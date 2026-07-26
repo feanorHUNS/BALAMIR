@@ -1009,14 +1009,14 @@
             const langSelect = document.getElementById('langSwitcher'); if(langSelect) langSelect.value = currentLang;
             if (currentUser.username === 'Ziyaretçi') currentUser.username = t('visitor');
 
-            updateStaticTranslations(); initAuthListener(); initColorPalette(); applyPermissions(); attachGlobalKeyEvents();
+            updateStaticTranslations(); initColorPalette(); applyPermissions(); attachGlobalKeyEvents();
             applyTheme(cloudData.activeTheme); renderTitles(); renderAll();
 
             const firebaseConfig = { apiKey: "AIzaSyBKOIS5aTqw6YuTiCq1q0xpeK_sdJtssCo", authDomain: "hunsguild.firebaseapp.com", projectId: "hunsguild", storageBucket: "hunsguild.firebasestorage.app", messagingSenderId: "869316740529", appId: "1:869316740529:web:0f41523c003a1728baa990", databaseURL: "https://hunsguild-default-rtdb.firebaseio.com" };
             let db = null; let usingLocal = false;
 
             try { 
-                if(typeof firebase !== 'undefined' && firebaseConfig.apiKey !== "") { firebase.initializeApp(firebaseConfig); db = firebase.database(); } 
+                if(typeof firebase !== 'undefined' && firebaseConfig.apiKey !== "") { firebase.initializeApp(firebaseConfig); db = firebase.database(); initAuthListener(); } 
                 else { usingLocal = true; }
             } catch(e) { usingLocal = true; }
 
