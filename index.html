@@ -431,6 +431,7 @@
                             </div>
                             <div class="flex justify-end gap-3">
                                 <button onclick="deleteActivePlan()" class="bg-red-900/50 hover:bg-red-600 text-red-400 hover:text-white px-6 py-2.5 rounded-xl text-xs font-black transition border border-red-800/50 uppercase shadow-sm" data-i18n="delete_plan">Delete Plan</button>
+                                <button onclick="downloadPlanPNGOnly()" class="bg-slate-700 hover:bg-slate-600 text-white px-6 py-2.5 rounded-xl text-xs font-black transition shadow-lg uppercase flex items-center gap-2" data-i18n="download_png_only">📥 DOWNLOAD PNG</button>
                                 <button onclick="publishActivePlan()" id="publishPlanBtn" class="bg-emerald-600 hover:bg-emerald-500 text-white px-8 py-2.5 rounded-xl text-xs font-black transition shadow-lg shadow-emerald-900/50 uppercase flex items-center gap-2" data-i18n="publish">PUBLISH</button>
                             </div>
                         </div>
@@ -824,7 +825,8 @@
                 tab_messages: "💬 Messages", messages_title: "💬 Messages", quick_msg_title: "✉️ Send a Quick Message to Leadership", quick_msg_desc: "Anyone can send this — visitors too. It goes straight to the admin's inbox below.", msg_placeholder: "Write your message here...", no_messages_yet: "No messages yet.", chat_rooms_title: "💬 Chat Rooms", chat_room_create: "+ Create Room", no_chat_rooms: "No rooms available to you yet.", select_a_room: "Select a room to start chatting.", no_chat_messages: "No messages in this room yet.", no_known_users: "No known users yet — they need to sign in with Google first.", room_members_title: "Who can see this room:",
                 add_group: "Add another group of 6", remove_group: "Remove this group", remove_group_confirm: "This group still has players assigned. Remove it anyway?",
                 discordlink_col_uid: "Discord User ID", uid_copied: "User ID copied.", finalize_now: "Finalize Now", finalize_confirm: "Finalize this announcement now? Buttons will stop working and the message will be deleted from Discord.",
-                user_cards_title: "🪪 User Cards", user_cards_desc: "Phone number and email are only visible to admin. Useful for reminders later (e.g. via WhatsApp) and for account recovery.", user_cards_none_yet: "No Discord users recorded yet.", user_cards_not_linked: "Not linked to a site character yet.", user_cards_phone: "Phone Number", user_cards_email: "Email", user_cards_saved: "User card saved."
+                user_cards_title: "🪪 User Cards", user_cards_desc: "Phone number and email are only visible to admin. Useful for reminders later (e.g. via WhatsApp) and for account recovery.", user_cards_none_yet: "No Discord users recorded yet.", user_cards_not_linked: "Not linked to a site character yet.", user_cards_phone: "Phone Number", user_cards_email: "Email", user_cards_saved: "User card saved.",
+                download_png_only: "📥 Download PNG"
             },
             tr: { 
                 tab_announcements: "Duyurular", tab_raid: "Raid Bölgesi", tab_plan: "Etkinlik Planı", tab_admin: "Yönetim", 
@@ -861,7 +863,8 @@
                 tab_messages: "💬 Mesajlar", messages_title: "💬 Mesajlar", quick_msg_title: "✉️ Yöneticilere Hızlı Mesaj Gönder", quick_msg_desc: "Bunu herkes gönderebilir — ziyaretçiler de. Aşağıdaki admin gelen kutusuna direkt düşer.", msg_placeholder: "Mesajınızı buraya yazın...", no_messages_yet: "Henüz mesaj yok.", chat_rooms_title: "💬 Sohbet Odaları", chat_room_create: "+ Oda Oluştur", no_chat_rooms: "Şu an erişebildiğin bir oda yok.", select_a_room: "Sohbete başlamak için bir oda seç.", no_chat_messages: "Bu odada henüz mesaj yok.", no_known_users: "Henüz bilinen bir kullanıcı yok — önce Google ile giriş yapmaları gerekiyor.", room_members_title: "Bu odayı kimler görebilir:",
                 add_group: "6 kişilik yeni grup ekle", remove_group: "Bu grubu kaldır", remove_group_confirm: "Bu grupta hâlâ atanmış oyuncular var. Yine de kaldırılsın mı?",
                 discordlink_col_uid: "Discord Kullanıcı ID", uid_copied: "Kullanıcı ID kopyalandı.", finalize_now: "Şimdi Sonlandır", finalize_confirm: "Bu duyuru şimdi sonlandırılsın mı? Butonlar çalışmayı durduracak ve mesaj Discord'dan silinecek.",
-                user_cards_title: "🪪 Kullanıcı Kartları", user_cards_desc: "Telefon numarası ve e-posta sadece admin tarafından görülebilir. İleride hatırlatıcı göndermek (örn. WhatsApp üzerinden) ve hesap kurtarma için kullanışlı.", user_cards_none_yet: "Henüz kayıtlı bir Discord kullanıcısı yok.", user_cards_not_linked: "Henüz bir site karakterine bağlanmadı.", user_cards_phone: "Telefon Numarası", user_cards_email: "E-posta", user_cards_saved: "Kullanıcı kartı kaydedildi."
+                user_cards_title: "🪪 Kullanıcı Kartları", user_cards_desc: "Telefon numarası ve e-posta sadece admin tarafından görülebilir. İleride hatırlatıcı göndermek (örn. WhatsApp üzerinden) ve hesap kurtarma için kullanışlı.", user_cards_none_yet: "Henüz kayıtlı bir Discord kullanıcısı yok.", user_cards_not_linked: "Henüz bir site karakterine bağlanmadı.", user_cards_phone: "Telefon Numarası", user_cards_email: "E-posta", user_cards_saved: "Kullanıcı kartı kaydedildi.",
+                download_png_only: "📥 PNG İNDİR"
             },
             de: { 
                 tab_announcements: "Ankündigungen", tab_raid: "Raid-Zone", tab_plan: "Eventplan", tab_admin: "Verwaltung", 
@@ -898,7 +901,8 @@
                 tab_messages: "💬 Nachrichten", messages_title: "💬 Nachrichten", quick_msg_title: "✉️ Schnelle Nachricht an die Führung senden", quick_msg_desc: "Jeder kann dies senden — auch Besucher. Es landet direkt im Admin-Posteingang unten.", msg_placeholder: "Schreiben Sie Ihre Nachricht hier...", no_messages_yet: "Noch keine Nachrichten.", chat_rooms_title: "💬 Chat-Räume", chat_room_create: "+ Raum erstellen", no_chat_rooms: "Noch keine Räume für Sie verfügbar.", select_a_room: "Wählen Sie einen Raum, um zu chatten.", no_chat_messages: "Noch keine Nachrichten in diesem Raum.", no_known_users: "Noch keine bekannten Benutzer — sie müssen sich zuerst mit Google anmelden.", room_members_title: "Wer kann diesen Raum sehen:",
                 add_group: "Weitere 6er-Gruppe hinzufügen", remove_group: "Diese Gruppe entfernen", remove_group_confirm: "Dieser Gruppe sind noch Spieler zugewiesen. Trotzdem entfernen?",
                 discordlink_col_uid: "Discord-Benutzer-ID", uid_copied: "Benutzer-ID kopiert.", finalize_now: "Jetzt abschließen", finalize_confirm: "Diese Ankündigung jetzt abschließen? Buttons funktionieren dann nicht mehr und die Nachricht wird aus Discord gelöscht.",
-                user_cards_title: "🪪 Benutzerkarten", user_cards_desc: "Telefonnummer und E-Mail sind nur für Admin sichtbar. Nützlich für spätere Erinnerungen (z.B. über WhatsApp) und Kontowiederherstellung.", user_cards_none_yet: "Noch keine Discord-Nutzer erfasst.", user_cards_not_linked: "Noch nicht mit einem Website-Charakter verknüpft.", user_cards_phone: "Telefonnummer", user_cards_email: "E-Mail", user_cards_saved: "Benutzerkarte gespeichert."
+                user_cards_title: "🪪 Benutzerkarten", user_cards_desc: "Telefonnummer und E-Mail sind nur für Admin sichtbar. Nützlich für spätere Erinnerungen (z.B. über WhatsApp) und Kontowiederherstellung.", user_cards_none_yet: "Noch keine Discord-Nutzer erfasst.", user_cards_not_linked: "Noch nicht mit einem Website-Charakter verknüpft.", user_cards_phone: "Telefonnummer", user_cards_email: "E-Mail", user_cards_saved: "Benutzerkarte gespeichert.",
+                download_png_only: "📥 PNG herunterladen"
             },
             fr: { 
                 tab_announcements: "Annonces", tab_raid: "Zone de Raid", tab_plan: "Plan d'Événement", tab_admin: "Gestion", 
@@ -935,7 +939,8 @@
                 tab_messages: "💬 Messages", messages_title: "💬 Messages", quick_msg_title: "✉️ Envoyer un message rapide aux dirigeants", quick_msg_desc: "Tout le monde peut envoyer ceci — même les visiteurs. Cela arrive directement dans la boîte de réception de l'admin ci-dessous.", msg_placeholder: "Écrivez votre message ici...", no_messages_yet: "Aucun message pour l'instant.", chat_rooms_title: "💬 Salons de discussion", chat_room_create: "+ Créer un salon", no_chat_rooms: "Aucun salon disponible pour vous pour l'instant.", select_a_room: "Sélectionnez un salon pour discuter.", no_chat_messages: "Aucun message dans ce salon pour l'instant.", no_known_users: "Aucun utilisateur connu pour l'instant — ils doivent d'abord se connecter avec Google.", room_members_title: "Qui peut voir ce salon :",
                 add_group: "Ajouter un autre groupe de 6", remove_group: "Supprimer ce groupe", remove_group_confirm: "Ce groupe contient encore des joueurs assignés. Le supprimer quand même ?",
                 discordlink_col_uid: "ID utilisateur Discord", uid_copied: "ID utilisateur copié.", finalize_now: "Terminer maintenant", finalize_confirm: "Terminer cette annonce maintenant ? Les boutons cesseront de fonctionner et le message sera supprimé de Discord.",
-                user_cards_title: "🪪 Fiches utilisateur", user_cards_desc: "Le numéro de téléphone et l'email ne sont visibles que par l'admin. Utile pour des rappels futurs (ex. via WhatsApp) et la récupération de compte.", user_cards_none_yet: "Aucun utilisateur Discord enregistré pour l'instant.", user_cards_not_linked: "Pas encore lié à un personnage du site.", user_cards_phone: "Numéro de téléphone", user_cards_email: "Email", user_cards_saved: "Fiche utilisateur enregistrée."
+                user_cards_title: "🪪 Fiches utilisateur", user_cards_desc: "Le numéro de téléphone et l'email ne sont visibles que par l'admin. Utile pour des rappels futurs (ex. via WhatsApp) et la récupération de compte.", user_cards_none_yet: "Aucun utilisateur Discord enregistré pour l'instant.", user_cards_not_linked: "Pas encore lié à un personnage du site.", user_cards_phone: "Numéro de téléphone", user_cards_email: "Email", user_cards_saved: "Fiche utilisateur enregistrée.",
+                download_png_only: "📥 Télécharger le PNG"
             },
             ar: { 
                 tab_announcements: "الإعلانات", tab_raid: "منطقة الغارة", tab_plan: "خطة الحدث", tab_admin: "الإدارة", 
@@ -972,7 +977,8 @@
                 tab_messages: "💬 الرسائل", messages_title: "💬 الرسائل", quick_msg_title: "✉️ إرسال رسالة سريعة إلى القيادة", quick_msg_desc: "يمكن لأي شخص إرسال هذا — حتى الزوار. تصل مباشرة إلى صندوق وارد المسؤول أدناه.", msg_placeholder: "اكتب رسالتك هنا...", no_messages_yet: "لا توجد رسائل بعد.", chat_rooms_title: "💬 غرف الدردشة", chat_room_create: "+ إنشاء غرفة", no_chat_rooms: "لا توجد غرف متاحة لك بعد.", select_a_room: "اختر غرفة لبدء الدردشة.", no_chat_messages: "لا توجد رسائل في هذه الغرفة بعد.", no_known_users: "لا يوجد مستخدمون معروفون بعد — يجب عليهم تسجيل الدخول باستخدام Google أولاً.", room_members_title: "من يمكنه رؤية هذه الغرفة:",
                 add_group: "إضافة مجموعة أخرى من 6", remove_group: "إزالة هذه المجموعة", remove_group_confirm: "لا تزال هناك لاعبون معينون في هذه المجموعة. هل تريد إزالتها على أي حال؟",
                 discordlink_col_uid: "معرّف مستخدم ديسكورد", uid_copied: "تم نسخ معرّف المستخدم.", finalize_now: "إنهاء الآن", finalize_confirm: "هل تريد إنهاء هذا الإعلان الآن؟ ستتوقف الأزرار عن العمل وسيتم حذف الرسالة من ديسكورد.",
-                user_cards_title: "🪪 بطاقات المستخدمين", user_cards_desc: "رقم الهاتف والبريد الإلكتروني مرئيان فقط للمسؤول. مفيد للتذكيرات لاحقًا (مثل واتساب) واستعادة الحساب.", user_cards_none_yet: "لا يوجد مستخدمو ديسكورد مسجلون بعد.", user_cards_not_linked: "لم يتم ربطه بشخصية من الموقع بعد.", user_cards_phone: "رقم الهاتف", user_cards_email: "البريد الإلكتروني", user_cards_saved: "تم حفظ بطاقة المستخدم."
+                user_cards_title: "🪪 بطاقات المستخدمين", user_cards_desc: "رقم الهاتف والبريد الإلكتروني مرئيان فقط للمسؤول. مفيد للتذكيرات لاحقًا (مثل واتساب) واستعادة الحساب.", user_cards_none_yet: "لا يوجد مستخدمو ديسكورد مسجلون بعد.", user_cards_not_linked: "لم يتم ربطه بشخصية من الموقع بعد.", user_cards_phone: "رقم الهاتف", user_cards_email: "البريد الإلكتروني", user_cards_saved: "تم حفظ بطاقة المستخدم.",
+                download_png_only: "📥 تنزيل PNG"
             }
         };
 
@@ -2086,16 +2092,18 @@
     if (pills.length === 0 && plr.role && DOM_CLASSES[plr.role]) pills.push({ text: plr.role, color: DOM_CLASSES[plr.role] });
     if (pills.length === 0 && plr.role) pills.push({ text: plr.role, color: '#9ca3af' });
 
-    const borderColor = pills[0] ? pills[0].color : '#64748b';
+    // Karakter çerçevesi rengini önce SINIF'tan alır (yoksa rol renginden).
+    const borderColor = (plr.className && DOM_CLASSES[plr.className]) ? DOM_CLASSES[plr.className] : (pills[0] ? pills[0].color : '#64748b');
     const pillsHtml = pills.map(p => `<div style="display:inline-flex; align-items:center; justify-content:center; border: 2.5px solid ${p.color}; color: #ffffff; background-color: ${p.color}70; border-radius: 9999px; padding: 3px 11px; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.08em; line-height: 1; white-space: nowrap; text-shadow: 0 1px 3px rgba(0,0,0,0.9);">${p.text}</div>`).join('');
 
     const dragAttr = (!isExport && isAuth) ? `draggable="true" ondragstart="startPlanDrag(event, ${idx})" ondragend="endPlanDrag(event)" ondragover="allowPlanDrop(event)" ondrop="dropOnPlan(event, ${idx})" ondragenter="enterPlanDrop(event)" ondragleave="leavePlanDrop(event)" class="cursor-grab active:cursor-grabbing plan-slot relative w-full"` : `class="plan-slot relative w-full"`;
     
     const delBtn = (!isExport && isAuth) ? `<button onclick="removeFromPlan(${idx}); event.stopPropagation();" class="absolute -top-2 -right-2 bg-red-950 border border-red-500 text-red-500 hover:bg-red-500 hover:text-white w-5 h-5 md:w-6 md:h-6 rounded-full flex items-center justify-center text-[10px] font-black z-50 transition-colors shadow-lg">✕</button>` : '';
 
-    // PNG Çıktısı için özel olarak düzeltilmiş, HTML2Canvas'ın hata yapmayacağı sabit hizalamalı yapı:
-    return `<div ${dragAttr} class="bg-[#020617] rounded-xl relative transition-all duration-300 w-full" style="height: 75px; border: 2px solid ${borderColor}; box-shadow: inset 0 0 15px ${borderColor}50; padding-top: 10px; text-align: center;">
-        <div class="text-white font-black text-[18px] md:text-[22px] uppercase break-words leading-none z-10 w-full" style="font-family:'Inter',sans-serif; margin-bottom: 6px; text-align: center;">${plr.name}</div>
+    // Flexbox ile GERÇEK dikey+yatay ortalama (padding-top tahminine değil, style'a dayanıyor —
+    // html2canvas'ın class çakışması yaşasa bile inline style her zaman uygulanır).
+    return `<div ${dragAttr} class="bg-[#020617] rounded-xl relative transition-all duration-300 w-full" style="height: 75px; border: 2px solid ${borderColor}; box-shadow: inset 0 0 15px ${borderColor}50; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; padding: 6px 8px; text-align: center;">
+        <div class="text-white font-black text-[18px] md:text-[22px] uppercase break-words leading-none z-10 w-full" style="font-family:'Inter',sans-serif; text-align: center;">${plr.name}</div>
         <div style="display: flex; gap: 4px; justify-content: center; align-items: center; flex-wrap: wrap; padding: 0 6px;">${pillsHtml}</div>
         ${delBtn}
     </div>`;
@@ -2292,6 +2300,39 @@
         }
         
         function deleteActivePlan() { if(!activePlanId) return; showCustomConfirm(t("confirm"), () => { cloudData.raidPlans = cloudData.raidPlans.filter(p => p.id !== activePlanId); activePlanId = cloudData.raidPlans.length > 0 ? cloudData.raidPlans[0].id : null; triggerCloudSave(); renderAll(); }, t("confirm"), "🔥"); }
+        // PNG yakalama mantığı ortak bir fonksiyona çıkarıldı — hem "Yayınla" hem "Sadece PNG İndir" butonları bunu kullanıyor.
+        function capturePlanExportPNG(onCaptured) {
+            const expArea = document.getElementById('planExportArea');
+            expArea.style.left = '0';
+            expArea.style.zIndex = '9999';
+
+            const planContainer = document.getElementById('planExportContainer');
+            const originalBoxShadow = planContainer.style.boxShadow;
+            planContainer.style.boxShadow = 'none'; // Resimde devasa parlama olmasın diye anlık kapatıyoruz
+
+            // useCORS: true eklendi ki dışarıdaki resim yüklenirken siyah ekran vermesin
+            html2canvas(planContainer, { backgroundColor: '#020617', scale: 2, useCORS: true }).then(canvas => {
+                if (onCaptured) onCaptured(canvas);
+                expArea.style.left = '-9999px';
+                expArea.style.zIndex = '-999';
+                planContainer.style.boxShadow = originalBoxShadow; // Parlamayı sisteme geri veriyoruz
+            });
+        }
+
+        // Sadece PNG indirir — yayınlamaz, Discord'a hiçbir şey göndermez.
+        function downloadPlanPNGOnly() {
+            const plan = cloudData.raidPlans.find(p => p.id === activePlanId);
+            if (!plan) return;
+            setTimeout(() => {
+                capturePlanExportPNG((canvas) => {
+                    const planLink = document.createElement('a');
+                    planLink.download = `HUNS_Plan_${Date.now()}.png`;
+                    planLink.href = canvas.toDataURL("image/png");
+                    planLink.click();
+                });
+            }, 100);
+        }
+
         function publishActivePlan() { 
             const plan = cloudData.raidPlans.find(p => p.id === activePlanId); 
             if(!plan) return; 
@@ -2304,28 +2345,15 @@
                 renderActiveEventsToMainPage(); 
                 
                 setTimeout(()=>{ 
-                    const expArea = document.getElementById('planExportArea'); 
-                    expArea.style.left = '0'; 
-                    expArea.style.zIndex = '9999'; 
-                    
-                    const planContainer = document.getElementById('planExportContainer');
-                    const originalBoxShadow = planContainer.style.boxShadow;
-                    planContainer.style.boxShadow = 'none'; // Resimde devasa parlama olmasın diye anlık kapatıyoruz
-                    
-                    // useCORS: true eklendi ki dışarıdaki resim yüklenirken siyah ekran vermesin
-                    html2canvas(planContainer, { backgroundColor: '#020617', scale: 2, useCORS: true }).then(canvas=>{ 
+                    capturePlanExportPNG((canvas) => {
                         const planLink = document.createElement('a'); 
                         planLink.download = `HUNS_Plan_${Date.now()}.png`; 
                         planLink.href = canvas.toDataURL("image/png"); 
                         planLink.click(); 
 
-                        // YENİ: Aynı görsel Discord Webhook'a da ek dosya olarak gönderiliyor
+                        // Aynı görsel Discord Webhook'a da ek dosya olarak gönderiliyor
                         canvas.toBlob(blob => { notifyDiscordEventPublished(plan, blob); }, 'image/png');
-                        
-                        expArea.style.left = '-9999px'; 
-                        expArea.style.zIndex = '-999'; 
-                        planContainer.style.boxShadow = originalBoxShadow; // Parlamayı sisteme geri veriyoruz
-                    }); 
+                    });
                 }, 500); 
             } else { 
                 plan.published = false; 
