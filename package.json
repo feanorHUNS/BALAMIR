@@ -1,0 +1,10 @@
+{
+  "name": "huns-guild-discord-functions",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "HUNS Guild Portal - Discord RSVP botu için Cloudflare Pages Functions",
+  "dependencies": {
+    "discord-interactions": "^3.4.0"
+  }
+}
