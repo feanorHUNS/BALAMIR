@@ -1,5 +1,9 @@
-// Site (checkAnnouncementExpiry) tarafından, etkinlik saati geldiğinde otomatik çağrılır.
+// Site (checkAnnouncementExpiry / manuel "Finalize Now") tarafından çağrılır.
 // Adres: https://SITEN.pages.dev/api/finalize-announcement
+//
+// ÖNEMLİ: Discord tarafındaki adımlardan biri (mesaj zaten silinmiş, kanal artık yok vb.)
+// başarısız olsa bile, sitedeki "finalized" durumu HER ZAMAN kaydedilir — yani biri mesajı
+// Discord'dan elle silmiş olsa da, "Finalize Now"a bastığında site senkron kalır.
 
 export async function onRequestPost(context) {
     const { request, env } = context;
@@ -20,36 +24,43 @@ export async function onRequestPost(context) {
             });
         }
 
-        // 1) Katılımı onaylayanları etiketleyip TR+EN teşekkür mesajı gönder (orijinal mesaj hâlâ görünürken).
-        const acceptedIds = Object.keys(ann.accepted || {});
-        if (acceptedIds.length > 0) {
-            const mentions = acceptedIds.map(id => `<@${id}>`).join(' ');
-            await fetch(`https://discord.com/api/v10/channels/${ann.channelId}/messages`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bot ${env.DISCORD_BOT_TOKEN}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    content: `🎉 Katılımınızı onayladığınız için teşekkürler! / Thank you for confirming your attendance!\n\n${mentions}`,
-                    allowed_mentions: { parse: [], users: acceptedIds }
-                })
+        // 1) Katılımı onaylayanları etiketleyip TR+EN teşekkür mesajı gönder.
+        //    (Discord tarafı başarısız olsa bile aşağıdaki finalize adımını engellemesin diye try/catch içinde.)
+        try {
+            const acceptedIds = Object.keys(ann.accepted || {});
+            if (acceptedIds.length > 0) {
+                const mentions = acceptedIds.map(id => `<@${id}>`).join(' ');
+                await fetch(`https://discord.com/api/v10/channels/${ann.channelId}/messages`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bot ${env.DISCORD_BOT_TOKEN}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        content: `🎉 Katılımınızı onayladığınız için teşekkürler! / Thank you for confirming your attendance!\n\n${mentions}`,
+                        allowed_mentions: { parse: [], users: acceptedIds }
+                    })
+                });
+            }
+        } catch (e) { console.error('Teşekkür mesajı gönderilemedi (yoksayıldı):', e); }
+
+        // 2) Orijinal duyuru mesajını Discord'dan sil. Mesaj zaten (elle) silinmişse Discord 404
+        //    döner — bu normal bir durum, hata sayılmaz, işleme devam edilir.
+        try {
+            await fetch(`https://discord.com/api/v10/channels/${ann.channelId}/messages/${ann.messageId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bot ${env.DISCORD_BOT_TOKEN}` }
             });
-        }
+        } catch (e) { console.error('Mesaj silinemedi (muhtemelen zaten silinmiş, yoksayıldı):', e); }
 
-        // 2) Orijinal duyuru mesajını Discord'dan TAMAMEN sil (artık sadece butonları kaldırmıyoruz).
-        await fetch(`https://discord.com/api/v10/channels/${ann.channelId}/messages/${ann.messageId}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bot ${env.DISCORD_BOT_TOKEN}` }
-        }).catch(() => null);
+        // 3) Bu etkinlik için daha önce gönderilmiş hatırlatma mesajlarını sil (varsa).
+        try {
+            if (webhookUrl && ann.reminderMsgIds) {
+                const deletePromises = Object.values(ann.reminderMsgIds).map(msgId =>
+                    fetch(`${webhookUrl}/messages/${msgId}`, { method: 'DELETE' }).catch(() => null)
+                );
+                await Promise.all(deletePromises);
+            }
+        } catch (e) { console.error('Hatırlatma mesajları silinemedi (yoksayıldı):', e); }
 
-        // 3) Bu etkinlik için daha önce gönderilmiş "30dk kaldı / 15dk kaldı / başlıyor" hatırlatma
-        //    mesajlarını, artık işe yaramadıkları için Discord kanalından otomatik siler.
-        if (webhookUrl && ann.reminderMsgIds) {
-            const deletePromises = Object.values(ann.reminderMsgIds).map(msgId =>
-                fetch(`${webhookUrl}/messages/${msgId}`, { method: 'DELETE' }).catch(() => null)
-            );
-            await Promise.all(deletePromises);
-        }
-
-        // 4) Tekrar tetiklenmesin diye işaretle.
+        // 4) Tekrar tetiklenmesin diye işaretle — Discord tarafında yukarıda ne olursa olsun BU HER ZAMAN ÇALIŞIR.
         await fetch(`${env.FIREBASE_DB_URL}/Announcements/${annId}.json`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
