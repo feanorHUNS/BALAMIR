@@ -167,7 +167,7 @@
                 <div class="absolute inset-0 bg-blue-900/10 blur-3xl rounded-full"></div>
                 <h2 id="exportPlanTitle" class="text-5xl font-black text-amber-500 uppercase tracking-widest mt-2 mb-4 relative z-10 guild-font" style="text-shadow: 0 0 25px rgba(245,158,11,0.8);"></h2>
                 <div class="themed-clock-container relative z-10">
-                    <span class="text-white font-mono font-black text-xl tracking-widest" id="exportPlanTime" style="text-shadow: 0 0 10px var(--neon-color);"></span>
+                    <span class="text-white font-mono font-black text-xl tracking-widest" id="exportPlanTime" style="text-shadow: 0 0 10px var(--neon-color); display: inline-block; line-height: 1.4; vertical-align: middle;"></span>
                 </div>
             </div>
             <div id="exportPlanGrid" class="grid gap-10 mb-10 relative z-10"></div>
@@ -2094,7 +2094,7 @@
 
     // Karakter çerçevesi rengini önce SINIF'tan alır (yoksa rol renginden).
     const borderColor = (plr.className && DOM_CLASSES[plr.className]) ? DOM_CLASSES[plr.className] : (pills[0] ? pills[0].color : '#64748b');
-    const pillsHtml = pills.map(p => `<span style="display:inline-block; vertical-align:middle; border: 2.5px solid ${p.color}; color: #ffffff; background-color: ${p.color}70; border-radius: 9999px; padding: 3px 11px; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.08em; line-height: 1; white-space: nowrap; text-shadow: 0 1px 3px rgba(0,0,0,0.9); margin: 0 2px;">${p.text}</span>`).join('');
+    const pillsHtml = pills.map(p => `<span style="display:inline-block; vertical-align:middle; height: 21px; line-height: 21px; border: 2.5px solid ${p.color}; color: #ffffff; background-color: ${p.color}70; border-radius: 9999px; padding: 0 11px; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap; text-shadow: 0 1px 3px rgba(0,0,0,0.9); margin: 0 2px;">${p.text}</span>`).join('');
 
     const dragAttr = (!isExport && isAuth) ? `draggable="true" ondragstart="startPlanDrag(event, ${idx})" ondragend="endPlanDrag(event)" ondragover="allowPlanDrop(event)" ondrop="dropOnPlan(event, ${idx})" ondragenter="enterPlanDrop(event)" ondragleave="leavePlanDrop(event)" class="cursor-grab active:cursor-grabbing plan-slot relative w-full"` : `class="plan-slot relative w-full"`;
     
