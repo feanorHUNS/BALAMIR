@@ -20,14 +20,7 @@ export async function onRequestPost(context) {
             });
         }
 
-        // 1) Butonları kaldır (mesajı düzenle, components: [])
-        await fetch(`https://discord.com/api/v10/channels/${ann.channelId}/messages/${ann.messageId}`, {
-            method: 'PATCH',
-            headers: { 'Authorization': `Bot ${env.DISCORD_BOT_TOKEN}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ components: [] })
-        });
-
-        // 2) Katılımı onaylayanları etiketleyip TR+EN teşekkür mesajı gönder.
+        // 1) Katılımı onaylayanları etiketleyip TR+EN teşekkür mesajı gönder (orijinal mesaj hâlâ görünürken).
         const acceptedIds = Object.keys(ann.accepted || {});
         if (acceptedIds.length > 0) {
             const mentions = acceptedIds.map(id => `<@${id}>`).join(' ');
@@ -40,6 +33,12 @@ export async function onRequestPost(context) {
                 })
             });
         }
+
+        // 2) Orijinal duyuru mesajını Discord'dan TAMAMEN sil (artık sadece butonları kaldırmıyoruz).
+        await fetch(`https://discord.com/api/v10/channels/${ann.channelId}/messages/${ann.messageId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bot ${env.DISCORD_BOT_TOKEN}` }
+        }).catch(() => null);
 
         // 3) Bu etkinlik için daha önce gönderilmiş "30dk kaldı / 15dk kaldı / başlıyor" hatırlatma
         //    mesajlarını, artık işe yaramadıkları için Discord kanalından otomatik siler.
