@@ -2349,17 +2349,26 @@
             const safeReset = () => { if (!settled) { settled = true; resetVisibility(); } };
             setTimeout(safeReset, 8000); // html2canvas hiç yanıt vermezse (ne başarı ne hata) son çare
 
-            // useCORS: true eklendi ki dışarıdaki resim yüklenirken siyah ekran vermesin
-            html2canvas(planContainer, { backgroundColor: '#020617', scale: 2, useCORS: true }).then(canvas => {
+            // html2canvas'ın kendisi SENKRON olarak hata fırlatırsa (promise reddi değil, doğrudan throw),
+            // bu try/catch olmadan .then()/.catch() zincirine hiç ulaşılamaz ve ekran asılı kalırdı.
+            try {
+                // useCORS: true eklendi ki dışarıdaki resim yüklenirken siyah ekran vermesin
+                html2canvas(planContainer, { backgroundColor: '#020617', scale: 2, useCORS: true }).then(canvas => {
+                    settled = true;
+                    if (onCaptured) onCaptured(canvas);
+                    resetVisibility();
+                }).catch(e => {
+                    settled = true;
+                    console.error('PNG yakalama hatası (promise):', e);
+                    showCustomAlert(t("png_capture_fail"), t("info"), "❌");
+                    resetVisibility();
+                });
+            } catch (e) {
                 settled = true;
-                if (onCaptured) onCaptured(canvas);
-                resetVisibility();
-            }).catch(e => {
-                settled = true;
-                console.error('PNG yakalama hatası:', e);
+                console.error('PNG yakalama hatası (senkron):', e);
                 showCustomAlert(t("png_capture_fail"), t("info"), "❌");
                 resetVisibility();
-            });
+            }
         }
 
         // Sadece PNG indirir — yayınlamaz, Discord'a hiçbir şey göndermez.
