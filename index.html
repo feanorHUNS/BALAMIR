@@ -32,7 +32,7 @@
 
         .plan-slot { position: relative; transition: all 0.2s; } 
         .plan-slot.drop-over { border: 2px dashed #ffffff !important; background: rgba(255, 255, 255, 0.1) !important; box-shadow: inset 0 0 30px rgba(255,255,255,0.5); transform: scale(1.02); z-index: 10; }
-        .themed-clock-container { display: inline-flex; align-items: center; justify-content: center; text-align: center; width: fit-content; margin: 0 auto; background: rgba(2, 6, 23, 0.25); backdrop-filter: blur(2px); border: 2px solid var(--neon-color); padding: 10px 30px; border-radius: 50px; box-shadow: 0 0 20px var(--neon-shadow); position: relative; z-index: 10; }
+        .themed-clock-container { display: inline-block; text-align: center; width: fit-content; margin: 0 auto; background: rgba(2, 6, 23, 0.25); backdrop-filter: blur(2px); border: 2px solid var(--neon-color); padding: 10px 30px; border-radius: 50px; box-shadow: 0 0 20px var(--neon-shadow); position: relative; z-index: 10; }
 
         .raid-active-row { background: rgba(30, 58, 138, 0.15); border-left: 4px solid #3b82f6 !important; }
         @keyframes highlightRowAnim { 0% { background-color: rgba(59, 130, 246, 0.5); } 100% { background-color: transparent; } } .highlight-flash { animation: highlightRowAnim 2.5s ease-out forwards; }
@@ -2094,17 +2094,20 @@
 
     // Karakter çerçevesi rengini önce SINIF'tan alır (yoksa rol renginden).
     const borderColor = (plr.className && DOM_CLASSES[plr.className]) ? DOM_CLASSES[plr.className] : (pills[0] ? pills[0].color : '#64748b');
-    const pillsHtml = pills.map(p => `<div style="display:inline-flex; align-items:center; justify-content:center; border: 2.5px solid ${p.color}; color: #ffffff; background-color: ${p.color}70; border-radius: 9999px; padding: 3px 11px; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.08em; line-height: 1; white-space: nowrap; text-shadow: 0 1px 3px rgba(0,0,0,0.9);">${p.text}</div>`).join('');
+    const pillsHtml = pills.map(p => `<span style="display:inline-block; vertical-align:middle; border: 2.5px solid ${p.color}; color: #ffffff; background-color: ${p.color}70; border-radius: 9999px; padding: 3px 11px; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.08em; line-height: 1; white-space: nowrap; text-shadow: 0 1px 3px rgba(0,0,0,0.9); margin: 0 2px;">${p.text}</span>`).join('');
 
     const dragAttr = (!isExport && isAuth) ? `draggable="true" ondragstart="startPlanDrag(event, ${idx})" ondragend="endPlanDrag(event)" ondragover="allowPlanDrop(event)" ondrop="dropOnPlan(event, ${idx})" ondragenter="enterPlanDrop(event)" ondragleave="leavePlanDrop(event)" class="cursor-grab active:cursor-grabbing plan-slot relative w-full"` : `class="plan-slot relative w-full"`;
     
     const delBtn = (!isExport && isAuth) ? `<button onclick="removeFromPlan(${idx}); event.stopPropagation();" class="absolute -top-2 -right-2 bg-red-950 border border-red-500 text-red-500 hover:bg-red-500 hover:text-white w-5 h-5 md:w-6 md:h-6 rounded-full flex items-center justify-center text-[10px] font-black z-50 transition-colors shadow-lg">✕</button>` : '';
 
-    // Flexbox ile GERÇEK dikey+yatay ortalama (padding-top tahminine değil, style'a dayanıyor —
-    // html2canvas'ın class çakışması yaşasa bile inline style her zaman uygulanır).
-    return `<div ${dragAttr} class="bg-[#020617] rounded-xl relative transition-all duration-300 w-full" style="height: 75px; border: 2px solid ${borderColor}; box-shadow: inset 0 0 15px ${borderColor}50; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; padding: 6px 8px; text-align: center;">
-        <div class="text-white font-black text-[18px] md:text-[22px] uppercase break-words leading-none z-10 w-full" style="font-family:'Inter',sans-serif; text-align: center;">${plr.name}</div>
-        <div style="display: flex; gap: 4px; justify-content: center; align-items: center; flex-wrap: wrap; padding: 0 6px;">${pillsHtml}</div>
+    // ÖNEMLİ: html2canvas modern flexbox'ı tam desteklemiyor, bu yüzden PNG çıktısında ortalama
+    // bozulabiliyor. Bunun yerine tüm tarayıcılarda (ve html2canvas'ta) güvenilir çalışan
+    // display:table / table-cell + vertical-align:middle yöntemini kullanıyoruz.
+    return `<div ${dragAttr} class="bg-[#020617] rounded-xl relative transition-all duration-300 w-full" style="height: 75px; border: 2px solid ${borderColor}; box-shadow: inset 0 0 15px ${borderColor}50; display: table; width: 100%; text-align: center;">
+        <div style="display: table-cell; vertical-align: middle; padding: 4px 10px;">
+            <div class="text-white font-black text-[18px] md:text-[22px] uppercase break-words leading-none" style="font-family:'Inter',sans-serif; text-align: center; margin-bottom: 6px;">${plr.name}</div>
+            <div style="text-align: center; white-space: normal;">${pillsHtml}</div>
+        </div>
         ${delBtn}
     </div>`;
 };
