@@ -623,6 +623,12 @@
                     <p class="text-[11px] text-slate-400 mb-5" data-i18n="discordlink_desc">Users who have interacted with the Discord bot appear here automatically. Their Discord user ID never changes even if they rename themselves — link them once to a site character to keep permanent statistics.</p>
                     <div id="discordLinkTable" class="space-y-2"></div>
                 </div>
+
+                <div class="admin-only-flex flex-col neon-theme-box p-6 rounded-2xl shadow-lg">
+                    <h3 class="text-sm font-black text-fuchsia-400 mb-1 tracking-widest uppercase" data-i18n="user_cards_title">🪪 User Cards</h3>
+                    <p class="text-[11px] text-slate-400 mb-5" data-i18n="user_cards_desc">Phone number and email are only visible to admin. Useful for reminders later (e.g. via WhatsApp) and for account recovery.</p>
+                    <div id="userCardsList" class="space-y-3"></div>
+                </div>
             </div>
             <div id="discordLinkDeniedMsg" class="text-center py-20 text-slate-500 font-bold text-sm tracking-widest uppercase" style="display: none;" data-i18n="unauthorized">Unauthorized Access.</div>
         </div>
@@ -816,7 +822,9 @@
                 add: "Add", discord_channels_title: "📡 RSVP Bot Channels", discord_channels_desc: "Add the channels the RSVP bot can publish to. You'll pick one each time you send an announcement.", discord_channels_none: "No channels added yet.", discord_channels_missing: "Please fill in both the channel name and ID.", discord_channels_select_label: "Channel", discord_channels_select_missing: "Please select a channel to publish to.", discord_channels_none_configured: "No channels configured — add one in Management first",
                 login_desc_google: "Sign in with your Google account. Access is granted by an admin afterwards.", login_with_google: "Continue with Google", bootstrap_admin_msg: "No admin exists yet. Copy the UID below and add it under Roles in the Firebase Console as 'admin' to bootstrap the first account.", pending_approval_msg: "You're signed in, but don't have access yet. An admin needs to approve your account.", pending_users_title: "⏳ Pending Approval", pending_users_desc: "Anyone who signs in with Google appears here automatically. Grant them officer or admin access, or leave them as visitors.", granted_users_title: "🛡️ Authorized Users", show_uids_toggle: "Show UIDs", grant_as_officer: "Make Officer", grant_as_admin: "Make Admin", revoke_access: "Revoke", no_pending_users: "No one is waiting for approval.", no_granted_users: "No authorized users yet.", role_granted: "Access granted.", revoke_confirm: "Revoke this person's access?",
                 tab_messages: "💬 Messages", messages_title: "💬 Messages", quick_msg_title: "✉️ Send a Quick Message to Leadership", quick_msg_desc: "Anyone can send this — visitors too. It goes straight to the admin's inbox below.", msg_placeholder: "Write your message here...", no_messages_yet: "No messages yet.", chat_rooms_title: "💬 Chat Rooms", chat_room_create: "+ Create Room", no_chat_rooms: "No rooms available to you yet.", select_a_room: "Select a room to start chatting.", no_chat_messages: "No messages in this room yet.", no_known_users: "No known users yet — they need to sign in with Google first.", room_members_title: "Who can see this room:",
-                add_group: "Add another group of 6", remove_group: "Remove this group", remove_group_confirm: "This group still has players assigned. Remove it anyway?"
+                add_group: "Add another group of 6", remove_group: "Remove this group", remove_group_confirm: "This group still has players assigned. Remove it anyway?",
+                discordlink_col_uid: "Discord User ID", uid_copied: "User ID copied.", finalize_now: "Finalize Now", finalize_confirm: "Finalize this announcement now? Buttons will stop working and the message will be deleted from Discord.",
+                user_cards_title: "🪪 User Cards", user_cards_desc: "Phone number and email are only visible to admin. Useful for reminders later (e.g. via WhatsApp) and for account recovery.", user_cards_none_yet: "No Discord users recorded yet.", user_cards_not_linked: "Not linked to a site character yet.", user_cards_phone: "Phone Number", user_cards_email: "Email", user_cards_saved: "User card saved."
             },
             tr: { 
                 tab_announcements: "Duyurular", tab_raid: "Raid Bölgesi", tab_plan: "Etkinlik Planı", tab_admin: "Yönetim", 
@@ -851,7 +859,9 @@
                 add: "Ekle", discord_channels_title: "📡 RSVP Botu Kanalları", discord_channels_desc: "RSVP botunun paylaşım yapabileceği kanalları ekle. Her duyuru gönderiminde bunlardan birini seçeceksin.", discord_channels_none: "Henüz kanal eklenmedi.", discord_channels_missing: "Lütfen hem kanal adını hem ID'sini doldurun.", discord_channels_select_label: "Kanal", discord_channels_select_missing: "Lütfen yayınlanacak bir kanal seçin.", discord_channels_none_configured: "Henüz kanal tanımlanmadı — önce Yönetim panelinden ekle",
                 login_desc_google: "Google hesabınla giriş yap. Yetki daha sonra bir admin tarafından verilir.", login_with_google: "Google ile Giriş Yap", bootstrap_admin_msg: "Henüz admin yok. Aşağıdaki UID'yi kopyalayıp Firebase Console'da Roles altına 'admin' olarak ekleyerek ilk hesabı oluşturabilirsin.", pending_approval_msg: "Giriş yaptın ama henüz yetkin yok. Bir admin hesabını onaylaması gerekiyor.", pending_users_title: "⏳ Onay Bekleyenler", pending_users_desc: "Google ile giriş yapan herkes buraya otomatik düşer. İstersen officer ya da admin yetkisi ver, istersen ziyaretçi olarak bırak.", granted_users_title: "🛡️ Yetkili Kullanıcılar", show_uids_toggle: "UID'leri Göster", grant_as_officer: "Officer Yap", grant_as_admin: "Admin Yap", revoke_access: "Yetkiyi Al", no_pending_users: "Onay bekleyen kimse yok.", no_granted_users: "Henüz yetkili kullanıcı yok.", role_granted: "Yetki verildi.", revoke_confirm: "Bu kişinin yetkisini almak istediğine emin misin?",
                 tab_messages: "💬 Mesajlar", messages_title: "💬 Mesajlar", quick_msg_title: "✉️ Yöneticilere Hızlı Mesaj Gönder", quick_msg_desc: "Bunu herkes gönderebilir — ziyaretçiler de. Aşağıdaki admin gelen kutusuna direkt düşer.", msg_placeholder: "Mesajınızı buraya yazın...", no_messages_yet: "Henüz mesaj yok.", chat_rooms_title: "💬 Sohbet Odaları", chat_room_create: "+ Oda Oluştur", no_chat_rooms: "Şu an erişebildiğin bir oda yok.", select_a_room: "Sohbete başlamak için bir oda seç.", no_chat_messages: "Bu odada henüz mesaj yok.", no_known_users: "Henüz bilinen bir kullanıcı yok — önce Google ile giriş yapmaları gerekiyor.", room_members_title: "Bu odayı kimler görebilir:",
-                add_group: "6 kişilik yeni grup ekle", remove_group: "Bu grubu kaldır", remove_group_confirm: "Bu grupta hâlâ atanmış oyuncular var. Yine de kaldırılsın mı?"
+                add_group: "6 kişilik yeni grup ekle", remove_group: "Bu grubu kaldır", remove_group_confirm: "Bu grupta hâlâ atanmış oyuncular var. Yine de kaldırılsın mı?",
+                discordlink_col_uid: "Discord Kullanıcı ID", uid_copied: "Kullanıcı ID kopyalandı.", finalize_now: "Şimdi Sonlandır", finalize_confirm: "Bu duyuru şimdi sonlandırılsın mı? Butonlar çalışmayı durduracak ve mesaj Discord'dan silinecek.",
+                user_cards_title: "🪪 Kullanıcı Kartları", user_cards_desc: "Telefon numarası ve e-posta sadece admin tarafından görülebilir. İleride hatırlatıcı göndermek (örn. WhatsApp üzerinden) ve hesap kurtarma için kullanışlı.", user_cards_none_yet: "Henüz kayıtlı bir Discord kullanıcısı yok.", user_cards_not_linked: "Henüz bir site karakterine bağlanmadı.", user_cards_phone: "Telefon Numarası", user_cards_email: "E-posta", user_cards_saved: "Kullanıcı kartı kaydedildi."
             },
             de: { 
                 tab_announcements: "Ankündigungen", tab_raid: "Raid-Zone", tab_plan: "Eventplan", tab_admin: "Verwaltung", 
@@ -886,7 +896,9 @@
                 add: "Hinzufügen", discord_channels_title: "📡 RSVP-Bot-Kanäle", discord_channels_desc: "Fügen Sie die Kanäle hinzu, in denen der RSVP-Bot veröffentlichen kann. Sie wählen bei jeder Ankündigung einen davon aus.", discord_channels_none: "Noch keine Kanäle hinzugefügt.", discord_channels_missing: "Bitte Kanalname und ID ausfüllen.", discord_channels_select_label: "Kanal", discord_channels_select_missing: "Bitte einen Kanal zum Veröffentlichen auswählen.", discord_channels_none_configured: "Keine Kanäle konfiguriert — zuerst in der Verwaltung hinzufügen",
                 login_desc_google: "Melden Sie sich mit Ihrem Google-Konto an. Der Zugriff wird anschließend von einem Admin gewährt.", login_with_google: "Mit Google fortfahren", bootstrap_admin_msg: "Es existiert noch kein Admin. Kopieren Sie die UID unten und fügen Sie sie in der Firebase Console unter Roles als 'admin' hinzu, um das erste Konto einzurichten.", pending_approval_msg: "Sie sind angemeldet, haben aber noch keinen Zugriff. Ein Admin muss Ihr Konto genehmigen.", pending_users_title: "⏳ Ausstehende Genehmigung", pending_users_desc: "Jeder, der sich mit Google anmeldet, erscheint hier automatisch. Gewähren Sie Officer- oder Admin-Zugriff, oder belassen Sie sie als Besucher.", granted_users_title: "🛡️ Autorisierte Benutzer", show_uids_toggle: "UIDs anzeigen", grant_as_officer: "Zum Officer machen", grant_as_admin: "Zum Admin machen", revoke_access: "Widerrufen", no_pending_users: "Niemand wartet auf Genehmigung.", no_granted_users: "Noch keine autorisierten Benutzer.", role_granted: "Zugriff gewährt.", revoke_confirm: "Zugriff dieser Person widerrufen?",
                 tab_messages: "💬 Nachrichten", messages_title: "💬 Nachrichten", quick_msg_title: "✉️ Schnelle Nachricht an die Führung senden", quick_msg_desc: "Jeder kann dies senden — auch Besucher. Es landet direkt im Admin-Posteingang unten.", msg_placeholder: "Schreiben Sie Ihre Nachricht hier...", no_messages_yet: "Noch keine Nachrichten.", chat_rooms_title: "💬 Chat-Räume", chat_room_create: "+ Raum erstellen", no_chat_rooms: "Noch keine Räume für Sie verfügbar.", select_a_room: "Wählen Sie einen Raum, um zu chatten.", no_chat_messages: "Noch keine Nachrichten in diesem Raum.", no_known_users: "Noch keine bekannten Benutzer — sie müssen sich zuerst mit Google anmelden.", room_members_title: "Wer kann diesen Raum sehen:",
-                add_group: "Weitere 6er-Gruppe hinzufügen", remove_group: "Diese Gruppe entfernen", remove_group_confirm: "Dieser Gruppe sind noch Spieler zugewiesen. Trotzdem entfernen?"
+                add_group: "Weitere 6er-Gruppe hinzufügen", remove_group: "Diese Gruppe entfernen", remove_group_confirm: "Dieser Gruppe sind noch Spieler zugewiesen. Trotzdem entfernen?",
+                discordlink_col_uid: "Discord-Benutzer-ID", uid_copied: "Benutzer-ID kopiert.", finalize_now: "Jetzt abschließen", finalize_confirm: "Diese Ankündigung jetzt abschließen? Buttons funktionieren dann nicht mehr und die Nachricht wird aus Discord gelöscht.",
+                user_cards_title: "🪪 Benutzerkarten", user_cards_desc: "Telefonnummer und E-Mail sind nur für Admin sichtbar. Nützlich für spätere Erinnerungen (z.B. über WhatsApp) und Kontowiederherstellung.", user_cards_none_yet: "Noch keine Discord-Nutzer erfasst.", user_cards_not_linked: "Noch nicht mit einem Website-Charakter verknüpft.", user_cards_phone: "Telefonnummer", user_cards_email: "E-Mail", user_cards_saved: "Benutzerkarte gespeichert."
             },
             fr: { 
                 tab_announcements: "Annonces", tab_raid: "Zone de Raid", tab_plan: "Plan d'Événement", tab_admin: "Gestion", 
@@ -921,7 +933,9 @@
                 add: "Ajouter", discord_channels_title: "📡 Canaux du bot RSVP", discord_channels_desc: "Ajoutez les canaux sur lesquels le bot RSVP peut publier. Vous en choisirez un à chaque envoi d'annonce.", discord_channels_none: "Aucun canal ajouté pour l'instant.", discord_channels_missing: "Veuillez remplir le nom et l'ID du canal.", discord_channels_select_label: "Canal", discord_channels_select_missing: "Veuillez sélectionner un canal de publication.", discord_channels_none_configured: "Aucun canal configuré — ajoutez-en un dans la Gestion d'abord",
                 login_desc_google: "Connectez-vous avec votre compte Google. L'accès est ensuite accordé par un administrateur.", login_with_google: "Continuer avec Google", bootstrap_admin_msg: "Aucun administrateur n'existe encore. Copiez l'UID ci-dessous et ajoutez-le sous Roles dans la Firebase Console en tant que 'admin' pour créer le premier compte.", pending_approval_msg: "Vous êtes connecté mais n'avez pas encore d'accès. Un administrateur doit approuver votre compte.", pending_users_title: "⏳ En attente d'approbation", pending_users_desc: "Toute personne se connectant avec Google apparaît ici automatiquement. Accordez l'accès officier ou admin, ou laissez en visiteur.", granted_users_title: "🛡️ Utilisateurs autorisés", show_uids_toggle: "Afficher les UID", grant_as_officer: "Nommer Officier", grant_as_admin: "Nommer Admin", revoke_access: "Révoquer", no_pending_users: "Personne n'attend d'approbation.", no_granted_users: "Aucun utilisateur autorisé pour l'instant.", role_granted: "Accès accordé.", revoke_confirm: "Révoquer l'accès de cette personne ?",
                 tab_messages: "💬 Messages", messages_title: "💬 Messages", quick_msg_title: "✉️ Envoyer un message rapide aux dirigeants", quick_msg_desc: "Tout le monde peut envoyer ceci — même les visiteurs. Cela arrive directement dans la boîte de réception de l'admin ci-dessous.", msg_placeholder: "Écrivez votre message ici...", no_messages_yet: "Aucun message pour l'instant.", chat_rooms_title: "💬 Salons de discussion", chat_room_create: "+ Créer un salon", no_chat_rooms: "Aucun salon disponible pour vous pour l'instant.", select_a_room: "Sélectionnez un salon pour discuter.", no_chat_messages: "Aucun message dans ce salon pour l'instant.", no_known_users: "Aucun utilisateur connu pour l'instant — ils doivent d'abord se connecter avec Google.", room_members_title: "Qui peut voir ce salon :",
-                add_group: "Ajouter un autre groupe de 6", remove_group: "Supprimer ce groupe", remove_group_confirm: "Ce groupe contient encore des joueurs assignés. Le supprimer quand même ?"
+                add_group: "Ajouter un autre groupe de 6", remove_group: "Supprimer ce groupe", remove_group_confirm: "Ce groupe contient encore des joueurs assignés. Le supprimer quand même ?",
+                discordlink_col_uid: "ID utilisateur Discord", uid_copied: "ID utilisateur copié.", finalize_now: "Terminer maintenant", finalize_confirm: "Terminer cette annonce maintenant ? Les boutons cesseront de fonctionner et le message sera supprimé de Discord.",
+                user_cards_title: "🪪 Fiches utilisateur", user_cards_desc: "Le numéro de téléphone et l'email ne sont visibles que par l'admin. Utile pour des rappels futurs (ex. via WhatsApp) et la récupération de compte.", user_cards_none_yet: "Aucun utilisateur Discord enregistré pour l'instant.", user_cards_not_linked: "Pas encore lié à un personnage du site.", user_cards_phone: "Numéro de téléphone", user_cards_email: "Email", user_cards_saved: "Fiche utilisateur enregistrée."
             },
             ar: { 
                 tab_announcements: "الإعلانات", tab_raid: "منطقة الغارة", tab_plan: "خطة الحدث", tab_admin: "الإدارة", 
@@ -956,7 +970,9 @@
                 add: "إضافة", discord_channels_title: "📡 قنوات بوت RSVP", discord_channels_desc: "أضف القنوات التي يمكن لبوت RSVP النشر فيها. ستختار واحدة منها عند كل إرسال إعلان.", discord_channels_none: "لم تتم إضافة أي قنوات بعد.", discord_channels_missing: "يرجى ملء اسم القناة ومعرّفها.", discord_channels_select_label: "القناة", discord_channels_select_missing: "يرجى اختيار قناة للنشر.", discord_channels_none_configured: "لم يتم تكوين أي قناة — أضف واحدة من الإدارة أولاً",
                 login_desc_google: "سجّل الدخول بحساب Google الخاص بك. يتم منح الوصول لاحقًا من قبل المسؤول.", login_with_google: "المتابعة باستخدام Google", bootstrap_admin_msg: "لا يوجد مسؤول بعد. انسخ المعرّف (UID) أدناه وأضفه تحت Roles في Firebase Console بصفته 'admin' لإنشاء أول حساب.", pending_approval_msg: "لقد سجّلت الدخول لكن ليس لديك صلاحية بعد. يجب على أحد المسؤولين الموافقة على حسابك.", pending_users_title: "⏳ بانتظار الموافقة", pending_users_desc: "يظهر هنا تلقائيًا كل من يسجل الدخول باستخدام Google. امنحه صلاحية مسؤول أو ضابط، أو اتركه كزائر.", granted_users_title: "🛡️ المستخدمون المصرّح لهم", show_uids_toggle: "إظهار المعرّفات (UID)", grant_as_officer: "تعيين كضابط", grant_as_admin: "تعيين كمسؤول", revoke_access: "إلغاء الصلاحية", no_pending_users: "لا يوجد أحد بانتظار الموافقة.", no_granted_users: "لا يوجد مستخدمون مصرّح لهم بعد.", role_granted: "تم منح الصلاحية.", revoke_confirm: "هل تريد إلغاء صلاحية هذا الشخص؟",
                 tab_messages: "💬 الرسائل", messages_title: "💬 الرسائل", quick_msg_title: "✉️ إرسال رسالة سريعة إلى القيادة", quick_msg_desc: "يمكن لأي شخص إرسال هذا — حتى الزوار. تصل مباشرة إلى صندوق وارد المسؤول أدناه.", msg_placeholder: "اكتب رسالتك هنا...", no_messages_yet: "لا توجد رسائل بعد.", chat_rooms_title: "💬 غرف الدردشة", chat_room_create: "+ إنشاء غرفة", no_chat_rooms: "لا توجد غرف متاحة لك بعد.", select_a_room: "اختر غرفة لبدء الدردشة.", no_chat_messages: "لا توجد رسائل في هذه الغرفة بعد.", no_known_users: "لا يوجد مستخدمون معروفون بعد — يجب عليهم تسجيل الدخول باستخدام Google أولاً.", room_members_title: "من يمكنه رؤية هذه الغرفة:",
-                add_group: "إضافة مجموعة أخرى من 6", remove_group: "إزالة هذه المجموعة", remove_group_confirm: "لا تزال هناك لاعبون معينون في هذه المجموعة. هل تريد إزالتها على أي حال؟"
+                add_group: "إضافة مجموعة أخرى من 6", remove_group: "إزالة هذه المجموعة", remove_group_confirm: "لا تزال هناك لاعبون معينون في هذه المجموعة. هل تريد إزالتها على أي حال؟",
+                discordlink_col_uid: "معرّف مستخدم ديسكورد", uid_copied: "تم نسخ معرّف المستخدم.", finalize_now: "إنهاء الآن", finalize_confirm: "هل تريد إنهاء هذا الإعلان الآن؟ ستتوقف الأزرار عن العمل وسيتم حذف الرسالة من ديسكورد.",
+                user_cards_title: "🪪 بطاقات المستخدمين", user_cards_desc: "رقم الهاتف والبريد الإلكتروني مرئيان فقط للمسؤول. مفيد للتذكيرات لاحقًا (مثل واتساب) واستعادة الحساب.", user_cards_none_yet: "لا يوجد مستخدمو ديسكورد مسجلون بعد.", user_cards_not_linked: "لم يتم ربطه بشخصية من الموقع بعد.", user_cards_phone: "رقم الهاتف", user_cards_email: "البريد الإلكتروني", user_cards_saved: "تم حفظ بطاقة المستخدم."
             }
         };
 
@@ -1014,6 +1030,7 @@
         let discordUsersData = {}; // Bot ile etkileşime giren Discord kullanıcıları - Firebase 'DiscordUsers' yolundan
         let rolesData = {}; // Yetki verilmiş kullanıcılar (admin/officer) - Firebase 'Roles' yolundan (UID -> {role, name})
         let pendingUsersData = {}; // Google ile giriş yapmış ama henüz yetkisi olmayan kullanıcılar - 'PendingUsers' yolundan
+        let userCardsData = {}; // Kullanıcı kartları (telefon/e-posta, sadece admin) - Firebase 'UserCards' yolundan
         let currentFirebaseUser = null; // Şu an giriş yapmış Google/Firebase kullanıcı nesnesi
         let chatRoomsData = {}; // Tüm sohbet odaları (metadata) - Firebase 'ChatRooms' yolundan
         let activeChatRoomId = null; // Şu an açık olan sohbet odası
@@ -1162,6 +1179,10 @@
                         db.ref('ChatRooms').on('value', (snapshot) => {
                             chatRoomsData = snapshot.val() || {};
                             if (activeTab === 'messages') renderChatRoomList();
+                        });
+                        db.ref('UserCards').on('value', (snapshot) => {
+                            userCardsData = snapshot.val() || {};
+                            if (activeTab === 'discordlink' && currentUser.role === 'admin') renderUserCards();
                         });
                     } catch(e) { /* Announcements yolu henüz kurulmamış olabilir, sorun değil */ }
                 } catch(e) { hideLoader(); }
@@ -1486,7 +1507,10 @@
         function renderPlanRsvpSection(plan) {
             const select = document.getElementById('planLinkedAnnSelect');
             if (select) {
-                const entries = Object.entries(announcementsData || {}).sort((a, b) => (b[1].createdAt || 0) - (a[1].createdAt || 0)).slice(0, 20);
+                const timeNow = Date.now();
+                const entries = Object.entries(announcementsData || {})
+                    .filter(([id, ann]) => id === plan.linkedAnnId || !ann.time || new Date(ann.time).getTime() > timeNow - (30 * 60000))
+                    .sort((a, b) => (b[1].createdAt || 0) - (a[1].createdAt || 0)).slice(0, 20);
                 const options = ['<option value="">— —</option>'].concat(entries.map(([id, ann]) => `<option value="${id}" ${plan.linkedAnnId === id ? 'selected' : ''}>${ann.title}</option>`));
                 select.innerHTML = options.join('');
                 select.value = plan.linkedAnnId || '';
@@ -1535,19 +1559,38 @@
                 const statusBadge = ann.finalized
                     ? `<span class="text-[8px] font-black uppercase bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full border border-slate-700">${t("discordann_status_finalized")}</span>`
                     : `<span class="text-[8px] font-black uppercase bg-emerald-950 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-700">${t("discordann_status_active")}</span>`;
+                const finalizeBtn = (!ann.finalized && currentUser.role !== 'visitor')
+                    ? `<button onclick="manualFinalizeAnnouncement('${annId}')" class="text-[9px] bg-red-950/50 text-red-400 border border-red-800 px-2 py-1 rounded hover:bg-red-600 hover:text-white transition font-black uppercase">${t("finalize_now")}</button>`
+                    : '';
                 return `<div class="bg-slate-900/40 p-3 border border-slate-800 rounded-xl text-[11px]">
                     <div class="flex justify-between items-center mb-1">
                         <span class="font-black text-white">${ann.title}</span>
                         ${statusBadge}
                     </div>
                     <div class="text-slate-500 text-[10px] mb-2">🗓️ ${timeStr}</div>
-                    <div class="flex gap-3 text-[10px]">
-                        <span class="text-emerald-400">✅ ${acceptedCount}</span>
-                        <span class="text-red-400">❌ ${declinedCount}</span>
-                        <span class="text-cyan-400">❓ ${tentativeCount}</span>
+                    <div class="flex justify-between items-center">
+                        <div class="flex gap-3 text-[10px]">
+                            <span class="text-emerald-400">✅ ${acceptedCount}</span>
+                            <span class="text-red-400">❌ ${declinedCount}</span>
+                            <span class="text-cyan-400">❓ ${tentativeCount}</span>
+                        </div>
+                        ${finalizeBtn}
                     </div>
                 </div>`;
             }).join('');
+        }
+
+        // Yetkili biri isterse bir duyuruyu etkinlik saatini beklemeden elle sonlandırabilir.
+        // Sonlandırma: teşekkür mesajı gönderilir + mesaj Discord'dan tamamen silinir.
+        function manualFinalizeAnnouncement(annId) {
+            if (currentUser.role === 'visitor') return;
+            showCustomConfirm(t("finalize_confirm"), () => {
+                fetch('/api/finalize-announcement', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ annId, webhookUrl: cloudData.discordWebhookUrl || null })
+                }).then(() => logAudit(`Duyuru elle sonlandırıldı: ${annId}`)).catch(e => console.error('manualFinalizeAnnouncement error:', e));
+            }, t("confirm"), "🏁");
         }
 
         // Etkinliğe 1 saat kala: butonları kaldır + katılım onaylayanlara TR/EN teşekkür mesajı gönder.
@@ -1603,7 +1646,7 @@
             container.innerHTML = entries.map(([discordUserId, du]) => {
                 const stats = statsFor(discordUserId);
                 const linkedPlayerId = cloudData.discordLinks[discordUserId] || '';
-                return `<div class="grid grid-cols-1 md:grid-cols-4 gap-3 items-center bg-slate-900/40 p-3 border border-slate-800 rounded-xl text-[11px]">
+                return `<div class="grid grid-cols-1 md:grid-cols-5 gap-3 items-center bg-slate-900/40 p-3 border border-slate-800 rounded-xl text-[11px]">
                     <div>
                         <div class="text-[9px] text-slate-500 uppercase font-black tracking-widest">${t("discordlink_col_username")}</div>
                         <div class="font-bold text-white">@${du.username || '—'}</div>
@@ -1611,6 +1654,10 @@
                     <div>
                         <div class="text-[9px] text-slate-500 uppercase font-black tracking-widest">${t("discordlink_col_nickname")}</div>
                         <div class="font-bold text-cyan-400">${du.nickname || du.username || '—'}</div>
+                    </div>
+                    <div>
+                        <div class="text-[9px] text-slate-500 uppercase font-black tracking-widest">${t("discordlink_col_uid")}</div>
+                        <div class="font-mono text-[10px] text-slate-400 truncate cursor-pointer hover:text-white transition" onclick="navigator.clipboard.writeText('${discordUserId}'); showCustomAlert(t('uid_copied'), t('success'), '📋');" title="${discordUserId}">${discordUserId}</div>
                     </div>
                     <div class="flex gap-2 text-[10px]">
                         <span class="text-emerald-400">✅ ${stats.accepted}</span>
@@ -1630,6 +1677,79 @@
             if (!cloudData.discordLinks) cloudData.discordLinks = {};
             if (playerId) cloudData.discordLinks[discordUserId] = playerId; else delete cloudData.discordLinks[discordUserId];
             triggerCloudSave();
+        }
+
+        // ============ KULLANICI KARTLARI (sadece admin) ============
+        // Her Discord kullanıcısı için: bağlı site karakterinin DKP/loot bilgisi + admin'e özel telefon/e-posta.
+        function renderUserCards() {
+            const container = document.getElementById('userCardsList');
+            if (!container || currentUser.role !== 'admin') return;
+
+            const entries = Object.entries(discordUsersData || {}).sort((a, b) => (b[1].lastSeen || 0) - (a[1].lastSeen || 0));
+            if (entries.length === 0) {
+                container.innerHTML = `<p class="text-[11px] text-slate-500">${t("user_cards_none_yet")}</p>`;
+                return;
+            }
+
+            container.innerHTML = entries.map(([uid, du]) => {
+                const card = userCardsData[uid] || {};
+                const linkedPlayerId = cloudData.discordLinks[uid] || '';
+                const linkedPlayer = cloudData.players.find(p => String(p.id) === String(linkedPlayerId));
+                const dkpInfo = linkedPlayer
+                    ? `<span class="text-cyan-400">DKP: ${linkedPlayer.dkp}</span> <span class="text-purple-400 ml-2">Arti: ${linkedPlayer.totalArti || 0}</span> <span class="text-orange-400 ml-2">DC: ${linkedPlayer.totalDragon || 0}</span>`
+                    : `<span class="text-slate-500 italic">${t("user_cards_not_linked")}</span>`;
+
+                return `<div class="bg-slate-950/60 border border-slate-800 rounded-xl p-3">
+                    <div class="flex justify-between items-start mb-2 flex-wrap gap-2">
+                        <div>
+                            <div class="text-xs font-bold text-white">${du.nickname || du.username || '—'} <span class="text-[9px] text-slate-500 font-normal">(@${du.username || '—'})</span></div>
+                            <div class="text-[10px] mt-0.5">${dkpInfo}</div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
+                        <div>
+                            <label class="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1">${t("user_cards_phone")}</label>
+                            <input type="text" id="cardPhone_${uid}" value="${card.phone || ''}" placeholder="+90 5xx xxx xx xx" class="w-full neon-theme-input px-2 py-1.5 rounded-lg text-[11px] outline-none">
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1">${t("user_cards_email")}</label>
+                            <input type="email" id="cardEmail_${uid}" value="${card.email || ''}" placeholder="mail@example.com" class="w-full neon-theme-input px-2 py-1.5 rounded-lg text-[11px] outline-none">
+                        </div>
+                    </div>
+                    <button onclick="saveUserCard('${uid}')" class="mt-2 bg-fuchsia-600 hover:bg-fuchsia-500 text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition">${t('save')}</button>
+                </div>`;
+            }).join('');
+        }
+
+        function saveUserCard(uid) {
+            if (currentUser.role !== 'admin') return;
+            const phoneInput = document.getElementById('cardPhone_' + uid);
+            const emailInput = document.getElementById('cardEmail_' + uid);
+            const phone = phoneInput ? phoneInput.value.trim() : '';
+            const email = emailInput ? emailInput.value.trim() : '';
+
+            firebase.database().ref('UserCards/' + uid).set({ phone, email }).then(() => {
+                logAudit(`Kullanıcı kartı güncellendi: ${uid}`);
+                showCustomAlert(t("user_cards_saved"), t("success"), "🪪");
+
+                // E-posta, Google ile giriş yapmış birinin (PendingUsers/Roles) e-postasıyla eşleşiyorsa,
+                // o kişinin görünen adını Discord ismiyle senkronize et (kafa karışıklığını önlemek için).
+                if (email) {
+                    const discordName = (discordUsersData[uid] && (discordUsersData[uid].nickname || discordUsersData[uid].username)) || null;
+                    if (discordName) {
+                        Object.entries(pendingUsersData || {}).forEach(([puid, pu]) => {
+                            if (pu.email && pu.email.toLowerCase() === email.toLowerCase() && pu.name !== discordName) {
+                                firebase.database().ref('PendingUsers/' + puid + '/name').set(discordName).catch(() => {});
+                            }
+                        });
+                        Object.entries(rolesData || {}).forEach(([ruid, r]) => {
+                            if (r.email && r.email.toLowerCase() === email.toLowerCase() && r.name !== discordName) {
+                                firebase.database().ref('Roles/' + ruid + '/name').set(discordName).catch(() => {});
+                            }
+                        });
+                    }
+                }
+            }).catch(e => showCustomAlert('Hata: ' + e.message, t("info"), "❌"));
         }
 
         function renderThemeButtons() { const container = document.getElementById('themeContainer'); if (!container) return; container.innerHTML = NEON_THEMES.map(tObj => `<button onclick="applyTheme(${tObj.id})" title="${tObj.name}" class="py-2 text-[9px] font-black uppercase tracking-widest rounded-xl transition-all border overflow-hidden whitespace-nowrap text-ellipsis px-1 ${cloudData.activeTheme === tObj.id ? 'bg-slate-800 text-white shadow-[0_0_15px_var(--neon-color)] scale-105 border-[var(--neon-color)]' : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-500'}" style="${cloudData.activeTheme === tObj.id ? `border-color:${tObj.color}; color:${tObj.color};` : ''}">${tObj.name}</button>`).join(''); }
@@ -1714,7 +1834,7 @@
 
         
         function applyPermissions() { document.body.classList.remove('admin-mode', 'officer-mode'); const badge = document.getElementById('userRoleBadge'); document.getElementById('loginBtn').classList.remove('hidden'); document.getElementById('logoutBtn').classList.add('hidden'); document.getElementById('editModeBtn').classList.add('hidden'); if(currentUser.role !== 'visitor') { document.getElementById('loginBtn').classList.add('hidden'); document.getElementById('logoutBtn').classList.remove('hidden'); } if(currentUser.role === 'admin') { document.body.classList.add('admin-mode'); document.getElementById('editModeBtn').classList.remove('hidden'); if(badge) { currentUser.username = t("admin_role"); badge.className = "text-[9px] font-black uppercase tracking-widest text-white bg-red-900 border border-red-500 px-2 py-0.5 rounded"; badge.innerText = currentUser.username; } } else if (currentUser.role === 'officer') { document.body.classList.add('officer-mode'); if(badge) { badge.className = "text-[9px] font-black uppercase tracking-widest text-slate-900 bg-amber-400 border border-amber-600 px-2 py-0.5 rounded"; badge.innerText = currentUser.username; } } else { if(badge) { badge.className = "text-[9px] font-black uppercase tracking-widest text-slate-500 bg-slate-900 border border-slate-700 px-2 py-0.5 rounded"; badge.innerText = t("visitor"); } } const sb = document.getElementById('raidSidebar'); if(activeTab === 'raid' && currentUser.role !== 'visitor') { sb.style.display = 'flex'; document.body.classList.add('sidebar-active'); } else { sb.style.display = 'none'; document.body.classList.remove('sidebar-active'); } }
-        function switchTab(tabId) { activeTab = tabId; document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active')); document.getElementById(`page-${tabId}`).classList.add('active'); document.getElementById(`tab-${tabId}`).classList.add('active'); if (tabId === 'admin') { if (currentUser.role !== 'admin') { document.getElementById('accessDeniedMsg').style.display = 'block'; } else { document.getElementById('accessDeniedMsg').style.display = 'none'; } } if (tabId === 'discordann') { if (currentUser.role === 'visitor') { document.getElementById('discordAnnDeniedMsg').style.display = 'block'; } else { document.getElementById('discordAnnDeniedMsg').style.display = 'none'; renderDiscordAnnouncementsList(); renderDiscordAnnChannelSelect(); } } if (tabId === 'discordlink') { if (currentUser.role === 'visitor') { document.getElementById('discordLinkDeniedMsg').style.display = 'block'; } else { document.getElementById('discordLinkDeniedMsg').style.display = 'none'; renderDiscordLinkTable(); } } if (tabId === 'messages') { renderMessagesInbox(); renderChatRoomList(); } applyPermissions(); }
+        function switchTab(tabId) { activeTab = tabId; document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active')); document.getElementById(`page-${tabId}`).classList.add('active'); document.getElementById(`tab-${tabId}`).classList.add('active'); if (tabId === 'admin') { if (currentUser.role !== 'admin') { document.getElementById('accessDeniedMsg').style.display = 'block'; } else { document.getElementById('accessDeniedMsg').style.display = 'none'; } } if (tabId === 'discordann') { if (currentUser.role === 'visitor') { document.getElementById('discordAnnDeniedMsg').style.display = 'block'; } else { document.getElementById('discordAnnDeniedMsg').style.display = 'none'; renderDiscordAnnouncementsList(); renderDiscordAnnChannelSelect(); } } if (tabId === 'discordlink') { if (currentUser.role === 'visitor') { document.getElementById('discordLinkDeniedMsg').style.display = 'block'; } else { document.getElementById('discordLinkDeniedMsg').style.display = 'none'; renderDiscordLinkTable(); if (currentUser.role === 'admin') renderUserCards(); } } if (tabId === 'messages') { renderMessagesInbox(); renderChatRoomList(); } applyPermissions(); }
         
         function toggleEditMode() { if(currentUser.role !== 'admin') return; isEditMode = !isEditMode; document.body.classList.toggle('edit-mode-active', isEditMode); const statusSpan = document.getElementById('editModeStatus'); const ed = document.getElementById('announcementEditor'); const tbar = document.getElementById('editorToolbar'); if(isEditMode) { statusSpan.innerText = t("on"); statusSpan.className = 'text-emerald-400'; ed.setAttribute('contenteditable','true'); tbar.classList.remove('hidden'); tbar.style.display = 'flex'; } else { statusSpan.innerText = t("off"); statusSpan.className = 'text-red-500'; ed.setAttribute('contenteditable','false'); tbar.classList.add('hidden'); tbar.style.display = 'none'; } }
         function handleTitleClick(e, key) { if(!isEditMode || currentUser.role !== 'admin') return; e.preventDefault(); e.stopPropagation(); openTitleEdit(key); }
@@ -1955,22 +2075,28 @@
     if(!plr || !plr.name || plr.empty) {
         return `<div ${!isExport && isAuth ? `ondragover="allowPlanDrop(event)" ondrop="dropOnPlan(event, ${idx})" ondragenter="enterPlanDrop(event)" ondragleave="leavePlanDrop(event)"` : ''} class="bg-[#0f172a]/20 border-2 border-slate-800 border-dashed rounded-xl flex items-center justify-center text-[10px] md:text-xs text-slate-600 font-black uppercase tracking-widest plan-slot transition-all duration-300 w-full" style="height: 75px;">${t('empty_slot')}</div>`;
     }
-    
-    let bC, tC, bgC, rT;
-    if (isDom) { 
-        bC = DOM_CLASSES[plr.role] || "#9ca3af"; tC = "#ffffff"; bgC = `${bC}30`; rT = plr.role; 
-    } else { 
-        const rC = (plr.role||'dps').toLowerCase(); bC = rC==='tank'?'#ef4444':rC==='healer'?'#10b981':rC==='support'?'#3b82f6':'#f59e0b'; tC = "#ffffff"; bgC = `${bC}30`; rT = plr.role; 
-    }
-    
+
+    // Rol ve sınıf artık ayrı ayrı saklanıyor; ikisi de doluysa iki kutucuk, biri boşsa tek kutucuk gösterilir.
+    const roleColorMap = { tank: '#ef4444', healer: '#10b981', support: '#3b82f6', dps: '#f59e0b' };
+    const knownRoles = ['Tank', 'Healer', 'Support', 'DPS'];
+    let pills = [];
+    if (plr.role && knownRoles.includes(plr.role)) pills.push({ text: plr.role, color: roleColorMap[plr.role.toLowerCase()] });
+    if (plr.className && DOM_CLASSES[plr.className]) pills.push({ text: plr.className, color: DOM_CLASSES[plr.className] });
+    // Geriye dönük uyumluluk: eski Dominion kayıtlarında sınıf bilgisi "role" alanında tutuluyordu.
+    if (pills.length === 0 && plr.role && DOM_CLASSES[plr.role]) pills.push({ text: plr.role, color: DOM_CLASSES[plr.role] });
+    if (pills.length === 0 && plr.role) pills.push({ text: plr.role, color: '#9ca3af' });
+
+    const borderColor = pills[0] ? pills[0].color : '#64748b';
+    const pillsHtml = pills.map(p => `<div style="display:inline-flex; align-items:center; justify-content:center; border: 2.5px solid ${p.color}; color: #ffffff; background-color: ${p.color}70; border-radius: 9999px; padding: 3px 11px; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.08em; line-height: 1; white-space: nowrap; text-shadow: 0 1px 3px rgba(0,0,0,0.9);">${p.text}</div>`).join('');
+
     const dragAttr = (!isExport && isAuth) ? `draggable="true" ondragstart="startPlanDrag(event, ${idx})" ondragend="endPlanDrag(event)" ondragover="allowPlanDrop(event)" ondrop="dropOnPlan(event, ${idx})" ondragenter="enterPlanDrop(event)" ondragleave="leavePlanDrop(event)" class="cursor-grab active:cursor-grabbing plan-slot relative w-full"` : `class="plan-slot relative w-full"`;
     
     const delBtn = (!isExport && isAuth) ? `<button onclick="removeFromPlan(${idx}); event.stopPropagation();" class="absolute -top-2 -right-2 bg-red-950 border border-red-500 text-red-500 hover:bg-red-500 hover:text-white w-5 h-5 md:w-6 md:h-6 rounded-full flex items-center justify-center text-[10px] font-black z-50 transition-colors shadow-lg">✕</button>` : '';
 
     // PNG Çıktısı için özel olarak düzeltilmiş, HTML2Canvas'ın hata yapmayacağı sabit hizalamalı yapı:
-    return `<div ${dragAttr} class="bg-[#020617] rounded-xl relative transition-all duration-300 w-full" style="height: 75px; border: 2px solid ${bC}; box-shadow: inset 0 0 15px ${bgC}; padding-top: 12px; text-align: center;">
-        <div class="text-white font-black text-[18px] md:text-[22px] uppercase break-words leading-none z-10 w-full" style="font-family:'Inter',sans-serif; margin-bottom: 8px; text-align: center;">${plr.name}</div>
-        <div style="display: flex; align-items: center; justify-content: center; width: fit-content; margin: 0 auto; border: 2px solid ${bC}; color: ${tC}; background-color: ${bgC}; border-radius: 9999px; padding: 3px 14px; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; line-height: 1; text-align: center; white-space: nowrap;">${rT}</div>
+    return `<div ${dragAttr} class="bg-[#020617] rounded-xl relative transition-all duration-300 w-full" style="height: 75px; border: 2px solid ${borderColor}; box-shadow: inset 0 0 15px ${borderColor}50; padding-top: 10px; text-align: center;">
+        <div class="text-white font-black text-[18px] md:text-[22px] uppercase break-words leading-none z-10 w-full" style="font-family:'Inter',sans-serif; margin-bottom: 6px; text-align: center;">${plr.name}</div>
+        <div style="display: flex; gap: 4px; justify-content: center; align-items: center; flex-wrap: wrap; padding: 0 6px;">${pillsHtml}</div>
         ${delBtn}
     </div>`;
 };
@@ -2057,13 +2183,13 @@
         function renderPlanAvailablePlayers(filterInput = '') { 
             const list = document.getElementById('planAvailablePlayers'); if(!list || !activePlanId) return; 
             const plan = cloudData.raidPlans.find(p => p.id === activePlanId); if(!plan) return; 
-            const isDom = plan.type.includes('dom'); const q = (filterInput||'').trim().toLowerCase(); 
+            const q = (filterInput||'').trim().toLowerCase(); 
             const planChars = plan.characters.filter(c => c && c.name && !c.empty).map(c => c.name); 
             let available = cloudData.players.filter(p => !p.isDeleted && !planChars.includes(p.name)); 
             if(q) available = available.filter(p => p.name.toLowerCase().includes(q)); 
             if(available.length === 0) { list.innerHTML = `<div class="p-3 text-[10px] text-slate-500 italic text-center">Empty.</div>`; return; } 
             available.sort((a,b) => (ROLE_ORDER[a.role]||99) - (ROLE_ORDER[b.role]||99)); 
-            list.innerHTML = available.map(p => `<div class="flex justify-between items-center bg-slate-900 border border-slate-800 p-2 rounded-lg hover:border-blue-500 transition group gap-2"><div class="flex items-center gap-2 flex-1 min-w-0"><span class="text-[8px] font-black uppercase text-${(p.role||'dps').toLowerCase()} bg-slate-950 border border-slate-700 px-1.5 py-0.5 rounded w-10 text-center shrink-0 hidden md:inline-block">${(p.role||'dps').substring(0,3)}</span><span class="text-[11px] font-bold text-white group-hover:text-blue-400 transition flex-1 break-words whitespace-normal" style="font-family:Georgia,serif;">${p.name}</span></div><div class="flex gap-1 items-center shrink-0">${isDom ? `<select id="classSelect_${p.id}" class="neon-theme-select text-[9px] py-1 px-1 rounded outline-none w-24">${Object.keys(DOM_CLASSES).map(c=>`<option value="${c}">${c}</option>`).join('')}</select>` : ''}<button onclick="addToPlan('${p.name}', ${isDom ? `document.getElementById('classSelect_${p.id}').value` : `'${p.role}'`})" class="bg-blue-900/30 hover:bg-blue-600 text-blue-400 hover:text-white px-3 py-1 rounded text-[10px] font-black transition border border-blue-800/50 shrink-0">+</button></div></div>`).join(''); 
+            list.innerHTML = available.map(p => `<div class="flex justify-between items-center bg-slate-900 border border-slate-800 p-2 rounded-lg hover:border-blue-500 transition group gap-2"><div class="flex items-center gap-2 flex-1 min-w-0"><span class="text-[8px] font-black uppercase text-${(p.role||'dps').toLowerCase()} bg-slate-950 border border-slate-700 px-1.5 py-0.5 rounded w-10 text-center shrink-0 hidden md:inline-block">${(p.role||'dps').substring(0,3)}</span><span class="text-[11px] font-bold text-white group-hover:text-blue-400 transition flex-1 break-words whitespace-normal" style="font-family:Georgia,serif;">${p.name}</span></div><div class="flex gap-1 items-center shrink-0"><select id="roleSelect_${p.id}" class="neon-theme-select text-[9px] py-1 px-1 rounded outline-none w-14"><option value="">—</option><option value="Tank" ${p.role==='Tank'?'selected':''}>Tank</option><option value="Healer" ${p.role==='Healer'?'selected':''}>Heal</option><option value="Support" ${p.role==='Support'?'selected':''}>Sup</option><option value="DPS" ${p.role==='DPS'?'selected':''}>DPS</option></select><select id="classSelect_${p.id}" class="neon-theme-select text-[9px] py-1 px-1 rounded outline-none w-20"><option value="">—</option>${Object.keys(DOM_CLASSES).map(c=>`<option value="${c}">${c}</option>`).join('')}</select><button onclick="addToPlan('${p.name}', document.getElementById('roleSelect_${p.id}').value, document.getElementById('classSelect_${p.id}').value)" class="bg-blue-900/30 hover:bg-blue-600 text-blue-400 hover:text-white px-3 py-1 rounded text-[10px] font-black transition border border-blue-800/50 shrink-0">+</button></div></div>`).join(''); 
         }
 
         function renderPlanUI() {
@@ -2075,7 +2201,7 @@
             
             const isDom = plan.type.includes('dom'); const maxCap = plan.type === 'party_dom' ? (plan.groupCount || 1) * 6 : 12; 
             const planDynInput = document.getElementById('planDynamicRoleOrClass');
-            if (planDynInput) { if (isDom) { planDynInput.innerHTML = `<select id="planNewRole" class="w-[110px] neon-theme-select p-2 rounded-lg text-[10px] uppercase font-bold outline-none">${Object.keys(DOM_CLASSES).map(c=>`<option value="${c}">${c}</option>`).join('')}</select>`; } else { planDynInput.innerHTML = `<select id="planNewRole" class="w-[110px] neon-theme-select p-2 rounded-lg text-[10px] uppercase font-bold outline-none"><option value="Tank">Tank</option><option value="Healer">Healer</option><option value="Support">Support</option><option value="DPS">DPS</option></select>`; } }
+            if (planDynInput) { planDynInput.innerHTML = `<select id="planNewRole" class="w-[92px] neon-theme-select p-2 rounded-lg text-[10px] uppercase font-bold outline-none"><option value="">—</option><option value="Tank">Tank</option><option value="Healer">Healer</option><option value="Support">Support</option><option value="DPS">DPS</option></select><select id="planNewClass" class="w-[92px] neon-theme-select p-2 rounded-lg text-[10px] uppercase font-bold outline-none"><option value="">—</option>${Object.keys(DOM_CLASSES).map(c=>`<option value="${c}">${c}</option>`).join('')}</select>`; }
 
             if (isAuth) { 
                 document.getElementById('planInputsContainer').classList.remove('hidden'); 
@@ -2145,19 +2271,19 @@
 
         function updatePlanBasicInfo() { if(!activePlanId) return; const plan = cloudData.raidPlans.find(p => p.id === activePlanId); if(plan) { plan.title = document.getElementById('planTitleInput').value.trim(); plan.time = document.getElementById('planTimeInput').value; triggerCloudSave(); renderPlanTabs(); renderActiveEventsToMainPage(); } }
         
-        function addToPlan(name, roleClass) { 
+        function addToPlan(name, role, className) { 
             const plan = cloudData.raidPlans.find(p => p.id === activePlanId); if(!plan) return; 
-            const maxCap = plan.type === 'party_dom' ? 6 : 12; 
+            const maxCap = plan.type === 'party_dom' ? (plan.groupCount || 1) * 6 : 12; 
             const currentCount = plan.characters.filter(x => x && x.name && !x.empty).length;
             if(currentCount >= maxCap) return showCustomAlert(`Maksimum ${maxCap} kişi!`); 
             if(!plan.characters.some(x => x && x.name === name)) { 
                 let emptyIdx = plan.characters.findIndex(x => !x || !x.name || x.empty);
-                if(emptyIdx !== -1) plan.characters[emptyIdx] = {name:name, role:roleClass};
+                if(emptyIdx !== -1) plan.characters[emptyIdx] = { name: name, role: role || null, className: className || null };
                 triggerCloudSave(); renderPlanUI(); 
             } 
         }
         
-        function addNewToPlan() { const name = document.getElementById('planNewName').value.trim(); const role = document.getElementById('planNewRole').value; if(!name) return; const plan = cloudData.raidPlans.find(p => p.id === activePlanId); if(!plan) return; const maxCap = plan.type === 'party_dom' ? 6 : 12; if(plan.characters.filter(x => x && x.name && !x.empty).length >= maxCap) return; const exists = cloudData.players.find(p => p.name.toLowerCase() === name.toLowerCase() && !p.isDeleted); if (exists) { addToPlan(exists.name, role); } else { let dkpRole = plan.type.includes('dom') ? "DPS" : role; cloudData.players.push({ id: Date.now(), name: name, role: dkpRole, dkp: 0, inRaid: false, rollTicket: false, dragon: 0, arti: 0, totalDragon:0, totalArti:0, hasPenaltyMark:false, sessionAddCount: 0, sessionSubCount: 0, isDeleted: false, customTitle:'' }); logAudit(`${name} eklendi.`); addToPlan(name, role); } document.getElementById('planNewName').value = ''; }
+        function addNewToPlan() { const name = document.getElementById('planNewName').value.trim(); const roleEl = document.getElementById('planNewRole'); const classEl = document.getElementById('planNewClass'); const role = roleEl ? roleEl.value : ''; const className = classEl ? classEl.value : ''; if(!name) return; const plan = cloudData.raidPlans.find(p => p.id === activePlanId); if(!plan) return; const maxCap = plan.type === 'party_dom' ? (plan.groupCount || 1) * 6 : 12; if(plan.characters.filter(x => x && x.name && !x.empty).length >= maxCap) return; const exists = cloudData.players.find(p => p.name.toLowerCase() === name.toLowerCase() && !p.isDeleted); if (exists) { addToPlan(exists.name, role, className); } else { let dkpRole = role || "DPS"; cloudData.players.push({ id: Date.now(), name: name, role: dkpRole, dkp: 0, inRaid: false, rollTicket: false, dragon: 0, arti: 0, totalDragon:0, totalArti:0, hasPenaltyMark:false, sessionAddCount: 0, sessionSubCount: 0, isDeleted: false, customTitle:'' }); logAudit(`${name} eklendi.`); addToPlan(name, role, className); } document.getElementById('planNewName').value = ''; }
         
         function removeFromPlan(idx) { 
             const plan = cloudData.raidPlans.find(p => p.id === activePlanId); if(!plan) return; 
@@ -2524,7 +2650,7 @@
         function grantRole(uid, role) {
             if (currentUser.role !== 'admin') return;
             const u = (pendingUsersData && pendingUsersData[uid]) || {};
-            firebase.database().ref('Roles/' + uid).set({ role, name: u.name || u.email || 'Unknown' }).then(() => {
+            firebase.database().ref('Roles/' + uid).set({ role, name: u.name || u.email || 'Unknown', email: u.email || null }).then(() => {
                 logAudit(`Yetki verildi: ${u.name || uid} -> ${role}`);
                 showCustomAlert(t("role_granted"), t("success"), "✅");
             }).catch(e => showCustomAlert('Hata: ' + e.message, t("info"), "❌"));
