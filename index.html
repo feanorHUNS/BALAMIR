@@ -1555,7 +1555,7 @@
             triggerCloudSave();
         }
 
- { const container = document.getElementById('themeContainer'); if (!container) return; container.innerHTML = NEON_THEMES.map(tObj => `<button onclick="applyTheme(${tObj.id})" title="${tObj.name}" class="py-2 text-[9px] font-black uppercase tracking-widest rounded-xl transition-all border overflow-hidden whitespace-nowrap text-ellipsis px-1 ${cloudData.activeTheme === tObj.id ? 'bg-slate-800 text-white shadow-[0_0_15px_var(--neon-color)] scale-105 border-[var(--neon-color)]' : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-500'}" style="${cloudData.activeTheme === tObj.id ? `border-color:${tObj.color}; color:${tObj.color};` : ''}">${tObj.name}</button>`).join(''); }
+        function renderThemeButtons() { const container = document.getElementById('themeContainer'); if (!container) return; container.innerHTML = NEON_THEMES.map(tObj => `<button onclick="applyTheme(${tObj.id})" title="${tObj.name}" class="py-2 text-[9px] font-black uppercase tracking-widest rounded-xl transition-all border overflow-hidden whitespace-nowrap text-ellipsis px-1 ${cloudData.activeTheme === tObj.id ? 'bg-slate-800 text-white shadow-[0_0_15px_var(--neon-color)] scale-105 border-[var(--neon-color)]' : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-500'}" style="${cloudData.activeTheme === tObj.id ? `border-color:${tObj.color}; color:${tObj.color};` : ''}">${tObj.name}</button>`).join(''); }
 
         // ============ GOOGLE İLE GİRİŞ / YETKİLENDİRME SİSTEMİ ============
         // Herkes kendi Google hesabıyla giriş yapabilir. Giriş yapan herkes otomatik olarak
