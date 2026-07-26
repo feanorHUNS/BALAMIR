@@ -5,12 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Guild Portal - HUNS</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- ÖNEMLİ: Orijinal html2canvas (niklasvh) kütüphanesinde dikey metin ortalama hatası var
-         (bkz. github.com/niklasvh/html2canvas issue #2107, #2937 — uzun süredir çözülmemiş).
-         Bunun yerine bu hatayı düzelten, aynı API'yi koruyan topluluk forku (@cantoo/html2canvas)
-         kullanılıyor — kodda başka hiçbir değişiklik gerekmiyor. Bu CDN bir şekilde yüklenemezse
-         (ağ sorunu vb.) eski sürüme otomatik geri dönülüyor, PNG özelliği hiç çalışmaz duruma düşmesin diye. -->
-    <script src="https://cdn.jsdelivr.net/npm/@cantoo/html2canvas@1.5.9/dist/html2canvas.min.js" onerror="var s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'; document.head.appendChild(s);"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -2142,7 +2137,7 @@
         function startPlanDrag(e, idx) {
             e.dataTransfer.effectAllowed = 'move';
             e.dataTransfer.setData('text/plain', idx.toString());
-            setTimeout(() => e.target.style.opacity = '0.4', 0);
+            setTimeout(() => { if (e.target && e.target.style) e.target.style.opacity = '0.4'; }, 0);
         }
         function allowPlanDrop(e) {
             e.preventDefault();
@@ -2166,7 +2161,7 @@
             document.querySelectorAll('.plan-slot').forEach(el => el.classList.remove('drop-over'));
         }
         function endPlanDrag(e) {
-            e.target.style.opacity = '1';
+            if (e.target && e.target.style) e.target.style.opacity = '1';
             document.querySelectorAll('.plan-slot').forEach(el => el.classList.remove('drop-over'));
         }
         function enterPlanDrop(e) {
