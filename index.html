@@ -310,7 +310,6 @@
                     </div>
                 </div>
                 <div class="flex flex-col md:flex-row items-end gap-3 w-full md:w-auto">
-                    <input type="text" id="playerSearchInput" oninput="renderPlayers()" placeholder="🔍 Search player..." data-i18n="player_search_placeholder" class="w-full md:w-56 neon-theme-input px-3 py-2 rounded-xl text-xs outline-none">
                     <!-- YENİ EKLENEN DKP BAZ KUTUCUKLARI -->
                     <div class="flex gap-3 auth-only bg-slate-900/50 p-2 rounded-xl border border-slate-800 shadow-lg">
                         <div class="flex flex-col items-center justify-center">
@@ -415,10 +414,6 @@
                                 </select>
                             </div>
                             <div id="planRsvpSummary" class="hidden grid grid-cols-3 gap-3 w-full"></div>
-                            <div class="auth-only flex-col gap-2 w-full pt-3 border-t border-slate-800 mt-1">
-                                <label class="text-[9px] font-black text-indigo-400 uppercase tracking-widest" data-i18n="plan_channels_title">📡 Discord Channels for this Event</label>
-                                <div id="planChannelsCheckboxes" class="flex flex-wrap gap-2"></div>
-                            </div>
                         </div>
                     </div>
 
@@ -1719,29 +1714,6 @@
             }, t("confirm"), "🗑️");
         }
 
-        function renderPlanChannelsCheckboxes(plan) {
-            const container = document.getElementById('planChannelsCheckboxes');
-            if (!container) return;
-            const channels = cloudData.discordChannels || [];
-            if (channels.length === 0) {
-                container.innerHTML = `<p class="text-[10px] text-slate-500 italic">${t("plan_channels_none")}</p>`;
-                return;
-            }
-            const selected = plan.discordChannelIds || [];
-            container.innerHTML = channels.map(ch => `<label class="flex items-center gap-1.5 bg-slate-950 border border-slate-800 px-2.5 py-1.5 rounded-lg cursor-pointer text-[10px] ${selected.includes(ch.id) ? 'border-indigo-500 text-indigo-300' : 'text-slate-400'}">
-                <input type="checkbox" ${selected.includes(ch.id) ? 'checked' : ''} onchange="togglePlanChannel('${ch.id}', this.checked)" class="w-3 h-3 cursor-pointer accent-indigo-500">
-                ${ch.name}
-            </label>`).join('');
-        }
-
-        function togglePlanChannel(channelId, checked) {
-            const plan = cloudData.raidPlans.find(p => p.id === activePlanId); if (!plan) return;
-            if (!plan.discordChannelIds) plan.discordChannelIds = [];
-            if (checked) { if (!plan.discordChannelIds.includes(channelId)) plan.discordChannelIds.push(channelId); }
-            else { plan.discordChannelIds = plan.discordChannelIds.filter(id => id !== channelId); }
-            triggerCloudSave();
-        }
-
         function renderPlanRsvpSection(plan) {
             const select = document.getElementById('planLinkedAnnSelect');
             if (select) {
@@ -2410,10 +2382,7 @@
         function removePenaltyMark(id) { if(currentUser.role!=='admin') return; const p=cloudData.players.find(x=>x.id===id); if(p){ p.hasPenaltyMark=false; triggerCloudSave(); renderAll(); if(!document.getElementById('editModal').classList.contains('hidden') && document.getElementById('editId').value == id) { openEditModal(id); } } }
 
         function renderPlayers() {
-            const searchInput = document.getElementById('playerSearchInput');
-            const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
-            let activePlayers = cloudData.players.filter(p => !p.isDeleted);
-            if (query) activePlayers = activePlayers.filter(p => p.name.toLowerCase().includes(query));
+            const activePlayers = cloudData.players.filter(p => !p.isDeleted);
             const safeSort = (a, b) => { const rA = ROLE_ORDER[a.role] || 99; const rB = ROLE_ORDER[b.role] || 99; return rA - rB || b.dkp - a.dkp; };
             const rl = activePlayers.filter(p=>p.inRaid).sort(safeSort);
             const rsl = activePlayers.filter(p=>!p.inRaid).sort((a,b)=>b.dkp-a.dkp);
@@ -2523,15 +2492,19 @@
 
         // ============ DISCORD'A PAYLAŞ (genel amaçlı, hem DKP raporu hem Etkinlik Planı için kullanılabilir) ============
         let shareToDiscordBlob = null;
-        function openShareToDiscordModal(imageBlob, captionText) {
+        let shareToDiscordPlanId = null; // Bir Etkinlik Planı paylaşılıyorsa, seçilen kanallar bu planın oto-hatırlatma kanalları olarak da kaydedilir.
+        function openShareToDiscordModal(imageBlob, captionText, planId = null) {
             shareToDiscordBlob = imageBlob;
+            shareToDiscordPlanId = planId;
             const channels = cloudData.discordChannels || [];
             const listEl = document.getElementById('shareDiscordChannelList');
+            const plan = planId ? cloudData.raidPlans.find(p => p.id === planId) : null;
+            const preSelected = plan ? (plan.discordChannelIds || []) : [];
             if (channels.length === 0) {
                 listEl.innerHTML = `<p class="text-[11px] text-slate-500 italic">${t("plan_channels_none")}</p>`;
             } else {
                 listEl.innerHTML = channels.map(ch => `<label class="flex items-center gap-2 bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg cursor-pointer text-[11px] text-slate-300">
-                    <input type="checkbox" value="${ch.id}" class="share-discord-channel-checkbox w-3.5 h-3.5 cursor-pointer accent-indigo-500">
+                    <input type="checkbox" value="${ch.id}" ${preSelected.includes(ch.id) ? 'checked' : ''} class="share-discord-channel-checkbox w-3.5 h-3.5 cursor-pointer accent-indigo-500">
                     ${ch.name}
                 </label>`).join('');
             }
@@ -2550,6 +2523,13 @@
             formData.append('content', content);
             formData.append('channelIds', JSON.stringify(checked));
 
+            // Bu paylaşım bir Etkinlik Planı'na aitse, seçilen kanalları o planın 30/15/0dk
+            // otomatik hatırlatma kanalları olarak da kaydet — tek yerden yönetim için.
+            if (shareToDiscordPlanId) {
+                const plan = cloudData.raidPlans.find(p => p.id === shareToDiscordPlanId);
+                if (plan) { plan.discordChannelIds = checked; triggerCloudSave(); }
+            }
+
             document.getElementById('shareToDiscordModal').classList.add('hidden');
             fetch('/api/send-plan-image', { method: 'POST', body: formData })
                 .then(res => { if (res.ok) { showCustomAlert(t("share_success"), t("success"), "📤"); logAudit("Discord'a paylaşım yapıldı."); } else { showCustomAlert(t("share_fail"), t("info"), "❌"); } })
@@ -2559,41 +2539,6 @@
 
         function renderLogs() { document.getElementById('rollLogs').innerHTML=cloudData.rolls.map(log=>`<div class="bg-slate-900/40 p-3 border border-slate-800 rounded-xl flex justify-between items-center text-[10px] shadow-sm"><div class="flex-1"><span class="text-purple-400 font-black uppercase text-[11px]" style="font-family:Georgia,serif;">${log.winner}</span> <span class="text-slate-400 bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800 ml-2">Roll: ${log.score}</span></div><div class="flex items-center gap-2"><span class="text-slate-600 font-mono text-[8px]">${log.time||''}</span>${currentUser.role==='admin'?`<button onclick="delLog('r',${log.id})" class="text-[8px] text-slate-500 hover:text-red-500 font-bold transition">Delete</button>`:''}</div></div>`).join(''); document.getElementById('raidHistory').innerHTML=cloudData.history.map(h=>`<div class="bg-slate-900/40 p-4 border border-slate-800 rounded-xl flex flex-col gap-2 shadow-sm text-[10px]"><div class="flex justify-between items-center border-b border-slate-800 pb-2 mb-1"><span class="text-emerald-500 font-bold font-mono">${h.date}</span>${currentUser.role==='admin'?`<button onclick="delLog('h',${h.id})" class="text-[8px] text-slate-500 hover:text-red-500 font-bold transition">Delete</button>`:''}</div><div class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1">${h.data.map(d=>`<div class="text-[9px] text-slate-400 flex justify-between border-b border-slate-800/50 pb-0.5"><span style="font-family:Georgia,serif;">${d.name}</span> <span class="text-cyan-400 font-bold">${d.dkp}P <span class="text-slate-600 ml-1 font-normal">A:${d.arti} Dc:${d.dragon}</span></span></div>`).join('')}</div></div>`).join(''); }
         function delLog(type,id){if(currentUser.role!=='admin')return; if(type==='r'){cloudData.rolls=cloudData.rolls.filter(x=>x.id!==id);}else{showCustomConfirm('Delete history?',()=>{cloudData.history=cloudData.history.filter(x=>x.id!==id); triggerCloudSave(); renderLogs();},t("confirm"),"🗑️"); return;} triggerCloudSave(); renderLogs();}
-
-        // XML/SVG içine güvenle gömebilmek için özel karakterleri kaçırır.
-        function escapeXmlForSvg(str) {
-            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-        }
-
-        // İsim + rol/sınıf etiketlerini bir SVG görsel olarak üretir (data URI). html2canvas metni
-        // KENDİSİ çizmek yerine bu görseli olduğu gibi çizer — bu yüzden dikey ortalama hatası oluşmaz.
-        function buildSlotContentSVGDataUri(name, pills) {
-            const W = 400, H = 75;
-            const upperName = escapeXmlForSvg(String(name).toUpperCase());
-            const nameY = pills.length > 0 ? 32 : 42;
-
-            let pillsSvg = '';
-            if (pills.length > 0) {
-                const pillWidths = pills.map(p => Math.max(56, p.text.length * 8.2 + 26));
-                const gap = 6;
-                const totalW = pillWidths.reduce((a, b) => a + b, 0) + gap * (pills.length - 1);
-                let curX = (W - totalW) / 2;
-                pills.forEach((p, i) => {
-                    const w = pillWidths[i];
-                    const label = escapeXmlForSvg(p.text.toUpperCase());
-                    pillsSvg += `<rect x="${curX}" y="49" width="${w}" height="21" rx="10.5" fill="${p.color}" fill-opacity="0.44" stroke="${p.color}" stroke-width="2.5"/>
-                        <text x="${curX + w / 2}" y="63.5" font-family="Inter, Arial, sans-serif" font-size="10" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="0.6">${label}</text>`;
-                    curX += w + gap;
-                });
-            }
-
-            const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
-                <text x="${W / 2}" y="${nameY}" font-family="Inter, Arial, sans-serif" font-size="23" font-weight="900" fill="#ffffff" text-anchor="middle">${upperName}</text>
-                ${pillsSvg}
-            </svg>`;
-
-            return 'data:image/svg+xml,' + encodeURIComponent(svg);
-        }
 
         const renderSlotHTML = (plr, idx, isExport, isAuth, isDom) => {
     // Boş slotlar
@@ -2613,19 +2558,19 @@
 
     // Karakter çerçevesi rengini önce SINIF'tan alır (yoksa rol renginden).
     const borderColor = (plr.className && DOM_CLASSES[plr.className]) ? DOM_CLASSES[plr.className] : (pills[0] ? pills[0].color : '#64748b');
+    const pillsHtml = pills.map(p => `<span style="display:inline-block; vertical-align:middle; height: 21px; line-height: 21px; border: 2.5px solid ${p.color}; color: #ffffff; background-color: ${p.color}70; border-radius: 9999px; padding: 0 11px; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap; text-shadow: 0 1px 3px rgba(0,0,0,0.9); margin: 0 2px;">${p.text}</span>`).join('');
 
     const dragAttr = (!isExport && isAuth) ? `draggable="true" ondragstart="startPlanDrag(event, ${idx})" ondragend="endPlanDrag(event)" ondragover="allowPlanDrop(event)" ondrop="dropOnPlan(event, ${idx})" ondragenter="enterPlanDrop(event)" ondragleave="leavePlanDrop(event)" class="cursor-grab active:cursor-grabbing plan-slot relative w-full"` : `class="plan-slot relative w-full"`;
     
     const delBtn = (!isExport && isAuth) ? `<button onclick="removeFromPlan(${idx}); event.stopPropagation();" class="absolute -top-2 -right-2 bg-red-950 border border-red-500 text-red-500 hover:bg-red-500 hover:text-white w-5 h-5 md:w-6 md:h-6 rounded-full flex items-center justify-center text-[10px] font-black z-50 transition-colors shadow-lg">✕</button>` : '';
 
-    // ÖNEMLİ: html2canvas'ın KENDİ metin çizim motoru (fillText tabanlı) bilinen, çözülmemiş bir
-    // dikey hizalama hatasına sahip (bkz. github.com/niklasvh/html2canvas #2107, #2937). Bunu tamamen
-    // atlatmak için isim + rol/sınıf etiketlerini canlı HTML metni olarak değil, SVG GÖRSEL olarak
-    // oluşturuyoruz — html2canvas görselleri (kendi metnini değil) güvenilir şekilde çiziyor.
-    const slotImgSrc = buildSlotContentSVGDataUri(plr.name, pills);
-
-    return `<div ${dragAttr} class="bg-[#020617] rounded-xl relative transition-all duration-300 w-full overflow-hidden" style="height: 75px; border: 2px solid ${borderColor}; box-shadow: inset 0 0 15px ${borderColor}50;">
-        <img src="${slotImgSrc}" style="width: 100%; height: 100%; display: block;" alt="${plr.name}">
+    // GERİ ALINDI: SVG data-URI görsel denemesi PNG'de kutucukları tamamen boş bıraktı (muhtemelen
+    // html2canvas görsel tam yüklenmeden yakalama yapıyor). Güvenli, GÖRÜNÜR sürüme dönüldü.
+    return `<div ${dragAttr} class="bg-[#020617] rounded-xl relative transition-all duration-300 w-full" style="height: 75px; border: 2px solid ${borderColor}; box-shadow: inset 0 0 15px ${borderColor}50; display: table; width: 100%; text-align: center;">
+        <div style="display: table-cell; vertical-align: middle; padding: 4px 10px;">
+            <div class="text-white font-black text-[18px] md:text-[22px] uppercase break-words leading-none" style="font-family:'Inter',sans-serif; text-align: center; margin-bottom: 6px;">${plr.name}</div>
+            <div style="text-align: center; white-space: normal;">${pillsHtml}</div>
+        </div>
         ${delBtn}
     </div>`;
 };
@@ -2742,7 +2687,6 @@
                     qi.value = plan.quote || cloudData.planQuote || "WE RISE FROM ASHES TO CONQUER THE CHAOS!";
                 }
                 renderPlanRsvpSection(plan);
-                renderPlanChannelsCheckboxes(plan);
                 renderPlanPresence();
             } else { 
                 document.getElementById('planInputsContainer').classList.add('hidden'); 
@@ -2882,7 +2826,7 @@
             setTimeout(() => {
                 capturePlanExportPNG((canvas) => {
                     canvas.toBlob(blob => {
-                        openShareToDiscordModal(blob, `📢 **${plan.title || 'Event'}**\n@everyone\n\n🔗 **Web Portal:** ${GUILD_SITE_URL}`);
+                        openShareToDiscordModal(blob, `📢 **${plan.title || 'Event'}**\n@everyone\n\n🔗 **Web Portal:** ${GUILD_SITE_URL}`, plan.id);
                     }, 'image/png');
                 });
             }, 100);
