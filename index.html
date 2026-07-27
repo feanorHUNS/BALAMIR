@@ -441,7 +441,6 @@
                                 <button onclick="deleteActivePlan()" class="bg-red-900/50 hover:bg-red-600 text-red-400 hover:text-white px-6 py-2.5 rounded-xl text-xs font-black transition border border-red-800/50 uppercase shadow-sm" data-i18n="delete_plan">Delete Plan</button>
                                 <button onclick="downloadPlanPNGOnly()" class="bg-slate-700 hover:bg-slate-600 text-white px-6 py-2.5 rounded-xl text-xs font-black transition shadow-lg uppercase flex items-center gap-2" data-i18n="download_png_only">📥 DOWNLOAD PNG</button>
                                 <button onclick="sharePlanToDiscordManually()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2.5 rounded-xl text-xs font-black transition shadow-lg uppercase flex items-center gap-2" data-i18n="share_to_discord">📤 Share to Discord</button>
-                                <button onclick="publishActivePlan()" id="publishPlanBtn" class="bg-emerald-600 hover:bg-emerald-500 text-white px-8 py-2.5 rounded-xl text-xs font-black transition shadow-lg shadow-emerald-900/50 uppercase flex items-center gap-2" data-i18n="publish">PUBLISH</button>
                             </div>
                         </div>
                     </div>
@@ -1244,6 +1243,7 @@
                                 if(!p.characters) p.characters = []; 
                                 if(!p.id) p.id = Date.now(); 
                                 if(!p.type) p.type = 'raid'; 
+                                if(p.published !== true) p.published = true; // PUBLISH butonu kaldırıldı — artık her plan otomatik yayınlanmış sayılır.
                                 const cap = p.type === 'party_dom' ? (p.groupCount || 1) * 6 : 12;
                                 let fixedChars = [];
                                 for(let i=0; i<cap; i++) {
@@ -1463,31 +1463,6 @@
             if (channels.some(ch => ch.id === prevValue)) select.value = prevValue;
         }
 
-
-        // ARTIK WEBHOOK KULLANMIYOR — plan.discordChannelIds içinde seçilen kanallara BOT üzerinden
-        // görsel + metin gönderiyor. Webhook'un bu işteki görevi tamamen bota devredildi.
-        function notifyDiscordEventPublished(plan, imageBlob) {
-            if (!cloudData.discordNotify || !cloudData.discordNotify.publish) return;
-            const channelIds = plan.discordChannelIds || [];
-            if (channelIds.length === 0 || !imageBlob) return; // Kanal seçilmemişse veya görsel yoksa gönderilecek bir şey yok.
-
-            let trTime = "Belirtilmedi";
-            if (plan.time) {
-                const d = new Date(plan.time);
-                trTime = d.toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul', dateStyle: 'short', timeStyle: 'short' }) + " (TRT)";
-            }
-            const content = `📢 **Yeni Etkinlik: ${plan.title || 'Event'}**\n🗓️ ${trTime}\n@everyone\n\n🔗 **Web Portal:** ${GUILD_SITE_URL}`;
-
-            const formData = new FormData();
-            formData.append('image', imageBlob, 'plan.png');
-            formData.append('content', content);
-            formData.append('channelIds', JSON.stringify(channelIds));
-            formData.append('planId', plan.id.toString());
-
-            fetch('/api/send-plan-image', { method: 'POST', body: formData })
-                .then(() => logAudit(`Discord'a etkinlik görseli paylaşıldı: ${plan.title || 'Event'}`))
-                .catch(e => console.error('send-plan-image error:', e));
-        }
 
         // Yapılandırılmış TÜM Discord kanallarına, bot üzerinden düz metin yayınlar.
         // (Webhook artık hiçbir işlevde kullanılmıyor — hepsi bota devredildi.)
@@ -2693,7 +2668,7 @@
         }
 
         function renderPlanTabs() { const tc = document.getElementById('planTabsContainer'); if (!tc) return; const vPlans = currentUser.role === 'visitor' ? cloudData.raidPlans.filter(p => p.type === 'raid' && p.published) : cloudData.raidPlans; if (vPlans.length > 0 && (!activePlanId || !vPlans.some(p => p.id === activePlanId))) { activePlanId = vPlans[0].id; } else if (vPlans.length === 0) { activePlanId = null; } let thtml = vPlans.map((p, i) => `<div onclick="activePlanId = ${p.id}; renderPlanUI();" class="plan-tab ${p.id === activePlanId ? 'active' : ''}">${p.title || `Event ${i+1}`} ${p.published ? '<span class="text-blue-500">🌍</span>' : ''}</div>`).join(''); if (currentUser.role !== 'visitor') { thtml += `<button onclick="document.getElementById('planTypeModal').classList.remove('hidden')" class="ml-2 bg-slate-800 hover:bg-slate-700 text-white px-3 py-1 rounded-full text-[10px] font-black transition border border-slate-700 shadow shrink-0">${t('new_btn')}</button>`; } tc.innerHTML = thtml; }
-        function createPlanWithType(type) { if(currentUser.role === 'visitor') return; const newId = Date.now(); let defTitle = type === 'party_dom' ? t('party_dom') : type === 'raid_dom' ? t('raid_dom') : t('std_raid'); const maxC = type === 'party_dom' ? 6 : 12; let initialChars = []; while(initialChars.length < maxC) initialChars.push({ empty: true }); cloudData.raidPlans.unshift({ id: newId, type: type, title: defTitle, time: "", characters: initialChars, active: true, published: false, autoMoved: false, groupCount: type === 'party_dom' ? 1 : 2, quote: "WE RISE FROM ASHES TO CONQUER THE CHAOS!" }); activePlanId = newId; triggerCloudSave(); document.getElementById('planTypeModal').classList.add('hidden'); renderPlanUI(); }
+        function createPlanWithType(type) { if(currentUser.role === 'visitor') return; const newId = Date.now(); let defTitle = type === 'party_dom' ? t('party_dom') : type === 'raid_dom' ? t('raid_dom') : t('std_raid'); const maxC = type === 'party_dom' ? 6 : 12; let initialChars = []; while(initialChars.length < maxC) initialChars.push({ empty: true }); cloudData.raidPlans.unshift({ id: newId, type: type, title: defTitle, time: "", characters: initialChars, active: true, published: true, publishedAt: Date.now(), autoMoved: false, groupCount: type === 'party_dom' ? 1 : 2, quote: "WE RISE FROM ASHES TO CONQUER THE CHAOS!" }); activePlanId = newId; triggerCloudSave(); document.getElementById('planTypeModal').classList.add('hidden'); renderPlanUI(); }
 
         // Party Dominion (6P) etkinliklerinde admin, Group 1'in yanındaki +/- ile 4 gruba (24 kişiye) kadar genişletebilir.
         // Yeni etkinlik her zaman 1 grupla (varsayılan) başlar.
@@ -2775,9 +2750,6 @@
                 document.getElementById('displayPlanTitle').innerText = plan.title || t("event"); 
                 document.getElementById('displayPlanTime').innerText = plan.time ? new Date(plan.time).toLocaleString('tr-TR') : t("no_date"); 
             }
-            
-            const pBtn = document.getElementById('publishPlanBtn');
-            if(pBtn) { if(plan.published) { pBtn.innerHTML = `UNPUBLISH`; pBtn.className = "bg-orange-600 hover:bg-orange-500 text-white px-6 py-2.5 rounded-xl text-xs font-black shadow-lg transition uppercase flex items-center gap-2"; } else { pBtn.innerHTML = `PUBLISH`; pBtn.className = "bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl text-xs font-black shadow-lg shadow-blue-900/50 transition uppercase flex items-center gap-2"; } }
             
             let chars = plan.characters || [];
             let fixedChars = [];
@@ -2916,37 +2888,6 @@
             }, 100);
         }
 
-        function publishActivePlan() { 
-            const plan = cloudData.raidPlans.find(p => p.id === activePlanId); 
-            if(!plan) return; 
-            
-            if (!plan.published) { 
-                if(!plan.title || !plan.time) return showCustomAlert("Eksik bilgi!"); 
-                plan.active = true; 
-                plan.published = true; 
-                plan.publishedAt = Date.now(); // Bildirim rozeti "yeni raid" sayımı için
-                triggerCloudSave(); 
-                renderActiveEventsToMainPage(); 
-                
-                setTimeout(()=>{ 
-                    capturePlanExportPNG((canvas) => {
-                        const planLink = document.createElement('a'); 
-                        planLink.download = `HUNS_Plan_${Date.now()}.png`; 
-                        planLink.href = canvas.toDataURL("image/png"); 
-                        planLink.click(); 
-
-                        // Aynı görsel Discord Webhook'a da ek dosya olarak gönderiliyor
-                        canvas.toBlob(blob => { notifyDiscordEventPublished(plan, blob); }, 'image/png');
-                    });
-                }, 500); 
-            } else { 
-                plan.published = false; 
-                triggerCloudSave(); 
-                renderActiveEventsToMainPage(); 
-            } 
-            renderPlanUI(); 
-        }
-        
         function renderActiveEventsToMainPage() { const banner = document.getElementById('activeEventsBanner'); const list = document.getElementById('activeEventsList'); const activePlans = cloudData.raidPlans.filter(p => p.published && p.active && (currentUser.role !== 'visitor' || p.type === 'raid')); if (activePlans.length === 0) { banner.classList.add('hidden'); return; } banner.classList.remove('hidden'); list.innerHTML = activePlans.map(p => { const isDom = p.type.includes('dom'); const tName = p.type === 'party_dom' ? t('party_dom') : p.type === 'raid_dom' ? t('raid_dom') : t('std_raid'); const maxC = p.type === 'party_dom' ? 6 : 12; return `<div class="bg-slate-900/60 border border-slate-700 p-4 rounded-2xl shadow-lg relative overflow-hidden group neon-theme-box border-none backdrop-blur-sm"><div class="absolute inset-0 bg-gradient-to-r from-blue-900/20 to-purple-900/20 opacity-50 group-hover:opacity-100 transition"></div><div class="relative z-10 flex flex-col h-full"><h3 class="text-sm font-black text-white uppercase tracking-widest mb-1 truncate">${p.title || t('event')} <span class="text-[9px] font-mono ${isDom?'text-fuchsia-400 bg-fuchsia-900/50':'text-amber-400 bg-amber-900/50'} px-1 rounded ml-1">${tName}</span></h3><div class="text-xs text-blue-400 font-mono font-bold mb-3">${p.time ? new Date(p.time).toLocaleString('tr-TR') : t('no_date')}</div><div class="mt-auto flex justify-between items-center border-t border-slate-700/50 pt-2"><span class="text-[10px] text-slate-400 font-black uppercase">ROSTER</span><span class="text-[10px] bg-slate-950 px-2 py-1 rounded text-white border border-slate-700">${p.characters.filter(x => x && x.name && !x.empty).length} / ${maxC}</span></div></div></div>`; }).join(''); }
         // ============ ÇOKLU İSTEMCİ ÇAKIŞMA KORUMASI ============
         // Aynı hatırlatmanın birden fazla açık sekme/istemci tarafından aynı anda Discord'a
