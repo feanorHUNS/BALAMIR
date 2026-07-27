@@ -8,12 +8,21 @@ export function buildAnnouncementEmbed(ann) {
     const tentativeNames = Object.values(ann.tentative || {});
     const unixTime = ann.time ? Math.floor(new Date(ann.time).getTime() / 1000) : null;
 
+    // Türkiye saati sabit UTC+3 (yaz saati yok); Avrupa (CET/CEST) saati Intl ile otomatik
+    // yaz/kış saatine göre hesaplanıyor. İkisi de dinamik Discord zaman etiketinin yanında metin olarak gösteriliyor.
+    let timeFieldValue = null;
+    if (unixTime) {
+        const trTimeStr = new Date(ann.time).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        const euTimeStr = new Date(ann.time).toLocaleString('en-GB', { timeZone: 'Europe/Berlin', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        timeFieldValue = `<t:${unixTime}:F>\n<t:${unixTime}:R>\n🇹🇷 ${trTimeStr} (TRT)\n🇪🇺 ${euTimeStr} (CET/CEST)`;
+    }
+
     return {
         title: ann.title || 'Etkinlik',
         description: ann.content || '',
         color: 3447003,
         fields: [
-            ...(unixTime ? [{ name: '🗓️ Time', value: `<t:${unixTime}:F>\n<t:${unixTime}:R>`, inline: false }] : []),
+            ...(timeFieldValue ? [{ name: '🗓️ Time', value: timeFieldValue, inline: false }] : []),
             { name: `✅ Accepted (${acceptedNames.length})`, value: acceptedNames.length ? acceptedNames.join('\n') : '—', inline: true },
             { name: `❌ Declined (${declinedNames.length})`, value: declinedNames.length ? declinedNames.join('\n') : '—', inline: true },
             { name: `❓ Tentative (${tentativeNames.length})`, value: tentativeNames.length ? tentativeNames.join('\n') : '—', inline: true }
