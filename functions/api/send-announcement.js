@@ -51,11 +51,30 @@ export async function onRequestPost(context) {
         ann.channelId = targetChannelId;
         ann.createdAt = Date.now();
 
-        await fetch(`${env.FIREBASE_DB_URL}/Announcements/${annId}.json`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(ann)
-        });
+        // ÖNEMLİ: Discord'a mesaj gitse bile, siteye kaydetme adımı başarısız olabilir.
+        // Bu durumda admin'e KARIŞTIRMADAN, net bir "kısmi başarı" mesajı dönüyoruz —
+        // yoksa "hiç gönderilmedi" sanıp tekrar gönderip Discord'da mesajı ikiletebilir.
+        try {
+            const fbRes = await fetch(`${env.FIREBASE_DB_URL}/Announcements/${annId}.json`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(ann)
+            });
+            if (!fbRes.ok) {
+                const fbErrText = await fbRes.text();
+                console.error('Firebase kaydetme hatası:', fbErrText);
+                return new Response(
+                    `Discord'a mesaj GÖNDERİLDİ (tekrar göndermeyin) ama site veritabanına kaydedilemedi: ${fbErrText}`,
+                    { status: 502 }
+                );
+            }
+        } catch (fbErr) {
+            console.error('Firebase kaydetme hatası (network):', fbErr);
+            return new Response(
+                `Discord'a mesaj GÖNDERİLDİ (tekrar göndermeyin) ama site veritabanına kaydedilemedi: ${fbErr.message}`,
+                { status: 502 }
+            );
+        }
 
         return new Response(JSON.stringify({ success: true, annId, messageId: discordMsg.id }), {
             status: 200,
