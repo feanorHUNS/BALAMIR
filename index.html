@@ -2564,10 +2564,17 @@
     
     const delBtn = (!isExport && isAuth) ? `<button onclick="removeFromPlan(${idx}); event.stopPropagation();" class="absolute -top-2 -right-2 bg-red-950 border border-red-500 text-red-500 hover:bg-red-500 hover:text-white w-5 h-5 md:w-6 md:h-6 rounded-full flex items-center justify-center text-[10px] font-black z-50 transition-colors shadow-lg">✕</button>` : '';
 
-    // GERİ ALINDI: SVG data-URI görsel denemesi PNG'de kutucukları tamamen boş bıraktı (muhtemelen
-    // html2canvas görsel tam yüklenmeden yakalama yapıyor). Güvenli, GÖRÜNÜR sürüme dönüldü.
-    return `<div ${dragAttr} class="bg-[#020617] rounded-xl relative transition-all duration-300 w-full" style="height: 75px; border: 2px solid ${borderColor}; box-shadow: inset 0 0 15px ${borderColor}50; display: table; width: 100%; text-align: center;">
-        <div style="display: table-cell; vertical-align: middle; padding: 4px 10px;">
+    // DENEME 3: html2canvas "ortala" (vertical-align:middle / table-cell) komutunu tutarsız yorumluyor,
+    // içeriği PNG çıktısında kutunun ÜST kısmına yakın çiziyor — ama CANLI SİTEDE bu sorun yok, orada
+    // doğru ortalanıyor. Bu yüzden SADECE export (PNG) modunda sabit/büyük bir üst boşlukla içeriği
+    // manuel aşağı itiyoruz; canlı sitede eski (doğru çalışan) ortalama yöntemini koruyoruz.
+    const innerStyle = isExport
+        ? `padding-top: 22px; padding-left: 10px; padding-right: 10px;`
+        : `display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 4px 10px;`;
+    const outerExtra = isExport ? 'overflow: hidden;' : 'display: table; width: 100%;';
+
+    return `<div ${dragAttr} class="bg-[#020617] rounded-xl relative transition-all duration-300 w-full" style="height: 75px; border: 2px solid ${borderColor}; box-shadow: inset 0 0 15px ${borderColor}50; text-align: center; ${outerExtra}">
+        <div style="${isExport ? '' : 'display: table-cell; vertical-align: middle;'} ${innerStyle}">
             <div class="text-white font-black text-[18px] md:text-[22px] uppercase break-words leading-none" style="font-family:'Inter',sans-serif; text-align: center; margin-bottom: 6px;">${plr.name}</div>
             <div style="text-align: center; white-space: normal;">${pillsHtml}</div>
         </div>
