@@ -96,7 +96,6 @@
         .fab-btn:hover { background: #334155; border-color: #64748b; transform: scale(1.05); }
         @media (max-width: 767px) {
             .fab-btn { bottom: 1rem !important; right: 1rem !important; width: 3.2rem !important; height: 3.2rem !important; font-size: 1.25rem !important; }
-            .fab-btn[style*="bottom: 8rem"] { bottom: 5.2rem !important; width: 2.7rem !important; height: 2.7rem !important; font-size: 1.05rem !important; }
             .tab-btn { padding-left: 0.5rem !important; padding-right: 0.5rem !important; font-size: 0.6rem !important; }
         }
         .fab-btn:hover { transform: scale(1.1); }
@@ -388,6 +387,7 @@
                 <div class="lg:col-span-8 flex flex-col">
                     <div class="mb-6 neon-theme-box p-5 rounded-2xl relative overflow-hidden shadow-lg">
                         <div class="relative z-10 flex flex-col gap-4">
+                            <div id="planPresenceIndicator" class="auth-only"></div>
                             <div id="planInputsContainer" class="flex flex-col md:flex-row gap-4 auth-only w-full">
                                 <div class="flex-1">
                                     <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block" data-i18n="event_title">Event Title</label>
@@ -497,15 +497,6 @@
                             </label>
                         </div>
                         <div id="grantedUsersList" class="space-y-2 overflow-y-auto flex-1 pr-2 custom-scrollbar"></div>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div class="neon-theme-box p-5 rounded-2xl shadow-lg flex flex-col max-h-80">
-                        <div class="flex justify-between items-center mb-4 border-b border-slate-800 pb-2">
-                            <h3 class="text-xs font-black text-amber-400 tracking-widest uppercase flex items-center gap-2" data-i18n="inbox">✉️ INBOX</h3>
-                        </div>
-                        <div id="adminMessagesList" class="space-y-2 overflow-y-auto flex-1 pr-2 custom-scrollbar"></div>
                     </div>
                 </div>
 
@@ -637,62 +628,10 @@
             </div>
             <div id="discordLinkDeniedMsg" class="text-center py-20 text-slate-500 font-bold text-sm tracking-widest uppercase" style="display: none;" data-i18n="unauthorized">Unauthorized Access.</div>
         </div>
-
-        <div id="page-messages" class="hidden fixed inset-0 bg-slate-950/97 z-[4000] backdrop-blur-md overflow-y-auto p-4 md:p-8">
-            <div class="max-w-5xl mx-auto pb-10">
-                <div class="flex justify-between items-center mb-6 border-b border-slate-800 pb-2">
-                    <h1 class="text-3xl guild-font neon-theme-text" data-i18n="messages_title">💬 Messages</h1>
-                    <button onclick="closeMessagesModal()" class="text-slate-500 hover:text-white text-2xl leading-none">✕</button>
-                </div>
-
-                <!-- Herkese açık hızlı mesaj kutusu -->
-                <div class="neon-theme-box p-6 rounded-2xl shadow-lg mb-8">
-                    <h3 class="text-sm font-black text-amber-400 mb-1 tracking-widest uppercase" data-i18n="quick_msg_title">✉️ Send a Quick Message to Leadership</h3>
-                    <p class="text-[10px] text-slate-500 mb-3" data-i18n="quick_msg_desc">Anyone can send this — visitors too. It goes straight to the admin's inbox below.</p>
-                    <textarea id="quickMsgInput" rows="3" class="w-full neon-theme-input p-3 rounded-xl outline-none mb-3" data-i18n="msg_placeholder" placeholder="Write your message here..."></textarea>
-                    <button onclick="sendQuickMessage()" class="neon-theme-btn px-6 py-2 rounded-xl font-black text-xs shadow-lg transition" data-i18n="send_msg">Send</button>
-                </div>
-
-                <!-- Sadece admin: Gelen Kutusu (tüm hızlı mesajlar) -->
-                <div class="neon-theme-box p-6 rounded-2xl shadow-lg mb-8 admin-only-flex flex-col">
-                    <h3 class="text-sm font-black text-orange-400 mb-3 tracking-widest uppercase" data-i18n="inbox">✉️ INBOX</h3>
-                    <div id="messagesInboxList" class="space-y-2 max-h-72 overflow-y-auto pr-2 custom-scrollbar"></div>
-                </div>
-
-                <!-- Sohbet Odaları -->
-                <div class="auth-only grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div class="neon-theme-box p-4 rounded-2xl lg:col-span-1 flex flex-col max-h-[600px]">
-                        <h3 class="text-xs font-black text-cyan-400 mb-3 tracking-widest uppercase border-b border-slate-800 pb-2" data-i18n="chat_rooms_title">💬 Chat Rooms</h3>
-
-                        <div class="admin-only-flex flex-col gap-2 mb-4 pb-4 border-b border-slate-800">
-                            <input type="text" id="newChatRoomName" placeholder="Room name" class="w-full neon-theme-input px-3 py-2 rounded-lg text-xs outline-none">
-                            <button onclick="createChatRoom()" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition" data-i18n="chat_room_create">+ Create Room</button>
-                        </div>
-
-                        <div id="chatRoomList" class="space-y-1.5 overflow-y-auto flex-1 pr-1"></div>
-                    </div>
-
-                    <div class="neon-theme-box p-4 rounded-2xl lg:col-span-2 flex flex-col max-h-[600px]">
-                        <div id="chatRoomHeader" class="border-b border-slate-800 pb-3 mb-3"></div>
-                        <div id="chatRoomMembersPanel" class="hidden admin-only-flex flex-col mb-3 pb-3 border-b border-slate-800"></div>
-                        <div id="chatMessagesList" class="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar mb-3"></div>
-                        <div id="chatComposerBox" class="hidden flex gap-2">
-                            <input type="text" id="chatMessageInput" placeholder="Type a message..." class="flex-1 neon-theme-input px-3 py-2 rounded-lg text-xs outline-none">
-                            <button onclick="sendChatMessage()" class="bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2 rounded-lg text-xs font-black transition shrink-0" data-i18n="send_msg">Send</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
     </main>
 
-    <!-- YENİ: Kayan Mesaj İkonu - herkes görebilir, sayfa kayarken sabit kalır, Mesajlar modalını açar -->
-    <button onclick="openMessagesFromFab()" class="fab-btn" style="width: 4.5rem; height: 4.5rem; font-size: 1.75rem;" title="Messages">
-        ✉️
-        <span id="notifBadge" class="hidden absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-black rounded-full min-w-[1.4rem] h-[1.4rem] flex items-center justify-center border-2 border-slate-950 px-1">0</span>
-    </button>
-    <!-- İşlem Kaydı: tüm yetkililer (sadece admin değil) görebilsin diye mesaj butonunun hemen üstünde, sabit -->
-    <button onclick="openAuditLogModal()" class="fab-btn auth-only" style="width: 3.6rem; height: 3.6rem; font-size: 1.4rem; bottom: 8rem;" title="Who's Online / Log">👥</button>
+    <!-- İşlem Kaydı / Kim Online: tüm yetkililer (sadece admin değil) görebilir -->
+    <button onclick="openAuditLogModal()" class="fab-btn auth-only" style="width: 3.6rem; height: 3.6rem; font-size: 1.4rem;" title="Who's Online / Log">👥</button>
 
     <!-- İşlem Kaydı Modal - tüm yetkililer (admin + officer) görebilir -->
     <!-- Discord'a Paylaş Modal (DKP raporu, Etkinlik Planı vb. için genel amaçlı) -->
@@ -746,14 +685,6 @@
                 <span data-i18n="login_with_google">Continue with Google</span>
             </button>
             <button onclick="document.getElementById('loginModal').classList.add('hidden')" class="w-full px-4 py-2 text-xs font-black text-slate-400 bg-slate-800 rounded-lg hover:text-white transition" data-i18n="cancel">CANCEL</button>
-        </div>
-    </div>
-
-    <div id="msgModal" class="hidden fixed inset-0 bg-slate-950/90 z-[6000] flex items-center justify-center backdrop-blur-sm">
-        <div class="neon-theme-box p-6 w-[400px] max-w-[90vw] rounded-2xl shadow-2xl modal-pop">
-            <h3 class="text-lg font-black text-white mb-4 uppercase tracking-widest border-b border-slate-800 pb-2 text-center" data-i18n="msg_leader">Message To Leader</h3>
-            <textarea id="msgInput" rows="4" class="w-full neon-theme-input p-3 text-sm rounded-xl outline-none mb-4" placeholder="Write your message here..."></textarea>
-            <div class="flex gap-3 justify-end"><button onclick="document.getElementById('msgModal').classList.add('hidden')" class="px-5 py-2 text-sm font-bold text-slate-500 hover:text-slate-300 transition" data-i18n="cancel">Cancel</button><button onclick="sendMsgToLeader()" class="neon-theme-btn px-6 py-2 font-bold text-sm rounded-xl shadow-lg transition" data-i18n="send_msg">Send</button></div>
         </div>
     </div>
 
@@ -877,6 +808,7 @@
                 png_capture_fail: "Failed to generate PNG. Please try again.",
                 msg_cooldown: "Please wait {s} more second(s) before sending another message.", audit_log_title: "📜 Audit Log", no_audit_logs: "No actions logged yet.", delete_room_confirm: "Delete this room and all its messages? This cannot be undone.", player_search_placeholder: "🔍 Search player...", accepted: "Accepted", declined: "Declined", tentative: "Tentative", plan_channels_title: "📡 Discord Channels for this Event", plan_channels_none: "No channels configured yet — add some in Management first.",
                 edit: "Edit", discord_bot_settings: "🤖 Discord Bot Settings", discord_bot_settings_note: "These notifications are sent by the bot to every channel added on the right.", share_to_discord: "📤 Share to Discord", select_channels_for_share: "Select which channel(s) to post this to:", share_now: "Share", share_success: "Shared to Discord!", share_fail: "Failed to share.", who_online_title: "🟢 Who's Online", no_one_online: "No one else is online right now.", currently_viewing: "viewing", dkp_loot_log_title: "💰 DKP / Loot Changes", bot_shares_log_title: "📡 Bot Shares", other_actions_log_title: "📋 Other Actions", share_to_discord_prompt: "PNG downloaded! Would you also like to share it to Discord?", dkp_report_caption: "Raid DKP / Loot Report",
+                you: "you", also_editing: "Also viewing this plan",
                 online_now_title: "🟢 Online Now", category_dkp_loot: "💰 DKP / Loot Changes", category_discord_bot: "📢 Discord Bot Shares", category_general: "⚙️ General", no_one_online: "No one online right now.",
                 delete_ann_confirm: "Delete this announcement completely? This will remove the message from Discord and delete it from the site entirely — this cannot be undone.", delete_ann_success: "Announcement deleted from Discord and the site.", delete_ann_fail: "Failed to delete."
             },
@@ -922,6 +854,7 @@
                 delete_ann_confirm: "Bu duyuru tamamen silinsin mi? Bu işlem mesajı Discord'dan kaldırır ve siteden de tamamen siler — geri alınamaz.", delete_ann_success: "Duyuru hem Discord'dan hem siteden silindi.", delete_ann_fail: "Silme başarısız oldu.",
                 msg_cooldown: "Başka bir mesaj göndermeden önce {s} saniye daha bekle.", audit_log_title: "📜 İşlem Kaydı", no_audit_logs: "Henüz kayıtlı bir işlem yok.", delete_room_confirm: "Bu oda ve içindeki tüm mesajlar silinsin mi? Bu işlem geri alınamaz.", player_search_placeholder: "🔍 Oyuncu ara...", accepted: "Katılıyor", declined: "Katılmıyor", tentative: "Belki", plan_channels_title: "📡 Bu Etkinlik İçin Discord Kanalları", plan_channels_none: "Henüz kanal eklenmemiş — önce Yönetim'den ekle.",
                 edit: "Düzenle", discord_bot_settings: "🤖 Discord Bot Ayarları", discord_bot_settings_note: "Bu bildirimler, bot tarafından sağdaki tüm kanallara gönderilir.", share_to_discord: "📤 Discord'a Paylaş", select_channels_for_share: "Bunu hangi kanal(lar)a paylaşmak istersin:", share_now: "Paylaş", share_success: "Discord'a paylaşıldı!", share_fail: "Paylaşılamadı.", who_online_title: "🟢 Kim Online", no_one_online: "Şu an başka kimse online değil.", currently_viewing: "şurada", dkp_loot_log_title: "💰 DKP / Loot Değişiklikleri", bot_shares_log_title: "📡 Bot Paylaşımları", other_actions_log_title: "📋 Diğer İşlemler", share_to_discord_prompt: "PNG indirildi! Bunu Discord'a da paylaşmak ister misin?", dkp_report_caption: "Raid DKP / Loot Raporu",
+                you: "sen", also_editing: "Bu planı görüntüleyen diğerleri",
                 online_now_title: "🟢 Şu An Online", category_dkp_loot: "💰 DKP / Loot Değişiklikleri", category_discord_bot: "📢 Discord Bot Paylaşımları", category_general: "⚙️ Genel", no_one_online: "Şu an online kimse yok."
             },
             de: { 
@@ -966,6 +899,7 @@
                 delete_ann_confirm: "Diese Ankündigung vollständig löschen? Dies entfernt die Nachricht aus Discord und löscht sie komplett von der Website — kann nicht rückgängig gemacht werden.", delete_ann_success: "Ankündigung aus Discord und der Website gelöscht.", delete_ann_fail: "Löschen fehlgeschlagen.",
                 msg_cooldown: "Bitte warte noch {s} Sekunde(n), bevor du eine weitere Nachricht sendest.", audit_log_title: "📜 Protokoll", no_audit_logs: "Noch keine Aktionen protokolliert.", delete_room_confirm: "Diesen Raum und alle Nachrichten löschen? Kann nicht rückgängig gemacht werden.", player_search_placeholder: "🔍 Spieler suchen...", accepted: "Zugesagt", declined: "Abgesagt", tentative: "Unsicher", plan_channels_title: "📡 Discord-Kanäle für dieses Event", plan_channels_none: "Noch keine Kanäle konfiguriert — zuerst in der Verwaltung hinzufügen.",
                 edit: "Bearbeiten", discord_bot_settings: "🤖 Discord-Bot-Einstellungen", discord_bot_settings_note: "Diese Benachrichtigungen werden vom Bot an alle rechts hinzugefügten Kanäle gesendet.", share_to_discord: "📤 Auf Discord teilen", select_channels_for_share: "Wähle die Kanäle für diesen Beitrag:", share_now: "Teilen", share_success: "Auf Discord geteilt!", share_fail: "Teilen fehlgeschlagen.", who_online_title: "🟢 Wer ist online", no_one_online: "Gerade ist niemand sonst online.", currently_viewing: "auf", dkp_loot_log_title: "💰 DKP-/Loot-Änderungen", bot_shares_log_title: "📡 Bot-Beiträge", other_actions_log_title: "📋 Weitere Aktionen", share_to_discord_prompt: "PNG heruntergeladen! Möchtest du es auch auf Discord teilen?", dkp_report_caption: "Raid-DKP-/Loot-Bericht",
+                you: "du", also_editing: "Auch gerade hier",
                 online_now_title: "🟢 Gerade online", category_dkp_loot: "💰 DKP-/Loot-Änderungen", category_discord_bot: "📢 Discord-Bot-Beiträge", category_general: "⚙️ Allgemein", no_one_online: "Gerade niemand online."
             },
             fr: { 
@@ -1010,6 +944,7 @@
                 delete_ann_confirm: "Supprimer complètement cette annonce ? Cela retirera le message de Discord et le supprimera entièrement du site — irréversible.", delete_ann_success: "Annonce supprimée de Discord et du site.", delete_ann_fail: "Échec de la suppression.",
                 msg_cooldown: "Veuillez attendre encore {s} seconde(s) avant d'envoyer un autre message.", audit_log_title: "📜 Journal d'activité", no_audit_logs: "Aucune action enregistrée pour l'instant.", delete_room_confirm: "Supprimer ce salon et tous ses messages ? Irréversible.", player_search_placeholder: "🔍 Rechercher un joueur...", accepted: "Accepté", declined: "Refusé", tentative: "Incertain", plan_channels_title: "📡 Canaux Discord pour cet événement", plan_channels_none: "Aucun canal configuré — ajoutez-en d'abord dans Gestion.",
                 edit: "Modifier", discord_bot_settings: "🤖 Paramètres du Bot Discord", discord_bot_settings_note: "Ces notifications sont envoyées par le bot à tous les canaux ajoutés à droite.", share_to_discord: "📤 Partager sur Discord", select_channels_for_share: "Choisissez le(s) canal/canaux pour ce partage :", share_now: "Partager", share_success: "Partagé sur Discord !", share_fail: "Échec du partage.", who_online_title: "🟢 Qui est en ligne", no_one_online: "Personne d'autre n'est en ligne actuellement.", currently_viewing: "sur", dkp_loot_log_title: "💰 Modifications DKP / Loot", bot_shares_log_title: "📡 Partages du Bot", other_actions_log_title: "📋 Autres actions", share_to_discord_prompt: "PNG téléchargé ! Voulez-vous aussi le partager sur Discord ?", dkp_report_caption: "Rapport DKP / Loot du Raid",
+                you: "toi", also_editing: "Également ici",
                 online_now_title: "🟢 En ligne actuellement", category_dkp_loot: "💰 Changements DKP / Loot", category_discord_bot: "📢 Partages du bot Discord", category_general: "⚙️ Général", no_one_online: "Personne en ligne actuellement."
             },
             ar: { 
@@ -1054,6 +989,7 @@
                 delete_ann_confirm: "هل تريد حذف هذا الإعلان نهائيًا؟ سيؤدي هذا إلى إزالة الرسالة من ديسكورد وحذفها بالكامل من الموقع — لا يمكن التراجع عن هذا.", delete_ann_success: "تم حذف الإعلان من ديسكورد والموقع.", delete_ann_fail: "فشل الحذف.",
                 msg_cooldown: "يرجى الانتظار {s} ثانية إضافية قبل إرسال رسالة أخرى.", audit_log_title: "📜 سجل الإجراءات", no_audit_logs: "لا توجد إجراءات مسجلة بعد.", delete_room_confirm: "هل تريد حذف هذه الغرفة وجميع رسائلها؟ لا يمكن التراجع عن هذا.", player_search_placeholder: "🔍 البحث عن لاعب...", accepted: "موافق", declined: "غير موافق", tentative: "ربما", plan_channels_title: "📡 قنوات ديسكورد لهذا الحدث", plan_channels_none: "لا توجد قنوات مهيأة بعد — أضف بعضها في الإدارة أولاً.",
                 edit: "تعديل", discord_bot_settings: "🤖 إعدادات بوت ديسكورد", discord_bot_settings_note: "يتم إرسال هذه الإشعارات بواسطة البوت إلى جميع القنوات المضافة على اليمين.", share_to_discord: "📤 مشاركة على ديسكورد", select_channels_for_share: "اختر القناة/القنوات لمشاركة هذا:", share_now: "مشاركة", share_success: "تمت المشاركة على ديسكورد!", share_fail: "فشلت المشاركة.", who_online_title: "🟢 من متصل الآن", no_one_online: "لا يوجد أحد آخر متصل حاليًا.", currently_viewing: "في", dkp_loot_log_title: "💰 تغييرات DKP / الغنائم", bot_shares_log_title: "📡 مشاركات البوت", other_actions_log_title: "📋 إجراءات أخرى", share_to_discord_prompt: "تم تنزيل PNG! هل تريد مشاركته على ديسكورد أيضًا؟", dkp_report_caption: "تقرير DKP / الغنائم للمداهمة",
+                you: "أنت", also_editing: "متواجدون أيضًا هنا",
                 online_now_title: "🟢 متصل الآن", category_dkp_loot: "💰 تغييرات DKP / الغنائم", category_discord_bot: "📢 مشاركات بوت ديسكورد", category_general: "⚙️ عام", no_one_online: "لا يوجد أحد متصل الآن."
             }
         };
@@ -1069,7 +1005,11 @@
             document.body.setAttribute('dir', currentLang === 'ar' ? 'rtl' : 'ltr');
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
-                const override = cloudData.siteTitles && cloudData.siteTitles[key];
+                // ÖNEMLİ: Override artık dil-bazlı saklanıyor — cloudData.siteTitles[key][currentLang].
+                // Eski (dil-bağımsız) kayıtlarla geriye dönük uyumluluk için, eğer [currentLang] yoksa
+                // ama eski düz {text,color} yapısı varsa (override.text doğrudan varsa) onu da kabul ediyoruz.
+                const rawOverride = cloudData.siteTitles && cloudData.siteTitles[key];
+                const override = rawOverride ? (rawOverride[currentLang] || (rawOverride.text ? rawOverride : null)) : null;
                 const finalText = override && override.text ? override.text : t(key);
 
                 if (el.tagName.toLowerCase() === 'input' && el.placeholder) {
@@ -1115,10 +1055,6 @@
         let userCardsData = {}; // Kullanıcı kartları (telefon/e-posta, sadece admin) - Firebase 'UserCards' yolundan
         let presenceData = {}; // Kim online, hangi sayfada - Firebase 'Presence' yolundan (sadece Google ile giriş yapanlar)
         let currentFirebaseUser = null; // Şu an giriş yapmış Google/Firebase kullanıcı nesnesi
-        let chatRoomsData = {}; // Tüm sohbet odaları (metadata) - Firebase 'ChatRooms' yolundan
-        let activeChatRoomId = null; // Şu an açık olan sohbet odası
-        let activeChatMessagesData = {}; // Aktif odanın mesajları
-        let activeChatMessagesRef = null; // Aktif oda değişince eski dinleyiciyi kapatabilmek için
 
         const DEFAULT_EXPORT_BG = "https://alloder.pro/uploads/monthly_2024_05/large.2024-05.png.8d3ead6539700c234bfa290e57ebd427.png";
         const ROLE_ORDER = { "Tank": 1, "Healer": 2, "Support": 3, "DPS": 4 };
@@ -1234,7 +1170,7 @@
                         
                         isInitialLoad = false;
                         const ed = document.getElementById('announcementEditor'); if(ed && document.activeElement !== ed) { ed.innerHTML = cloudData.announcementHtml; }
-                        applyTheme(cloudData.activeTheme); renderTitles(); updateStaticTranslations(); renderAll(); hideLoader(); updateNotificationBadge();
+                        applyTheme(cloudData.activeTheme); renderTitles(); updateStaticTranslations(); renderAll(); hideLoader();
                     });
 
                     // Discord Duyuruları - ayrı bir Firebase yolu (GuildData'nın büyük blob'undan bağımsız,
@@ -1245,7 +1181,6 @@
                             if (activeTab === 'discordann') renderDiscordAnnouncementsList();
                             if (activeTab === 'plan') renderPlanUI();
                             if (activeTab === 'discordlink') renderDiscordLinkTable();
-                            updateNotificationBadge();
                         });
                         db.ref('DiscordUsers').on('value', (snapshot) => {
                             discordUsersData = snapshot.val() || {};
@@ -1258,12 +1193,6 @@
                         db.ref('PendingUsers').on('value', (snapshot) => {
                             pendingUsersData = snapshot.val() || {};
                             if (activeTab === 'admin') renderAccessManagement();
-                            if (activeTab === 'messages') renderChatRoomMembersPanel();
-                        });
-                        db.ref('ChatRooms').on('value', (snapshot) => {
-                            chatRoomsData = snapshot.val() || {};
-                            if (activeTab === 'messages') renderChatRoomList();
-                            updateNotificationBadge();
                         });
                         db.ref('UserCards').on('value', (snapshot) => {
                             userCardsData = snapshot.val() || {};
@@ -1271,24 +1200,24 @@
                         });
                         db.ref('Presence').on('value', (snapshot) => {
                             presenceData = snapshot.val() || {};
+                            if (activeTab === 'plan') renderPlanPresence();
                         });
                     } catch(e) { /* Announcements yolu henüz kurulmamış olabilir, sorun değil */ }
                 } catch(e) { hideLoader(); }
             }
-            setTimeout(hideLoader, 3000); setTimeout(updateNotificationBadge, 3500); setInterval(checkPlanAutomation, 30000); setInterval(checkAnnouncementExpiry, 30000); setInterval(checkDiscordMessagesSync, 60000);
+            setTimeout(hideLoader, 3000); setInterval(checkPlanAutomation, 30000); setInterval(checkAnnouncementExpiry, 30000); setInterval(checkDiscordMessagesSync, 60000);
         };
 
         function attachGlobalKeyEvents() {
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape') {
-                    const modals = ['loginModal', 'msgModal', 'customAlertOverlay', 'customConfirmOverlay', 'addModal', 'editModal', 'titleEditModal', 'planTypeModal', 'penaltyHistoryModal'];
+                    const modals = ['loginModal', 'customAlertOverlay', 'customConfirmOverlay', 'addModal', 'editModal', 'titleEditModal', 'planTypeModal', 'penaltyHistoryModal', 'auditLogModal', 'shareToDiscordModal'];
                     modals.forEach(id => { const m = document.getElementById(id); if(m && !m.classList.contains('hidden')) { m.classList.add('hidden'); if(id === 'customConfirmOverlay') confirmCb = null; } });
                     const rm = document.getElementById('rosterModal'); if(rm && !rm.classList.contains('-translate-x-full')) rm.classList.add('-translate-x-full');
                 }
                 if (e.key === 'Enter') {
                     if (!document.getElementById('customConfirmOverlay').classList.contains('hidden')) { e.preventDefault(); if(confirmCb) confirmCb(); confirmCb = null; document.getElementById('customConfirmOverlay').classList.add('hidden'); return; }
                     if (!document.getElementById('customAlertOverlay').classList.contains('hidden')) { e.preventDefault(); document.getElementById('customAlertOverlay').classList.add('hidden'); return; }
-                    if (!document.getElementById('msgModal').classList.contains('hidden')) { if (document.activeElement && document.activeElement.id === 'msgInput' && !e.shiftKey) { e.preventDefault(); sendMsgToLeader(); return; } }
                     if (!document.getElementById('loginModal').classList.contains('hidden')) { e.preventDefault(); handleLogin(); return; }
                     if (!document.getElementById('addModal').classList.contains('hidden')) { e.preventDefault(); addNewPlayer(); return; }
                     if (!document.getElementById('editModal').classList.contains('hidden')) { e.preventDefault(); saveEdit(); return; }
@@ -2006,46 +1935,37 @@
         function handleTitleClick(e, key) { if(!isEditMode || currentUser.role !== 'admin') return; e.preventDefault(); e.stopPropagation(); openTitleEdit(key); }
         function initColorPalette() { const pal = document.getElementById('titleColorPalette'); if(pal) { pal.innerHTML = PALETTE.map(c => `<div onclick="selectTitleColor('${c}')" class="w-6 h-6 rounded-full cursor-pointer border-2 border-transparent transition transform hover:scale-110 color-circle" style="background-color:${c};" data-color="${c}"></div>`).join(''); } }
         function selectTitleColor(c) { document.querySelectorAll('.color-circle').forEach(el => { el.classList.remove('border-white', 'shadow-[0_0_10px_currentColor]', 'scale-110'); el.classList.add('border-transparent'); }); const target = document.querySelector(`.color-circle[data-color="${c}"]`); if (target) { target.classList.remove('border-transparent'); target.classList.add('border-white', 'shadow-[0_0_10px_currentColor]', 'scale-110'); } }
-        function openTitleEdit(key) { if(!isEditMode || currentUser.role !== 'admin') return; currentEditTitleKey = key; const data = cloudData.siteTitles[key] || { text: "Title", color: "#f1f5f9" }; document.getElementById('titleEditText').value = data.text || ""; selectTitleColor(data.color || '#f1f5f9'); document.getElementById('titleEditModal').classList.remove('hidden'); }
-        function saveTitleEdit() { const text = document.getElementById('titleEditText').value.trim(); const color = document.querySelector('.color-circle.border-white')?.dataset.color || '#f1f5f9'; if(text) { cloudData.siteTitles[currentEditTitleKey] = { text, color }; triggerCloudSave(); renderTitles(); } document.getElementById('titleEditModal').classList.add('hidden'); }
+        function openTitleEdit(key) {
+            if(!isEditMode || currentUser.role !== 'admin') return;
+            currentEditTitleKey = key;
+            // ÖNEMLİ: Bu anahtar için, ŞU ANKİ dile ait daha önce kaydedilmiş bir düzenleme varsa onu göster;
+            // yoksa (ilk kez düzenleniyorsa) sabit "Title" yazısı değil, o başlığın GERÇEK mevcut metnini
+            // (mevcut dildeki çevirisini) göster — yoksa admin farkında olmadan başlığı "Title" yapabilirdi.
+            const existing = cloudData.siteTitles && cloudData.siteTitles[key] && cloudData.siteTitles[key][currentLang];
+            const data = existing || { text: t(key), color: "#f1f5f9" };
+            document.getElementById('titleEditText').value = data.text || "";
+            selectTitleColor(data.color || '#f1f5f9');
+            document.getElementById('titleEditModal').classList.remove('hidden');
+        }
+        function saveTitleEdit() {
+            const text = document.getElementById('titleEditText').value.trim();
+            const color = document.querySelector('.color-circle.border-white')?.dataset.color || '#f1f5f9';
+            if(text) {
+                // ÖNEMLİ: Düzenleme, sadece ŞU ANKİ dil için kaydediliyor — başka bir dile geçilince
+                // artık bu düzenleme görünmeyecek, o dilin kendi (düzenlenmemişse orijinal) metni gösterilecek.
+                if (!cloudData.siteTitles[currentEditTitleKey]) cloudData.siteTitles[currentEditTitleKey] = {};
+                cloudData.siteTitles[currentEditTitleKey][currentLang] = { text, color };
+                triggerCloudSave();
+                updateStaticTranslations();
+                renderTitles();
+            }
+            document.getElementById('titleEditModal').classList.add('hidden');
+        }
         function renderTitles() { const defaultTitles = { 'brand': 'HUNS' }; ['brand'].forEach(key => { const el = document.getElementById(`dyn-${key}`); if(el) { if(cloudData.siteTitles && cloudData.siteTitles[key]) { el.innerText = cloudData.siteTitles[key].text; el.style.color = cloudData.siteTitles[key].color; } else { el.innerText = defaultTitles[key]; el.style.color = ''; } } }); }
 
         function showCustomAlert(msg, title="INFO", icon="🔔") { document.getElementById('alertMessage').innerText = msg; document.getElementById('alertTitle').innerText = title; document.getElementById('alertIcon').innerText = icon; document.getElementById('customAlertOverlay').classList.remove('hidden'); }
         function showCustomConfirm(msg, cb, title="CONFIRM", icon="⚠️") { document.getElementById('confirmMessage').innerText = msg; document.getElementById('confirmTitle').innerText = title; document.getElementById('confirmIcon').innerText = icon; confirmCb = cb; document.getElementById('customConfirmOverlay').classList.remove('hidden'); }
         function logAudit(action) { if(currentUser.role==='visitor') return; cloudData.auditLogs.unshift({ time: new Date().toLocaleString('tr-TR'), user: currentUser.username, action }); if(cloudData.auditLogs.length>100) cloudData.auditLogs.pop(); }
-
-        // ============ BİLDİRİM ROZETİ (herkes görür: yeni raid + yeni duyuru + yeni sohbet mesajı) ============
-        function getLastNotifCheck() {
-            const v = localStorage.getItem('hunsLastNotifCheck');
-            return v ? parseInt(v) : 0;
-        }
-
-        function updateNotificationBadge() {
-            const badge = document.getElementById('notifBadge');
-            if (!badge) return;
-            const lastCheck = getLastNotifCheck();
-            const myUid = currentFirebaseUser ? currentFirebaseUser.uid : null;
-            const isAdmin = currentUser.role === 'admin';
-
-            const newRaids = (cloudData.raidPlans || []).filter(p => p.published && p.publishedAt && p.publishedAt > lastCheck).length;
-            const newAnns = Object.values(announcementsData || {}).filter(a => a.createdAt && a.createdAt > lastCheck).length;
-            const newRoomActivity = Object.entries(chatRoomsData || {}).filter(([id, room]) =>
-                (isAdmin || (room.allowedUids && myUid && room.allowedUids[myUid])) && room.lastMessageAt && room.lastMessageAt > lastCheck
-            ).length;
-
-            const total = newRaids + newAnns + newRoomActivity;
-            if (total > 0) {
-                badge.textContent = total > 99 ? '99+' : total;
-                badge.classList.remove('hidden');
-            } else {
-                badge.classList.add('hidden');
-            }
-        }
-
-        function markNotificationsSeen() {
-            localStorage.setItem('hunsLastNotifCheck', Date.now().toString());
-            updateNotificationBadge();
-        }
 
         // ============ PRESENCE (KİM ONLİNE, HANGİ SAYFADA) ============
         // Sadece Google ile giriş yapmış kullanıcılar için çalışır (ziyaretçilerin Firebase kimliği yok).
@@ -2069,8 +1989,28 @@
                 name: currentUser.username,
                 role: currentUser.role,
                 page: activeTab,
+                planId: (activeTab === 'plan') ? activePlanId : null,
                 lastSeen: Date.now()
             }).catch(() => {});
+        }
+
+        // Etkinlik Planı ekranında, o anda AYNI plan üzerinde çalışan diğer yetkilileri canlı gösterir.
+        function renderPlanPresence() {
+            const container = document.getElementById('planPresenceIndicator');
+            if (!container || !activePlanId) return;
+            const now = Date.now();
+            const myUid = currentFirebaseUser ? currentFirebaseUser.uid : null;
+            const others = Object.entries(presenceData || {}).filter(([uid, p]) =>
+                uid !== myUid && p.planId === activePlanId && p.lastSeen && (now - p.lastSeen) < 60000
+            );
+            if (others.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+            container.innerHTML = `<span class="inline-flex items-center gap-1.5 bg-emerald-950/40 border border-emerald-800 text-emerald-400 px-2.5 py-1 rounded-full text-[10px] font-bold">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                ${t('also_editing')}: ${others.map(([uid, p]) => p.name).join(', ')}
+            </span>`;
         }
 
         // Bir işlem kaydı metnine bakarak kategorisini tahmin eder (her logAudit çağrısını
@@ -2088,9 +2028,16 @@
             if (currentUser.role === 'visitor') return;
 
             // Kim online paneli
-            const pageNames = { raid: 'DKP', plan: 'Event Plan', discordann: 'Discord Announcement', discordlink: 'Discord Linking', messages: 'Messages', admin: 'Management', announcements: 'Announcements' };
+            const pageNames = { raid: 'DKP', plan: 'Event Plan', discordann: 'Discord Announcement', discordlink: 'Discord Linking', admin: 'Management', announcements: 'Announcements' };
             const now = Date.now();
-            const onlineEntries = Object.entries(presenceData || {}).filter(([uid, p]) => p.lastSeen && (now - p.lastSeen) < 60000);
+            let onlineEntries = Object.entries(presenceData || {}).filter(([uid, p]) => p.lastSeen && (now - p.lastSeen) < 60000);
+            // Firebase'den kendi kaydımız henüz gelmemiş olabilir (zamanlama) — bu yüzden kendimizi
+            // HER ZAMAN, güncel currentUser/activeTab bilgisiyle garantiye alıyoruz.
+            if (currentFirebaseUser && currentUser.role !== 'visitor') {
+                onlineEntries = onlineEntries.filter(([uid]) => uid !== currentFirebaseUser.uid);
+                onlineEntries.unshift([currentFirebaseUser.uid, { name: `${currentUser.username} (${t('you')})`, role: currentUser.role, page: activeTab, lastSeen: now }]);
+                updatePresence(); // Bu arada gerçek kaydı da Firebase'e senkronize et.
+            }
             const presenceList = document.getElementById('presenceList');
             if (onlineEntries.length === 0) {
                 presenceList.innerHTML = `<p class="text-[10px] text-slate-500 italic">${t("no_one_online")}</p>`;
@@ -2120,22 +2067,6 @@
             generalList.innerHTML = generalLogs.length ? generalLogs.map(renderRow).join('') : `<p class="text-[10px] text-slate-600 italic">${t("no_audit_logs")}</p>`;
 
             document.getElementById('auditLogModal').classList.remove('hidden');
-        }
-
-        // Sağ alttaki mesaj ikonuna basılınca Mesajlar modalı açılır ve doğrudan sohbet odalarına kaydırılır.
-        function openMessagesFromFab() {
-            document.getElementById('page-messages').classList.remove('hidden');
-            renderMessagesInbox();
-            renderChatRoomList();
-            markNotificationsSeen();
-            setTimeout(() => {
-                const roomsSection = document.getElementById('chatRoomList');
-                if (roomsSection) roomsSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }, 150);
-        }
-
-        function closeMessagesModal() {
-            document.getElementById('page-messages').classList.add('hidden');
         }
 
         function formatDoc(cmd, value=null) { document.execCommand(cmd, false, value); document.getElementById('announcementEditor').focus(); }
@@ -2555,6 +2486,7 @@
                 }
                 renderPlanRsvpSection(plan);
                 renderPlanChannelsCheckboxes(plan);
+                renderPlanPresence();
             } else { 
                 document.getElementById('planInputsContainer').classList.add('hidden'); 
                 document.getElementById('planDisplayContainer').classList.remove('hidden'); 
@@ -2848,219 +2780,6 @@
         function renderPenaltyLogs() { const c=document.getElementById('penaltyLogsContainer'); if(!c) return; if(cloudData.penaltyHistory.length===0){c.innerHTML='<div class="text-slate-500 text-sm text-center py-6">Empty.</div>'; return;} c.innerHTML=cloudData.penaltyHistory.map(log=>`<div class="bg-slate-950/60 p-4 border border-slate-700/50 rounded-xl mb-3 shadow-md"><div class="flex justify-between items-center border-b border-slate-800 pb-2 mb-2"><span class="text-orange-400 font-bold text-xs">${log.date}</span><div class="flex gap-2 items-center"><span class="text-red-400 text-xs font-black bg-red-950 px-2 py-0.5 rounded border border-red-900">-${log.penaltyAmount} DKP</span></div></div><div class="text-[11px] text-slate-400"><span class="block mb-1 font-bold text-slate-500 text-[9px] uppercase">Victims:</span> ${log.victims.join(', ')}</div></div>`).join(''); }
         function clearPenaltyHistory() { if(currentUser.role==='admin'){showCustomConfirm("Clear history?",()=>{cloudData.penaltyHistory=[]; triggerCloudSave(); renderPenaltyLogs();},t("confirm"),"🔥");} }
         function clearAuditLogs() { if(currentUser.role !== 'admin') return; showCustomConfirm("Clear all audit logs?", () => { cloudData.auditLogs = []; triggerCloudSave(); renderAdminPanel(); }, "CLEAR", "🔥"); }
-        function sendMsgToLeader() { const text = document.getElementById('msgInput').value.trim(); if(!text) return; const senderName = currentUser.role === 'visitor' ? 'Anonim Ziyaretçi' : currentUser.username; cloudData.adminMessages.unshift({ id: Date.now(), sender: senderName, text: text, time: new Date().toLocaleString('tr-TR') }); triggerCloudSave(); document.getElementById('msgModal').classList.add('hidden'); document.getElementById('msgInput').value = ''; showCustomAlert(t("msg_sent"), t("success"), "✉️"); }
-        function deleteMsg(id) { if(currentUser.role !== 'admin') return; cloudData.adminMessages = cloudData.adminMessages.filter(m => m.id !== id); triggerCloudSave(); renderAdminPanel(); renderMessagesInbox(); }
-
-        // ============ MESAJLAR SEKMESİ: HIZLI MESAJ + GELEN KUTUSU ============
-        let lastQuickMsgSentAt = 0; // Spam koruması için
-
-        function sendQuickMessage() {
-            const input = document.getElementById('quickMsgInput');
-            const text = input.value.trim();
-            if (!text) return;
-
-            // Spam koruması: yetkililer (admin/officer) 3 saniye, diğer herkes (ziyaretçi dahil) 15 saniye beklemeli.
-            const cooldown = (currentUser.role === 'admin' || currentUser.role === 'officer') ? 3000 : 15000;
-            const now = Date.now();
-            const remaining = cooldown - (now - lastQuickMsgSentAt);
-            if (remaining > 0) {
-                showCustomAlert(t("msg_cooldown").replace('{s}', Math.ceil(remaining / 1000)), t("info"), "⏳");
-                return;
-            }
-            lastQuickMsgSentAt = now;
-
-            const senderName = currentUser.role === 'visitor' ? 'Anonim Ziyaretçi' : currentUser.username;
-            cloudData.adminMessages.unshift({ id: Date.now(), sender: senderName, text: text, time: new Date().toLocaleString('tr-TR') });
-            triggerCloudSave();
-            input.value = '';
-            showCustomAlert(t("msg_sent"), t("success"), "✉️");
-        }
-
-        function renderMessagesInbox() {
-            const container = document.getElementById('messagesInboxList');
-            if (!container) return;
-            if (!cloudData.adminMessages || cloudData.adminMessages.length === 0) {
-                container.innerHTML = `<p class="text-[11px] text-slate-500 italic text-center py-4">${t("no_messages_yet")}</p>`;
-                return;
-            }
-            container.innerHTML = cloudData.adminMessages.map(m => `<div class="bg-slate-950 border border-slate-700 p-3 rounded-xl flex justify-between items-start shadow-sm hover:border-cyan-500/50 transition">
-                <div class="flex-1 pr-2">
-                    <span class="text-[11px] font-bold text-amber-400">${m.sender}</span> <span class="text-[9px] text-slate-500 ml-2 font-mono">${m.time}</span>
-                    <p class="text-xs text-slate-300 mt-1.5 leading-relaxed bg-slate-900 p-2 rounded-lg border border-slate-800/50 whitespace-pre-wrap">${m.text}</p>
-                </div>
-                <button onclick="deleteMsg(${m.id})" class="text-red-500 hover:text-white bg-red-950/30 hover:bg-red-600 px-2 py-1 rounded text-[9px] font-black uppercase transition border border-red-900/50 shrink-0">${t('delete')}</button>
-            </div>`).join('');
-        }
-
-        // ============ SOHBET ODALARI (kalıcı, davetle-erişim) ============
-        function createChatRoom() {
-            if (currentUser.role !== 'admin') return;
-            const input = document.getElementById('newChatRoomName');
-            const name = input.value.trim();
-            if (!name) return;
-            const roomId = 'room_' + Date.now();
-            const allowedUids = {};
-            if (currentFirebaseUser) allowedUids[currentFirebaseUser.uid] = true; // admin kendi odasını her zaman görür
-            firebase.database().ref('ChatRooms/' + roomId).set({
-                name, createdBy: currentFirebaseUser ? currentFirebaseUser.uid : null, createdAt: Date.now(), allowedUids
-            }).then(() => {
-                input.value = '';
-                logAudit(`Sohbet odası oluşturuldu: ${name}`);
-                selectChatRoom(roomId);
-            }).catch(e => showCustomAlert('Hata: ' + e.message, t("info"), "❌"));
-        }
-
-        function renderChatRoomList() {
-            const container = document.getElementById('chatRoomList');
-            if (!container) return;
-            const myUid = currentFirebaseUser ? currentFirebaseUser.uid : null;
-            const isAdmin = currentUser.role === 'admin';
-
-            const entries = Object.entries(chatRoomsData || {}).filter(([id, room]) =>
-                isAdmin || (room.allowedUids && myUid && room.allowedUids[myUid])
-            ).sort((a, b) => (b[1].createdAt || 0) - (a[1].createdAt || 0));
-
-            if (entries.length === 0) {
-                container.innerHTML = `<p class="text-[10px] text-slate-500 italic p-2">${t("no_chat_rooms")}</p>`;
-                return;
-            }
-
-            container.innerHTML = entries.map(([id, room]) => `<div class="flex items-center gap-1">
-                <div onclick="selectChatRoom('${id}')" class="flex-1 p-2.5 rounded-lg cursor-pointer border transition text-xs font-bold ${activeChatRoomId === id ? 'bg-cyan-900/30 border-cyan-500 text-white' : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-600'}">💬 ${room.name}</div>
-                ${isAdmin ? `<button onclick="deleteChatRoom('${id}'); event.stopPropagation();" title="${t('delete')}" class="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg bg-red-950/40 border border-red-800 text-red-400 hover:bg-red-600 hover:text-white transition text-xs">✕</button>` : ''}
-            </div>`).join('');
-        }
-
-        // Admin bir sohbet odasını (ve içindeki tüm mesajları) tamamen siler.
-        function deleteChatRoom(roomId) {
-            if (currentUser.role !== 'admin') return;
-            showCustomConfirm(t("delete_room_confirm"), () => {
-                firebase.database().ref('ChatRooms/' + roomId).remove()
-                    .then(() => firebase.database().ref('ChatMessages/' + roomId).remove())
-                    .then(() => {
-                        if (activeChatRoomId === roomId) {
-                            activeChatRoomId = null;
-                            if (activeChatMessagesRef) { activeChatMessagesRef.off(); activeChatMessagesRef = null; }
-                            renderChatRoomHeader(); renderChatRoomMembersPanel(); renderChatMessages();
-                        }
-                        logAudit(`Sohbet odası silindi: ${roomId}`);
-                    }).catch(e => showCustomAlert('Hata: ' + e.message, t("info"), "❌"));
-            }, t("confirm"), "🗑️");
-        }
-
-        function selectChatRoom(roomId) {
-            activeChatRoomId = roomId;
-            if (activeChatMessagesRef) { activeChatMessagesRef.off(); }
-            activeChatMessagesData = {};
-
-            renderChatRoomList();
-            renderChatRoomHeader();
-            renderChatRoomMembersPanel();
-
-            if (typeof firebase === 'undefined') return;
-            activeChatMessagesRef = firebase.database().ref('ChatMessages/' + roomId);
-            activeChatMessagesRef.on('value', (snapshot) => {
-                activeChatMessagesData = snapshot.val() || {};
-                renderChatMessages();
-            });
-        }
-
-        function renderChatRoomHeader() {
-            const header = document.getElementById('chatRoomHeader');
-            const composer = document.getElementById('chatComposerBox');
-            if (!header) return;
-            if (!activeChatRoomId || !chatRoomsData[activeChatRoomId]) {
-                header.innerHTML = `<p class="text-xs text-slate-500 italic">${t("select_a_room")}</p>`;
-                if (composer) composer.classList.add('hidden');
-                return;
-            }
-            const room = chatRoomsData[activeChatRoomId];
-            header.innerHTML = `<h3 class="text-sm font-black text-white uppercase tracking-widest">💬 ${room.name}</h3>`;
-            if (composer) composer.classList.remove('hidden');
-        }
-
-        function renderChatMessages() {
-            const container = document.getElementById('chatMessagesList');
-            if (!container) return;
-            const entries = Object.entries(activeChatMessagesData || {}).sort((a, b) => (a[1].time || 0) - (b[1].time || 0));
-            if (entries.length === 0) {
-                container.innerHTML = `<p class="text-[11px] text-slate-500 italic text-center py-6">${t("no_chat_messages")}</p>`;
-            } else {
-                const myUid = currentFirebaseUser ? currentFirebaseUser.uid : null;
-                const isAdmin = currentUser.role === 'admin';
-                container.innerHTML = entries.map(([id, m]) => {
-                    const isMine = m.senderUid === myUid;
-                    const delBtn = isAdmin ? `<button onclick="deleteChatMessage('${id}')" class="ml-2 text-slate-500 hover:text-red-400 transition text-[9px]" title="${t('delete')}">✕</button>` : '';
-                    return `<div class="flex ${isMine ? 'justify-end' : 'justify-start'} group">
-                        <div class="max-w-[75%] ${isMine ? 'bg-cyan-900/40 border-cyan-700/50' : 'bg-slate-950 border-slate-800'} border rounded-xl px-3 py-2 relative">
-                            <div class="text-[9px] font-black uppercase tracking-widest ${isMine ? 'text-cyan-300' : 'text-amber-400'} flex items-center">${m.senderName || 'Unknown'}${delBtn}</div>
-                            <div class="text-xs text-slate-200 mt-0.5 whitespace-pre-wrap break-words">${m.text}</div>
-                        </div>
-                    </div>`;
-                }).join('');
-            }
-            container.scrollTop = container.scrollHeight;
-        }
-
-        // Admin, sohbet odasındaki tek bir mesajı siler.
-        function deleteChatMessage(msgId) {
-            if (currentUser.role !== 'admin' || !activeChatRoomId) return;
-            firebase.database().ref(`ChatMessages/${activeChatRoomId}/${msgId}`).remove().catch(e => console.error('deleteChatMessage error:', e));
-        }
-
-        function sendChatMessage() {
-            if (!activeChatRoomId) return;
-            const input = document.getElementById('chatMessageInput');
-            const text = input.value.trim();
-            if (!text || !currentFirebaseUser) return;
-            const msgId = 'msg_' + Date.now();
-            const now = Date.now();
-            firebase.database().ref(`ChatMessages/${activeChatRoomId}/${msgId}`).set({
-                senderUid: currentFirebaseUser.uid,
-                senderName: currentUser.username,
-                text,
-                time: now
-            }).then(() => {
-                input.value = '';
-                // Bildirim rozeti "yeni mesaj var" sayımı bu alana bakıyor.
-                firebase.database().ref(`ChatRooms/${activeChatRoomId}/lastMessageAt`).set(now).catch(() => {});
-            }).catch(e => console.error('sendChatMessage error:', e));
-        }
-
-        // Admin: seçili odaya kimin erişebileceğini yönetir (PendingUsers + Roles birleşik listesinden).
-        function renderChatRoomMembersPanel() {
-            const panel = document.getElementById('chatRoomMembersPanel');
-            if (!panel) return;
-            if (currentUser.role !== 'admin' || !activeChatRoomId || !chatRoomsData[activeChatRoomId]) {
-                panel.classList.add('hidden');
-                return;
-            }
-            panel.classList.remove('hidden');
-            const room = chatRoomsData[activeChatRoomId];
-            const allowed = room.allowedUids || {};
-
-            // Bilinen herkesi (yetkili + onay bekleyen) birleştir, tekrar etmesin diye uid bazlı map kullan.
-            const known = {};
-            Object.entries(rolesData || {}).forEach(([uid, r]) => { known[uid] = r.name || uid; });
-            Object.entries(pendingUsersData || {}).forEach(([uid, u]) => { if (!known[uid]) known[uid] = u.name || u.email || uid; });
-
-            const entries = Object.entries(known);
-            if (entries.length === 0) {
-                panel.innerHTML = `<p class="text-[10px] text-slate-500 italic">${t("no_known_users")}</p>`;
-                return;
-            }
-
-            panel.innerHTML = `<div class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">${t("room_members_title")}</div>
-                <div class="flex flex-wrap gap-2">${entries.map(([uid, name]) => `<label class="flex items-center gap-1.5 bg-slate-950 border border-slate-800 px-2 py-1 rounded-lg cursor-pointer text-[10px] ${allowed[uid] ? 'border-cyan-600 text-cyan-300' : 'text-slate-400'}">
-                    <input type="checkbox" ${allowed[uid] ? 'checked' : ''} onchange="toggleRoomMember('${uid}', this.checked)" class="w-3 h-3 cursor-pointer accent-cyan-500">
-                    ${name}
-                </label>`).join('')}</div>`;
-        }
-
-        function toggleRoomMember(uid, checked) {
-            if (currentUser.role !== 'admin' || !activeChatRoomId) return;
-            firebase.database().ref(`ChatRooms/${activeChatRoomId}/allowedUids/${uid}`).set(checked ? true : null);
-        }
 
         // ============ YETKİ YÖNETİMİ (Google ile giriş yapanlar + admin/officer atama) ============
         function renderAccessManagement() {
@@ -3127,7 +2846,6 @@
             
             renderAccessManagement();
             document.getElementById('auditLogList').innerHTML = cloudData.auditLogs.map(log=>`<div class="text-[10px] bg-slate-950 p-2.5 rounded border border-slate-800 mb-1.5"><span class="text-slate-500 font-mono mr-2">${log.time}</span><span class="text-cyan-400 font-bold">${log.user}:</span> <span class="text-slate-300 ml-1">${log.action}</span></div>`).join(''); 
-            if(cloudData.adminMessages.length === 0) { document.getElementById('adminMessagesList').innerHTML = '<div class="text-[10px] text-slate-500 italic p-4 text-center border border-dashed border-slate-700 rounded-xl">Empty.</div>'; } else { document.getElementById('adminMessagesList').innerHTML = cloudData.adminMessages.map(m => `<div class="bg-slate-950 border border-slate-700 p-3 rounded-xl mb-2 flex justify-between items-start shadow-sm hover:border-cyan-500/50 transition"><div class="flex-1 pr-2"><span class="text-[11px] font-bold text-amber-400">${m.sender}</span> <span class="text-[9px] text-slate-500 ml-2 font-mono">${m.time}</span><p class="text-xs text-slate-300 mt-1.5 leading-relaxed bg-slate-900 p-2 rounded-lg border border-slate-800/50 whitespace-pre-wrap">${m.text}</p></div><button onclick="deleteMsg(${m.id})" class="text-red-500 hover:text-white bg-red-950/30 hover:bg-red-600 px-2 py-1 rounded text-[9px] font-black uppercase transition border border-red-900/50 shrink-0">SIL</button></div>`).join(''); }
 
             const rbContainer = document.getElementById('recycleBinList');
             const deletedPlayers = cloudData.players.filter(p => p.isDeleted);
