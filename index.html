@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Guild Portal - HUNS</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚔️</text></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
@@ -209,6 +210,9 @@
                     </button>
                     <button onclick="if(!isEditMode) switchTab('discordlink')" id="tab-discordlink" class="tab-btn auth-only px-3 md:px-4 py-2 text-xs font-black uppercase tracking-widest border-b-2 border-transparent relative z-20">
                         <span data-i18n="tab_discordlink">🔗 Discord Linking</span>
+                    </button>
+                    <button onclick="if(!isEditMode) switchTab('scheduledposts')" id="tab-scheduledposts" class="tab-btn auth-only px-3 md:px-4 py-2 text-xs font-black uppercase tracking-widest border-b-2 border-transparent relative z-20">
+                        <span data-i18n="tab_scheduledposts">⏰ Scheduled Posts</span>
                     </button>
                 </div>
 
@@ -628,6 +632,82 @@
             </div>
             <div id="discordLinkDeniedMsg" class="text-center py-20 text-slate-500 font-bold text-sm tracking-widest uppercase" style="display: none;" data-i18n="unauthorized">Unauthorized Access.</div>
         </div>
+
+        <div id="page-scheduledposts" class="tab-content">
+            <div class="auth-only flex-col max-w-4xl mx-auto">
+                <h1 class="text-3xl guild-font neon-theme-text mb-2 border-b border-slate-800 pb-2" data-i18n="scheduled_posts_title">⏰ Scheduled Posts</h1>
+                <p class="text-[11px] text-slate-500 mb-6" data-i18n="scheduled_posts_desc">These run on the server, even if no one has the site open. Note: the image must be a fixed link (e.g. an already-uploaded picture) — a live screenshot of the site cannot be generated automatically here.</p>
+
+                <div class="neon-theme-box p-6 rounded-2xl shadow-lg mb-8">
+                    <h3 class="text-sm font-black text-indigo-400 mb-4 tracking-widest uppercase" data-i18n="create_scheduled_post">+ Create New Scheduled Post</h3>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                        <div>
+                            <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1" data-i18n="label_for_yourself">Label (for yourself)</label>
+                            <input type="text" id="schedPostTitle" placeholder="Weekly rule reminder" class="w-full neon-theme-input px-3 py-2 rounded-lg text-xs outline-none">
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1" data-i18n="image_url_optional">Image URL (optional)</label>
+                            <input type="text" id="schedPostImageUrl" placeholder="https://..." class="w-full neon-theme-input px-3 py-2 rounded-lg text-xs outline-none font-mono">
+                        </div>
+                    </div>
+
+                    <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1" data-i18n="message_text">Message Text</label>
+                    <textarea id="schedPostContent" rows="3" class="w-full neon-theme-input p-3 rounded-xl outline-none mb-3 text-xs" placeholder="@everyone ..."></textarea>
+
+                    <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1" data-i18n="target_channels">Target Channels</label>
+                    <div id="schedPostChannels" class="flex flex-wrap gap-2 mb-4"></div>
+
+                    <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1" data-i18n="schedule_type">Schedule Type</label>
+                    <select id="schedPostType" onchange="renderSchedTypeFields()" class="w-full neon-theme-input px-3 py-2 rounded-lg text-xs outline-none mb-3">
+                        <option value="once" data-i18n="sched_type_once">Once</option>
+                        <option value="interval_count" data-i18n="sched_type_interval_count">Repeat N times (every X hours)</option>
+                        <option value="interval_forever" data-i18n="sched_type_interval_forever">Repeat forever (every X hours)</option>
+                        <option value="weekly" data-i18n="sched_type_weekly">Weekly (specific day + time, TR time)</option>
+                    </select>
+
+                    <div id="schedFieldsOnce" class="mb-3">
+                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1" data-i18n="date_time_tr">Date & Time (TR time)</label>
+                        <input type="datetime-local" id="schedOnceDateTime" class="w-full neon-theme-input px-3 py-2 rounded-lg text-xs outline-none" style="color-scheme: dark;">
+                    </div>
+
+                    <div id="schedFieldsInterval" class="hidden mb-3 grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1" data-i18n="every_x_hours">Every X hours</label>
+                            <input type="number" id="schedIntervalHours" value="24" min="1" class="w-full neon-theme-input px-3 py-2 rounded-lg text-xs outline-none">
+                        </div>
+                        <div id="schedRepeatCountWrap">
+                            <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1" data-i18n="repeat_count">How many times</label>
+                            <input type="number" id="schedRepeatCount" value="5" min="1" class="w-full neon-theme-input px-3 py-2 rounded-lg text-xs outline-none">
+                        </div>
+                    </div>
+
+                    <div id="schedFieldsWeekly" class="hidden mb-3 grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1" data-i18n="day_of_week">Day of Week</label>
+                            <select id="schedWeeklyDay" class="w-full neon-theme-input px-3 py-2 rounded-lg text-xs outline-none">
+                                <option value="1" data-i18n="day_monday">Monday</option>
+                                <option value="2" data-i18n="day_tuesday">Tuesday</option>
+                                <option value="3" data-i18n="day_wednesday">Wednesday</option>
+                                <option value="4" data-i18n="day_thursday">Thursday</option>
+                                <option value="5" data-i18n="day_friday">Friday</option>
+                                <option value="6" data-i18n="day_saturday">Saturday</option>
+                                <option value="0" data-i18n="day_sunday">Sunday</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1" data-i18n="time_tr">Time (TR time)</label>
+                            <input type="time" id="schedWeeklyTime" value="20:30" class="w-full neon-theme-input px-3 py-2 rounded-lg text-xs outline-none">
+                        </div>
+                    </div>
+
+                    <button onclick="createScheduledPost()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl text-xs font-black uppercase transition" data-i18n="create_scheduled_post_btn">Create</button>
+                </div>
+
+                <div id="scheduledPostsList" class="space-y-3"></div>
+            </div>
+            <div id="scheduledPostsDeniedMsg" class="text-center py-20 text-slate-500 font-bold text-sm tracking-widest uppercase" style="display: none;" data-i18n="unauthorized">Unauthorized Access.</div>
+        </div>
     </main>
 
     <!-- İşlem Kaydı / Kim Online: tüm yetkililer (sadece admin değil) görebilir -->
@@ -809,6 +889,7 @@
                 msg_cooldown: "Please wait {s} more second(s) before sending another message.", audit_log_title: "📜 Audit Log", no_audit_logs: "No actions logged yet.", delete_room_confirm: "Delete this room and all its messages? This cannot be undone.", player_search_placeholder: "🔍 Search player...", accepted: "Accepted", declined: "Declined", tentative: "Tentative", plan_channels_title: "📡 Discord Channels for this Event", plan_channels_none: "No channels configured yet — add some in Management first.",
                 edit: "Edit", discord_bot_settings: "🤖 Discord Bot Settings", discord_bot_settings_note: "These notifications are sent by the bot to every channel added on the right.", share_to_discord: "📤 Share to Discord", select_channels_for_share: "Select which channel(s) to post this to:", share_now: "Share", share_success: "Shared to Discord!", share_fail: "Failed to share.", who_online_title: "🟢 Who's Online", no_one_online: "No one else is online right now.", currently_viewing: "viewing", dkp_loot_log_title: "💰 DKP / Loot Changes", bot_shares_log_title: "📡 Bot Shares", other_actions_log_title: "📋 Other Actions", share_to_discord_prompt: "PNG downloaded! Would you also like to share it to Discord?", dkp_report_caption: "Raid DKP / Loot Report",
                 you: "you", also_editing: "Also viewing this plan",
+                tab_scheduledposts: "⏰ Scheduled Posts", scheduled_posts_title: "⏰ Scheduled Posts", scheduled_posts_desc: "These run on the server, even if no one has the site open. Note: the image must be a fixed link (e.g. an already-uploaded picture) — a live screenshot of the site cannot be generated automatically here.", create_scheduled_post: "+ Create New Scheduled Post", label_for_yourself: "Label (for yourself)", image_url_optional: "Image URL (optional)", message_text: "Message Text", target_channels: "Target Channels", schedule_type: "Schedule Type", sched_type_once: "Once", sched_type_interval_count: "Repeat N times (every X hours)", sched_type_interval_forever: "Repeat forever (every X hours)", sched_type_weekly: "Weekly (specific day + time, TR time)", date_time_tr: "Date & Time (TR time)", every_x_hours: "Every X hours", repeat_count: "How many times", day_of_week: "Day of Week", day_monday: "Monday", day_tuesday: "Tuesday", day_wednesday: "Wednesday", day_thursday: "Thursday", day_friday: "Friday", day_saturday: "Saturday", day_sunday: "Sunday", time_tr: "Time (TR time)", create_scheduled_post_btn: "Create", scheduled_post_created: "Scheduled post created.", no_scheduled_posts: "No scheduled posts yet.", active: "Active", paused_or_done: "Paused / Done", next_fire: "Next", fired_count: "Sent", pause: "Pause", resume: "Resume", delete_scheduled_post_confirm: "Delete this scheduled post? This cannot be undone.", every: "every", hours_short: "h",
                 online_now_title: "🟢 Online Now", category_dkp_loot: "💰 DKP / Loot Changes", category_discord_bot: "📢 Discord Bot Shares", category_general: "⚙️ General", no_one_online: "No one online right now.",
                 delete_ann_confirm: "Delete this announcement completely? This will remove the message from Discord and delete it from the site entirely — this cannot be undone.", delete_ann_success: "Announcement deleted from Discord and the site.", delete_ann_fail: "Failed to delete."
             },
@@ -855,6 +936,7 @@
                 msg_cooldown: "Başka bir mesaj göndermeden önce {s} saniye daha bekle.", audit_log_title: "📜 İşlem Kaydı", no_audit_logs: "Henüz kayıtlı bir işlem yok.", delete_room_confirm: "Bu oda ve içindeki tüm mesajlar silinsin mi? Bu işlem geri alınamaz.", player_search_placeholder: "🔍 Oyuncu ara...", accepted: "Katılıyor", declined: "Katılmıyor", tentative: "Belki", plan_channels_title: "📡 Bu Etkinlik İçin Discord Kanalları", plan_channels_none: "Henüz kanal eklenmemiş — önce Yönetim'den ekle.",
                 edit: "Düzenle", discord_bot_settings: "🤖 Discord Bot Ayarları", discord_bot_settings_note: "Bu bildirimler, bot tarafından sağdaki tüm kanallara gönderilir.", share_to_discord: "📤 Discord'a Paylaş", select_channels_for_share: "Bunu hangi kanal(lar)a paylaşmak istersin:", share_now: "Paylaş", share_success: "Discord'a paylaşıldı!", share_fail: "Paylaşılamadı.", who_online_title: "🟢 Kim Online", no_one_online: "Şu an başka kimse online değil.", currently_viewing: "şurada", dkp_loot_log_title: "💰 DKP / Loot Değişiklikleri", bot_shares_log_title: "📡 Bot Paylaşımları", other_actions_log_title: "📋 Diğer İşlemler", share_to_discord_prompt: "PNG indirildi! Bunu Discord'a da paylaşmak ister misin?", dkp_report_caption: "Raid DKP / Loot Raporu",
                 you: "sen", also_editing: "Bu planı görüntüleyen diğerleri",
+                tab_scheduledposts: "⏰ Zamanlanmış Paylaşımlar", scheduled_posts_title: "⏰ Zamanlanmış Paylaşımlar", scheduled_posts_desc: "Bunlar sunucu tarafında çalışır, kimse siteyi açık tutmasa bile. Not: görsel sabit bir link olmalı (örn. daha önce yüklenmiş bir resim) — sitenin anlık görüntüsü burada otomatik oluşturulamaz.", create_scheduled_post: "+ Yeni Zamanlanmış Paylaşım Oluştur", label_for_yourself: "Etiket (kendine not)", image_url_optional: "Görsel Linki (opsiyonel)", message_text: "Mesaj Metni", target_channels: "Hedef Kanallar", schedule_type: "Zamanlama Tipi", sched_type_once: "Bir kez", sched_type_interval_count: "Belirli sayıda tekrarla (X saatte bir)", sched_type_interval_forever: "Süresiz tekrarla (X saatte bir)", sched_type_weekly: "Haftalık (belirli gün + saat, TR saati)", date_time_tr: "Tarih & Saat (TR saati)", every_x_hours: "Kaç saatte bir", repeat_count: "Kaç kez", day_of_week: "Haftanın Günü", day_monday: "Pazartesi", day_tuesday: "Salı", day_wednesday: "Çarşamba", day_thursday: "Perşembe", day_friday: "Cuma", day_saturday: "Cumartesi", day_sunday: "Pazar", time_tr: "Saat (TR saati)", create_scheduled_post_btn: "Oluştur", scheduled_post_created: "Zamanlanmış paylaşım oluşturuldu.", no_scheduled_posts: "Henüz zamanlanmış bir paylaşım yok.", active: "Aktif", paused_or_done: "Duraklatıldı / Bitti", next_fire: "Sıradaki", fired_count: "Gönderilen", pause: "Duraklat", resume: "Devam Ettir", delete_scheduled_post_confirm: "Bu zamanlanmış paylaşım silinsin mi? Bu işlem geri alınamaz.", every: "her", hours_short: "sa",
                 online_now_title: "🟢 Şu An Online", category_dkp_loot: "💰 DKP / Loot Değişiklikleri", category_discord_bot: "📢 Discord Bot Paylaşımları", category_general: "⚙️ Genel", no_one_online: "Şu an online kimse yok."
             },
             de: { 
@@ -900,6 +982,7 @@
                 msg_cooldown: "Bitte warte noch {s} Sekunde(n), bevor du eine weitere Nachricht sendest.", audit_log_title: "📜 Protokoll", no_audit_logs: "Noch keine Aktionen protokolliert.", delete_room_confirm: "Diesen Raum und alle Nachrichten löschen? Kann nicht rückgängig gemacht werden.", player_search_placeholder: "🔍 Spieler suchen...", accepted: "Zugesagt", declined: "Abgesagt", tentative: "Unsicher", plan_channels_title: "📡 Discord-Kanäle für dieses Event", plan_channels_none: "Noch keine Kanäle konfiguriert — zuerst in der Verwaltung hinzufügen.",
                 edit: "Bearbeiten", discord_bot_settings: "🤖 Discord-Bot-Einstellungen", discord_bot_settings_note: "Diese Benachrichtigungen werden vom Bot an alle rechts hinzugefügten Kanäle gesendet.", share_to_discord: "📤 Auf Discord teilen", select_channels_for_share: "Wähle die Kanäle für diesen Beitrag:", share_now: "Teilen", share_success: "Auf Discord geteilt!", share_fail: "Teilen fehlgeschlagen.", who_online_title: "🟢 Wer ist online", no_one_online: "Gerade ist niemand sonst online.", currently_viewing: "auf", dkp_loot_log_title: "💰 DKP-/Loot-Änderungen", bot_shares_log_title: "📡 Bot-Beiträge", other_actions_log_title: "📋 Weitere Aktionen", share_to_discord_prompt: "PNG heruntergeladen! Möchtest du es auch auf Discord teilen?", dkp_report_caption: "Raid-DKP-/Loot-Bericht",
                 you: "du", also_editing: "Auch gerade hier",
+                tab_scheduledposts: "⏰ Geplante Beiträge", scheduled_posts_title: "⏰ Geplante Beiträge", scheduled_posts_desc: "Diese laufen auf dem Server, selbst wenn niemand die Website geöffnet hat. Hinweis: Das Bild muss ein fester Link sein (z.B. ein bereits hochgeladenes Bild) — ein Live-Screenshot der Website kann hier nicht automatisch erstellt werden.", create_scheduled_post: "+ Neuen geplanten Beitrag erstellen", label_for_yourself: "Bezeichnung (für dich selbst)", image_url_optional: "Bild-URL (optional)", message_text: "Nachrichtentext", target_channels: "Zielkanäle", schedule_type: "Zeitplan-Typ", sched_type_once: "Einmalig", sched_type_interval_count: "N-mal wiederholen (alle X Stunden)", sched_type_interval_forever: "Endlos wiederholen (alle X Stunden)", sched_type_weekly: "Wöchentlich (bestimmter Tag + Uhrzeit, TR-Zeit)", date_time_tr: "Datum & Uhrzeit (TR-Zeit)", every_x_hours: "Alle X Stunden", repeat_count: "Wie oft", day_of_week: "Wochentag", day_monday: "Montag", day_tuesday: "Dienstag", day_wednesday: "Mittwoch", day_thursday: "Donnerstag", day_friday: "Freitag", day_saturday: "Samstag", day_sunday: "Sonntag", time_tr: "Uhrzeit (TR-Zeit)", create_scheduled_post_btn: "Erstellen", scheduled_post_created: "Geplanter Beitrag erstellt.", no_scheduled_posts: "Noch keine geplanten Beiträge.", active: "Aktiv", paused_or_done: "Pausiert / Fertig", next_fire: "Nächster", fired_count: "Gesendet", pause: "Pausieren", resume: "Fortsetzen", delete_scheduled_post_confirm: "Diesen geplanten Beitrag löschen? Kann nicht rückgängig gemacht werden.", every: "alle", hours_short: "Std",
                 online_now_title: "🟢 Gerade online", category_dkp_loot: "💰 DKP-/Loot-Änderungen", category_discord_bot: "📢 Discord-Bot-Beiträge", category_general: "⚙️ Allgemein", no_one_online: "Gerade niemand online."
             },
             fr: { 
@@ -945,6 +1028,7 @@
                 msg_cooldown: "Veuillez attendre encore {s} seconde(s) avant d'envoyer un autre message.", audit_log_title: "📜 Journal d'activité", no_audit_logs: "Aucune action enregistrée pour l'instant.", delete_room_confirm: "Supprimer ce salon et tous ses messages ? Irréversible.", player_search_placeholder: "🔍 Rechercher un joueur...", accepted: "Accepté", declined: "Refusé", tentative: "Incertain", plan_channels_title: "📡 Canaux Discord pour cet événement", plan_channels_none: "Aucun canal configuré — ajoutez-en d'abord dans Gestion.",
                 edit: "Modifier", discord_bot_settings: "🤖 Paramètres du Bot Discord", discord_bot_settings_note: "Ces notifications sont envoyées par le bot à tous les canaux ajoutés à droite.", share_to_discord: "📤 Partager sur Discord", select_channels_for_share: "Choisissez le(s) canal/canaux pour ce partage :", share_now: "Partager", share_success: "Partagé sur Discord !", share_fail: "Échec du partage.", who_online_title: "🟢 Qui est en ligne", no_one_online: "Personne d'autre n'est en ligne actuellement.", currently_viewing: "sur", dkp_loot_log_title: "💰 Modifications DKP / Loot", bot_shares_log_title: "📡 Partages du Bot", other_actions_log_title: "📋 Autres actions", share_to_discord_prompt: "PNG téléchargé ! Voulez-vous aussi le partager sur Discord ?", dkp_report_caption: "Rapport DKP / Loot du Raid",
                 you: "toi", also_editing: "Également ici",
+                tab_scheduledposts: "⏰ Publications Planifiées", scheduled_posts_title: "⏰ Publications Planifiées", scheduled_posts_desc: "Celles-ci s'exécutent sur le serveur, même si personne n'a le site ouvert. Remarque : l'image doit être un lien fixe (ex. une image déjà téléchargée) — une capture d'écran en direct du site ne peut pas être générée automatiquement ici.", create_scheduled_post: "+ Créer une nouvelle publication planifiée", label_for_yourself: "Étiquette (pour vous-même)", image_url_optional: "URL de l'image (optionnel)", message_text: "Texte du message", target_channels: "Canaux cibles", schedule_type: "Type de planification", sched_type_once: "Une fois", sched_type_interval_count: "Répéter N fois (toutes les X heures)", sched_type_interval_forever: "Répéter indéfiniment (toutes les X heures)", sched_type_weekly: "Hebdomadaire (jour + heure précis, heure TR)", date_time_tr: "Date et heure (heure TR)", every_x_hours: "Toutes les X heures", repeat_count: "Combien de fois", day_of_week: "Jour de la semaine", day_monday: "Lundi", day_tuesday: "Mardi", day_wednesday: "Mercredi", day_thursday: "Jeudi", day_friday: "Vendredi", day_saturday: "Samedi", day_sunday: "Dimanche", time_tr: "Heure (heure TR)", create_scheduled_post_btn: "Créer", scheduled_post_created: "Publication planifiée créée.", no_scheduled_posts: "Aucune publication planifiée pour l'instant.", active: "Active", paused_or_done: "En pause / Terminée", next_fire: "Prochaine", fired_count: "Envoyées", pause: "Pause", resume: "Reprendre", delete_scheduled_post_confirm: "Supprimer cette publication planifiée ? Irréversible.", every: "toutes les", hours_short: "h",
                 online_now_title: "🟢 En ligne actuellement", category_dkp_loot: "💰 Changements DKP / Loot", category_discord_bot: "📢 Partages du bot Discord", category_general: "⚙️ Général", no_one_online: "Personne en ligne actuellement."
             },
             ar: { 
@@ -990,6 +1074,7 @@
                 msg_cooldown: "يرجى الانتظار {s} ثانية إضافية قبل إرسال رسالة أخرى.", audit_log_title: "📜 سجل الإجراءات", no_audit_logs: "لا توجد إجراءات مسجلة بعد.", delete_room_confirm: "هل تريد حذف هذه الغرفة وجميع رسائلها؟ لا يمكن التراجع عن هذا.", player_search_placeholder: "🔍 البحث عن لاعب...", accepted: "موافق", declined: "غير موافق", tentative: "ربما", plan_channels_title: "📡 قنوات ديسكورد لهذا الحدث", plan_channels_none: "لا توجد قنوات مهيأة بعد — أضف بعضها في الإدارة أولاً.",
                 edit: "تعديل", discord_bot_settings: "🤖 إعدادات بوت ديسكورد", discord_bot_settings_note: "يتم إرسال هذه الإشعارات بواسطة البوت إلى جميع القنوات المضافة على اليمين.", share_to_discord: "📤 مشاركة على ديسكورد", select_channels_for_share: "اختر القناة/القنوات لمشاركة هذا:", share_now: "مشاركة", share_success: "تمت المشاركة على ديسكورد!", share_fail: "فشلت المشاركة.", who_online_title: "🟢 من متصل الآن", no_one_online: "لا يوجد أحد آخر متصل حاليًا.", currently_viewing: "في", dkp_loot_log_title: "💰 تغييرات DKP / الغنائم", bot_shares_log_title: "📡 مشاركات البوت", other_actions_log_title: "📋 إجراءات أخرى", share_to_discord_prompt: "تم تنزيل PNG! هل تريد مشاركته على ديسكورد أيضًا؟", dkp_report_caption: "تقرير DKP / الغنائم للمداهمة",
                 you: "أنت", also_editing: "متواجدون أيضًا هنا",
+                tab_scheduledposts: "⏰ المنشورات المجدولة", scheduled_posts_title: "⏰ المنشورات المجدولة", scheduled_posts_desc: "تعمل هذه على الخادم، حتى لو لم يكن أحد قد فتح الموقع. ملاحظة: يجب أن تكون الصورة رابطًا ثابتًا (مثل صورة تم رفعها مسبقًا) — لا يمكن إنشاء لقطة شاشة حية للموقع تلقائيًا هنا.", create_scheduled_post: "+ إنشاء منشور مجدول جديد", label_for_yourself: "تسمية (لنفسك)", image_url_optional: "رابط الصورة (اختياري)", message_text: "نص الرسالة", target_channels: "القنوات المستهدفة", schedule_type: "نوع الجدولة", sched_type_once: "مرة واحدة", sched_type_interval_count: "تكرار N مرة (كل X ساعة)", sched_type_interval_forever: "تكرار بلا نهاية (كل X ساعة)", sched_type_weekly: "أسبوعي (يوم ووقت محددان، بتوقيت تركيا)", date_time_tr: "التاريخ والوقت (بتوقيت تركيا)", every_x_hours: "كل X ساعة", repeat_count: "كم مرة", day_of_week: "يوم الأسبوع", day_monday: "الاثنين", day_tuesday: "الثلاثاء", day_wednesday: "الأربعاء", day_thursday: "الخميس", day_friday: "الجمعة", day_saturday: "السبت", day_sunday: "الأحد", time_tr: "الوقت (بتوقيت تركيا)", create_scheduled_post_btn: "إنشاء", scheduled_post_created: "تم إنشاء المنشور المجدول.", no_scheduled_posts: "لا توجد منشورات مجدولة بعد.", active: "نشط", paused_or_done: "متوقف مؤقتًا / منتهٍ", next_fire: "التالي", fired_count: "تم الإرسال", pause: "إيقاف مؤقت", resume: "استئناف", delete_scheduled_post_confirm: "هل تريد حذف هذا المنشور المجدول؟ لا يمكن التراجع عن هذا.", every: "كل", hours_short: "س",
                 online_now_title: "🟢 متصل الآن", category_dkp_loot: "💰 تغييرات DKP / الغنائم", category_discord_bot: "📢 مشاركات بوت ديسكورد", category_general: "⚙️ عام", no_one_online: "لا يوجد أحد متصل الآن."
             }
         };
@@ -1053,6 +1138,7 @@
         let rolesData = {}; // Yetki verilmiş kullanıcılar (admin/officer) - Firebase 'Roles' yolundan (UID -> {role, name})
         let pendingUsersData = {}; // Google ile giriş yapmış ama henüz yetkisi olmayan kullanıcılar - 'PendingUsers' yolundan
         let userCardsData = {}; // Kullanıcı kartları (telefon/e-posta, sadece admin) - Firebase 'UserCards' yolundan
+        let scheduledPostsData = {}; // Zamanlanmış Discord paylaşımları - Firebase 'ScheduledPosts' yolundan
         let presenceData = {}; // Kim online, hangi sayfada - Firebase 'Presence' yolundan (sadece Google ile giriş yapanlar)
         let currentFirebaseUser = null; // Şu an giriş yapmış Google/Firebase kullanıcı nesnesi
 
@@ -1197,6 +1283,10 @@
                         db.ref('UserCards').on('value', (snapshot) => {
                             userCardsData = snapshot.val() || {};
                             if (activeTab === 'discordlink' && currentUser.role === 'admin') renderUserCards();
+                        });
+                        db.ref('ScheduledPosts').on('value', (snapshot) => {
+                            scheduledPostsData = snapshot.val() || {};
+                            if (activeTab === 'scheduledposts') renderScheduledPostsList();
                         });
                         db.ref('Presence').on('value', (snapshot) => {
                             presenceData = snapshot.val() || {};
@@ -1436,7 +1526,19 @@
 
             const title = titleInput.value.trim();
             const content = contentInput.value.trim();
-            const time = timeInput.value; // datetime-local -> "2026-07-27T21:00"
+            const rawTime = timeInput.value; // datetime-local -> "2026-07-27T21:00" (yanıltıcı: tarayıcıda TR gibi görünür ama sunucuda UTC sanılabilirdi)
+            // ÖNEMLİ: Seçilen tarih/saat HER ZAMAN Türkiye saati (TR, UTC+3, yaz saati yok) kabul edilip,
+            // kesin bir UTC zaman damgasına çevriliyor — böylece sunucu tarafında (Cloudflare Worker, UTC
+            // ortamında çalışır) yanlışlıkla UTC olarak yorumlanıp saatin 3 saat kayması engelleniyor.
+            let time = null;
+            if (rawTime) {
+                const [datePart, timePart] = rawTime.split('T');
+                const [y, mo, d] = datePart.split('-').map(Number);
+                const [hh, mm] = timePart.split(':').map(Number);
+                const TR_OFFSET_MS = 3 * 60 * 60 * 1000;
+                const utcMs = Date.UTC(y, mo - 1, d, hh, mm, 0) - TR_OFFSET_MS;
+                time = new Date(utcMs).toISOString();
+            }
             const channelId = channelSelect ? channelSelect.value : '';
 
             if (!title || !content) {
@@ -1496,6 +1598,152 @@
         // Plan editöründeki "Bağlı Discord Duyurusu" dropdown'ını doldurur ve RSVP özetini gösterir.
         // Etkinlik Planı'nın istediği kadar Discord kanalına (bot üzerinden) gönderilebilmesi için
         // kanal seçim kutucuklarını çizer. Seçimler plan.discordChannelIds dizisinde saklanır.
+        // ============ ZAMANLANMIŞ PAYLAŞIMLAR (⏰ Scheduled Posts) ============
+        // ÖNEMLİ: Bu paylaşımlar Cloudflare'nin sunucu tarafındaki "Cron Trigger" özelliğiyle,
+        // kimse siteyi açık tutmasa bile HER DAKİKA kontrol edilip zamanı gelenler gönderiliyor.
+        // Görsel burada sadece bir LİNK olabilir (site ekranının anlık görüntüsü otomatik alınamaz).
+
+        // Türkiye kalıcı olarak UTC+3'te (yaz saati yok) — worker.js'deki AYNI mantığın istemci tarafı kopyası.
+        const TR_OFFSET_MS_CLIENT = 3 * 60 * 60 * 1000;
+        function computeNextWeeklyFireUTCClient(dayOfWeek, hh, mm, fromUTCms) {
+            const trShifted = new Date(fromUTCms + TR_OFFSET_MS_CLIENT);
+            const curDay = trShifted.getUTCDay();
+            let daysUntil = (dayOfWeek - curDay + 7) % 7;
+            const candidate = new Date(trShifted);
+            candidate.setUTCDate(candidate.getUTCDate() + daysUntil);
+            candidate.setUTCHours(hh, mm, 0, 0);
+            let candidateUTCms = candidate.getTime() - TR_OFFSET_MS_CLIENT;
+            if (candidateUTCms <= fromUTCms) candidateUTCms += 7 * 24 * 60 * 60 * 1000;
+            return candidateUTCms;
+        }
+
+        function renderSchedPostChannels() {
+            const container = document.getElementById('schedPostChannels');
+            if (!container) return;
+            const channels = cloudData.discordChannels || [];
+            if (channels.length === 0) {
+                container.innerHTML = `<p class="text-[10px] text-slate-500 italic">${t("plan_channels_none")}</p>`;
+                return;
+            }
+            container.innerHTML = channels.map(ch => `<label class="flex items-center gap-1.5 bg-slate-950 border border-slate-800 px-2.5 py-1.5 rounded-lg cursor-pointer text-[10px] text-slate-300">
+                <input type="checkbox" value="${ch.id}" class="sched-post-channel-checkbox w-3 h-3 cursor-pointer accent-indigo-500">
+                ${ch.name}
+            </label>`).join('');
+        }
+
+        function renderSchedTypeFields() {
+            const type = document.getElementById('schedPostType').value;
+            document.getElementById('schedFieldsOnce').classList.toggle('hidden', type !== 'once');
+            document.getElementById('schedFieldsInterval').classList.toggle('hidden', type !== 'interval_count' && type !== 'interval_forever');
+            document.getElementById('schedFieldsWeekly').classList.toggle('hidden', type !== 'weekly');
+            const repeatWrap = document.getElementById('schedRepeatCountWrap');
+            if (repeatWrap) repeatWrap.style.display = (type === 'interval_count') ? '' : 'none';
+        }
+
+        function createScheduledPost() {
+            if (currentUser.role === 'visitor') return;
+            const title = document.getElementById('schedPostTitle').value.trim();
+            const content = document.getElementById('schedPostContent').value.trim();
+            const imageUrl = document.getElementById('schedPostImageUrl').value.trim();
+            const channelIds = Array.from(document.querySelectorAll('.sched-post-channel-checkbox:checked')).map(cb => cb.value);
+            const type = document.getElementById('schedPostType').value;
+
+            if (!content) return showCustomAlert(t("discordann_missing_fields"), t("info"), "❌");
+            if (channelIds.length === 0) return showCustomAlert(t("discord_channels_select_missing"), t("info"), "❌");
+
+            const now = Date.now();
+            const post = { title: title || content.substring(0, 30), content, imageUrl: imageUrl || null, channelIds, scheduleType: type, active: true, createdBy: currentUser.username, createdAt: now, firedCount: 0, lastFiredAt: null };
+
+            if (type === 'once') {
+                const dt = document.getElementById('schedOnceDateTime').value;
+                if (!dt) return showCustomAlert(t("discordann_missing_fields"), t("info"), "❌");
+                // datetime-local girişi TR saatiyle giriliyor kabul ediliyor (tarayıcı yerel saatinden bağımsız, sabit TR ofsetiyle hesaplanıyor).
+                const [datePart, timePart] = dt.split('T');
+                const [y, mo, d] = datePart.split('-').map(Number);
+                const [hh, mm] = timePart.split(':').map(Number);
+                const asUTC = Date.UTC(y, mo - 1, d, hh, mm, 0) - TR_OFFSET_MS_CLIENT;
+                post.nextFireAt = asUTC;
+            } else if (type === 'interval_count' || type === 'interval_forever') {
+                const hours = parseInt(document.getElementById('schedIntervalHours').value) || 24;
+                post.intervalHours = hours;
+                if (type === 'interval_count') post.repeatCount = parseInt(document.getElementById('schedRepeatCount').value) || 1;
+                post.nextFireAt = now + hours * 3600000; // ilk gönderim, oluşturulduktan X saat sonra
+            } else if (type === 'weekly') {
+                const dayOfWeek = parseInt(document.getElementById('schedWeeklyDay').value);
+                const timeVal = document.getElementById('schedWeeklyTime').value || '20:30';
+                const [hh, mm] = timeVal.split(':').map(Number);
+                post.dayOfWeek = dayOfWeek; post.hour = hh; post.minute = mm;
+                post.nextFireAt = computeNextWeeklyFireUTCClient(dayOfWeek, hh, mm, now);
+            }
+
+            const postId = 'sched_' + now;
+            firebase.database().ref('ScheduledPosts/' + postId).set(post).then(() => {
+                logAudit(`Zamanlanmış paylaşım oluşturuldu: ${post.title}`);
+                showCustomAlert(t("scheduled_post_created"), t("success"), "⏰");
+                document.getElementById('schedPostTitle').value = '';
+                document.getElementById('schedPostContent').value = '';
+                document.getElementById('schedPostImageUrl').value = '';
+            }).catch(e => showCustomAlert('Hata: ' + e.message, t("info"), "❌"));
+        }
+
+        function renderScheduledPostsList() {
+            const container = document.getElementById('scheduledPostsList');
+            if (!container) return;
+            const entries = Object.entries(scheduledPostsData || {}).sort((a, b) => (b[1].createdAt || 0) - (a[1].createdAt || 0));
+            if (entries.length === 0) {
+                container.innerHTML = `<p class="text-[11px] text-slate-500 italic text-center py-6">${t("no_scheduled_posts")}</p>`;
+                return;
+            }
+
+            const typeLabels = { once: t('sched_type_once'), interval_count: t('sched_type_interval_count'), interval_forever: t('sched_type_interval_forever'), weekly: t('sched_type_weekly') };
+            const dayLabels = { 0: t('day_sunday'), 1: t('day_monday'), 2: t('day_tuesday'), 3: t('day_wednesday'), 4: t('day_thursday'), 5: t('day_friday'), 6: t('day_saturday') };
+
+            container.innerHTML = entries.map(([id, p]) => {
+                const nextStr = p.nextFireAt ? new Date(p.nextFireAt).toLocaleString('tr-TR') : '—';
+                const scheduleDetail = p.scheduleType === 'weekly' ? `${dayLabels[p.dayOfWeek]} ${String(p.hour).padStart(2,'0')}:${String(p.minute).padStart(2,'0')} (TR)` : (p.scheduleType === 'once' ? '' : `${t('every')} ${p.intervalHours}${t('hours_short')}`);
+                const statusBadge = p.active
+                    ? `<span class="text-[8px] font-black uppercase bg-emerald-950 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-700">${t('active')}</span>`
+                    : `<span class="text-[8px] font-black uppercase bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full border border-slate-700">${t('paused_or_done')}</span>`;
+                return `<div class="neon-theme-box p-4 rounded-2xl">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <div class="text-sm font-black text-white">${p.title}</div>
+                            <div class="text-[10px] text-slate-500">${typeLabels[p.scheduleType]} ${scheduleDetail ? '· ' + scheduleDetail : ''}</div>
+                        </div>
+                        ${statusBadge}
+                    </div>
+                    <p class="text-xs text-slate-300 bg-slate-950 p-2 rounded-lg border border-slate-800/50 whitespace-pre-wrap mb-2">${p.content}</p>
+                    <div class="flex justify-between items-center text-[10px] text-slate-500">
+                        <span>${t('next_fire')}: <span class="text-cyan-400 font-bold">${p.active ? nextStr : '—'}</span> · ${t('fired_count')}: ${p.firedCount || 0}</span>
+                        <div class="flex gap-1.5">
+                            <button onclick="toggleScheduledPost('${id}', ${!p.active})" class="text-[9px] bg-slate-800 text-slate-300 border border-slate-700 px-2 py-1 rounded hover:bg-slate-600 transition font-black uppercase">${p.active ? t('pause') : t('resume')}</button>
+                            <button onclick="deleteScheduledPost('${id}')" class="text-[9px] bg-red-950/50 text-red-400 border border-red-800 px-2 py-1 rounded hover:bg-red-600 hover:text-white transition font-black uppercase">${t('delete')}</button>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function toggleScheduledPost(id, makeActive) {
+            if (currentUser.role === 'visitor') return;
+            const updates = { active: makeActive };
+            // Duraklatılmış bir paylaşım devam ettirilince, geçmişte kalmış bir zamanla anında ateşlenmesin diye sonraki zamanı yeniden hesapla.
+            if (makeActive) {
+                const p = scheduledPostsData[id];
+                const now = Date.now();
+                if (p.scheduleType === 'weekly') updates.nextFireAt = computeNextWeeklyFireUTCClient(p.dayOfWeek, p.hour, p.minute, now);
+                else if (p.scheduleType !== 'once') updates.nextFireAt = now + (p.intervalHours || 24) * 3600000;
+            }
+            firebase.database().ref('ScheduledPosts/' + id).update(updates).catch(e => console.error('toggleScheduledPost error:', e));
+        }
+
+        function deleteScheduledPost(id) {
+            if (currentUser.role === 'visitor') return;
+            showCustomConfirm(t("delete_scheduled_post_confirm"), () => {
+                firebase.database().ref('ScheduledPosts/' + id).remove().then(() => logAudit('Zamanlanmış paylaşım silindi.')).catch(e => console.error('deleteScheduledPost error:', e));
+            }, t("confirm"), "🗑️");
+        }
+
         function renderPlanChannelsCheckboxes(plan) {
             const container = document.getElementById('planChannelsCheckboxes');
             if (!container) return;
@@ -1929,7 +2177,7 @@
 
         
         function applyPermissions() { document.body.classList.remove('admin-mode', 'officer-mode'); const badge = document.getElementById('userRoleBadge'); document.getElementById('loginBtn').classList.remove('hidden'); document.getElementById('logoutBtn').classList.add('hidden'); document.getElementById('editModeBtn').classList.add('hidden'); if(currentUser.role !== 'visitor') { document.getElementById('loginBtn').classList.add('hidden'); document.getElementById('logoutBtn').classList.remove('hidden'); } if(currentUser.role === 'admin') { document.body.classList.add('admin-mode'); document.getElementById('editModeBtn').classList.remove('hidden'); if(badge) { currentUser.username = t("admin_role"); badge.className = "text-[9px] font-black uppercase tracking-widest text-white bg-red-900 border border-red-500 px-2 py-0.5 rounded"; badge.innerText = currentUser.username; } } else if (currentUser.role === 'officer') { document.body.classList.add('officer-mode'); if(badge) { badge.className = "text-[9px] font-black uppercase tracking-widest text-slate-900 bg-amber-400 border border-amber-600 px-2 py-0.5 rounded"; badge.innerText = currentUser.username; } } else { if(badge) { badge.className = "text-[9px] font-black uppercase tracking-widest text-slate-500 bg-slate-900 border border-slate-700 px-2 py-0.5 rounded"; badge.innerText = t("visitor"); } } const sb = document.getElementById('raidSidebar'); if(activeTab === 'raid' && currentUser.role !== 'visitor') { sb.style.display = 'flex'; document.body.classList.add('sidebar-active'); } else { sb.style.display = 'none'; document.body.classList.remove('sidebar-active'); } }
-        function switchTab(tabId) { activeTab = tabId; document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active')); document.getElementById(`page-${tabId}`).classList.add('active'); document.getElementById(`tab-${tabId}`).classList.add('active'); if (tabId === 'admin') { if (currentUser.role !== 'admin') { document.getElementById('accessDeniedMsg').style.display = 'block'; } else { document.getElementById('accessDeniedMsg').style.display = 'none'; } } if (tabId === 'discordann') { if (currentUser.role === 'visitor') { document.getElementById('discordAnnDeniedMsg').style.display = 'block'; } else { document.getElementById('discordAnnDeniedMsg').style.display = 'none'; renderDiscordAnnouncementsList(); renderDiscordAnnChannelSelect(); } } if (tabId === 'discordlink') { if (currentUser.role === 'visitor') { document.getElementById('discordLinkDeniedMsg').style.display = 'block'; } else { document.getElementById('discordLinkDeniedMsg').style.display = 'none'; renderDiscordLinkTable(); if (currentUser.role === 'admin') renderUserCards(); } } applyPermissions(); updatePresence(); }
+        function switchTab(tabId) { activeTab = tabId; document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active')); document.getElementById(`page-${tabId}`).classList.add('active'); document.getElementById(`tab-${tabId}`).classList.add('active'); if (tabId === 'admin') { if (currentUser.role !== 'admin') { document.getElementById('accessDeniedMsg').style.display = 'block'; } else { document.getElementById('accessDeniedMsg').style.display = 'none'; } } if (tabId === 'discordann') { if (currentUser.role === 'visitor') { document.getElementById('discordAnnDeniedMsg').style.display = 'block'; } else { document.getElementById('discordAnnDeniedMsg').style.display = 'none'; renderDiscordAnnouncementsList(); renderDiscordAnnChannelSelect(); } } if (tabId === 'discordlink') { if (currentUser.role === 'visitor') { document.getElementById('discordLinkDeniedMsg').style.display = 'block'; } else { document.getElementById('discordLinkDeniedMsg').style.display = 'none'; renderDiscordLinkTable(); if (currentUser.role === 'admin') renderUserCards(); } } if (tabId === 'scheduledposts') { if (currentUser.role === 'visitor') { document.getElementById('scheduledPostsDeniedMsg').style.display = 'block'; } else { document.getElementById('scheduledPostsDeniedMsg').style.display = 'none'; renderSchedPostChannels(); renderSchedTypeFields(); renderScheduledPostsList(); } } applyPermissions(); updatePresence(); }
         
         function toggleEditMode() { if(currentUser.role !== 'admin') return; isEditMode = !isEditMode; document.body.classList.toggle('edit-mode-active', isEditMode); const statusSpan = document.getElementById('editModeStatus'); const ed = document.getElementById('announcementEditor'); const tbar = document.getElementById('editorToolbar'); if(isEditMode) { statusSpan.innerText = t("on"); statusSpan.className = 'text-emerald-400'; ed.setAttribute('contenteditable','true'); tbar.classList.remove('hidden'); tbar.style.display = 'flex'; } else { statusSpan.innerText = t("off"); statusSpan.className = 'text-red-500'; ed.setAttribute('contenteditable','false'); tbar.classList.add('hidden'); tbar.style.display = 'none'; } }
         function handleTitleClick(e, key) { if(!isEditMode || currentUser.role !== 'admin') return; e.preventDefault(); e.stopPropagation(); openTitleEdit(key); }
@@ -2337,6 +2585,41 @@
         function renderLogs() { document.getElementById('rollLogs').innerHTML=cloudData.rolls.map(log=>`<div class="bg-slate-900/40 p-3 border border-slate-800 rounded-xl flex justify-between items-center text-[10px] shadow-sm"><div class="flex-1"><span class="text-purple-400 font-black uppercase text-[11px]" style="font-family:Georgia,serif;">${log.winner}</span> <span class="text-slate-400 bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800 ml-2">Roll: ${log.score}</span></div><div class="flex items-center gap-2"><span class="text-slate-600 font-mono text-[8px]">${log.time||''}</span>${currentUser.role==='admin'?`<button onclick="delLog('r',${log.id})" class="text-[8px] text-slate-500 hover:text-red-500 font-bold transition">Delete</button>`:''}</div></div>`).join(''); document.getElementById('raidHistory').innerHTML=cloudData.history.map(h=>`<div class="bg-slate-900/40 p-4 border border-slate-800 rounded-xl flex flex-col gap-2 shadow-sm text-[10px]"><div class="flex justify-between items-center border-b border-slate-800 pb-2 mb-1"><span class="text-emerald-500 font-bold font-mono">${h.date}</span>${currentUser.role==='admin'?`<button onclick="delLog('h',${h.id})" class="text-[8px] text-slate-500 hover:text-red-500 font-bold transition">Delete</button>`:''}</div><div class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1">${h.data.map(d=>`<div class="text-[9px] text-slate-400 flex justify-between border-b border-slate-800/50 pb-0.5"><span style="font-family:Georgia,serif;">${d.name}</span> <span class="text-cyan-400 font-bold">${d.dkp}P <span class="text-slate-600 ml-1 font-normal">A:${d.arti} Dc:${d.dragon}</span></span></div>`).join('')}</div></div>`).join(''); }
         function delLog(type,id){if(currentUser.role!=='admin')return; if(type==='r'){cloudData.rolls=cloudData.rolls.filter(x=>x.id!==id);}else{showCustomConfirm('Delete history?',()=>{cloudData.history=cloudData.history.filter(x=>x.id!==id); triggerCloudSave(); renderLogs();},t("confirm"),"🗑️"); return;} triggerCloudSave(); renderLogs();}
 
+        // XML/SVG içine güvenle gömebilmek için özel karakterleri kaçırır.
+        function escapeXmlForSvg(str) {
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        // İsim + rol/sınıf etiketlerini bir SVG görsel olarak üretir (data URI). html2canvas metni
+        // KENDİSİ çizmek yerine bu görseli olduğu gibi çizer — bu yüzden dikey ortalama hatası oluşmaz.
+        function buildSlotContentSVGDataUri(name, pills) {
+            const W = 400, H = 75;
+            const upperName = escapeXmlForSvg(String(name).toUpperCase());
+            const nameY = pills.length > 0 ? 32 : 42;
+
+            let pillsSvg = '';
+            if (pills.length > 0) {
+                const pillWidths = pills.map(p => Math.max(56, p.text.length * 8.2 + 26));
+                const gap = 6;
+                const totalW = pillWidths.reduce((a, b) => a + b, 0) + gap * (pills.length - 1);
+                let curX = (W - totalW) / 2;
+                pills.forEach((p, i) => {
+                    const w = pillWidths[i];
+                    const label = escapeXmlForSvg(p.text.toUpperCase());
+                    pillsSvg += `<rect x="${curX}" y="49" width="${w}" height="21" rx="10.5" fill="${p.color}" fill-opacity="0.44" stroke="${p.color}" stroke-width="2.5"/>
+                        <text x="${curX + w / 2}" y="63.5" font-family="Inter, Arial, sans-serif" font-size="10" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="0.6">${label}</text>`;
+                    curX += w + gap;
+                });
+            }
+
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+                <text x="${W / 2}" y="${nameY}" font-family="Inter, Arial, sans-serif" font-size="23" font-weight="900" fill="#ffffff" text-anchor="middle">${upperName}</text>
+                ${pillsSvg}
+            </svg>`;
+
+            return 'data:image/svg+xml,' + encodeURIComponent(svg);
+        }
+
         const renderSlotHTML = (plr, idx, isExport, isAuth, isDom) => {
     // Boş slotlar
     if(!plr || !plr.name || plr.empty) {
@@ -2355,20 +2638,19 @@
 
     // Karakter çerçevesi rengini önce SINIF'tan alır (yoksa rol renginden).
     const borderColor = (plr.className && DOM_CLASSES[plr.className]) ? DOM_CLASSES[plr.className] : (pills[0] ? pills[0].color : '#64748b');
-    const pillsHtml = pills.map(p => `<span style="display:inline-block; vertical-align:middle; height: 21px; line-height: 21px; border: 2.5px solid ${p.color}; color: #ffffff; background-color: ${p.color}70; border-radius: 9999px; padding: 0 11px; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap; text-shadow: 0 1px 3px rgba(0,0,0,0.9); margin: 0 2px;">${p.text}</span>`).join('');
 
     const dragAttr = (!isExport && isAuth) ? `draggable="true" ondragstart="startPlanDrag(event, ${idx})" ondragend="endPlanDrag(event)" ondragover="allowPlanDrop(event)" ondrop="dropOnPlan(event, ${idx})" ondragenter="enterPlanDrop(event)" ondragleave="leavePlanDrop(event)" class="cursor-grab active:cursor-grabbing plan-slot relative w-full"` : `class="plan-slot relative w-full"`;
     
     const delBtn = (!isExport && isAuth) ? `<button onclick="removeFromPlan(${idx}); event.stopPropagation();" class="absolute -top-2 -right-2 bg-red-950 border border-red-500 text-red-500 hover:bg-red-500 hover:text-white w-5 h-5 md:w-6 md:h-6 rounded-full flex items-center justify-center text-[10px] font-black z-50 transition-colors shadow-lg">✕</button>` : '';
 
-    // ÖNEMLİ: html2canvas modern flexbox'ı tam desteklemiyor, bu yüzden PNG çıktısında ortalama
-    // bozulabiliyor. Bunun yerine tüm tarayıcılarda (ve html2canvas'ta) güvenilir çalışan
-    // display:table / table-cell + vertical-align:middle yöntemini kullanıyoruz.
-    return `<div ${dragAttr} class="bg-[#020617] rounded-xl relative transition-all duration-300 w-full" style="height: 75px; border: 2px solid ${borderColor}; box-shadow: inset 0 0 15px ${borderColor}50; display: table; width: 100%; text-align: center;">
-        <div style="display: table-cell; vertical-align: middle; padding: 4px 10px;">
-            <div class="text-white font-black text-[18px] md:text-[22px] uppercase break-words leading-none" style="font-family:'Inter',sans-serif; text-align: center; margin-bottom: 6px;">${plr.name}</div>
-            <div style="text-align: center; white-space: normal;">${pillsHtml}</div>
-        </div>
+    // ÖNEMLİ: html2canvas'ın KENDİ metin çizim motoru (fillText tabanlı) bilinen, çözülmemiş bir
+    // dikey hizalama hatasına sahip (bkz. github.com/niklasvh/html2canvas #2107, #2937). Bunu tamamen
+    // atlatmak için isim + rol/sınıf etiketlerini canlı HTML metni olarak değil, SVG GÖRSEL olarak
+    // oluşturuyoruz — html2canvas görselleri (kendi metnini değil) güvenilir şekilde çiziyor.
+    const slotImgSrc = buildSlotContentSVGDataUri(plr.name, pills);
+
+    return `<div ${dragAttr} class="bg-[#020617] rounded-xl relative transition-all duration-300 w-full overflow-hidden" style="height: 75px; border: 2px solid ${borderColor}; box-shadow: inset 0 0 15px ${borderColor}50;">
+        <img src="${slotImgSrc}" style="width: 100%; height: 100%; display: block;" alt="${plr.name}">
         ${delBtn}
     </div>`;
 };
