@@ -2564,25 +2564,20 @@
     
     const delBtn = (!isExport && isAuth) ? `<button onclick="removeFromPlan(${idx}); event.stopPropagation();" class="absolute -top-2 -right-2 bg-red-950 border border-red-500 text-red-500 hover:bg-red-500 hover:text-white w-5 h-5 md:w-6 md:h-6 rounded-full flex items-center justify-center text-[10px] font-black z-50 transition-colors shadow-lg">✕</button>` : '';
 
-    // DENEME 5: table-cell + padding-top kombinasyonu html2canvas'ta HİÇ ETKİ YARATMADI (21px'e
-    // rağmen sonuç birebir aynı kaldı) — yani html2canvas bu tabloyu farklı yorumluyor ve o padding'i
-    // yok sayıyor. Daha önce SADE BLOK + padding-top (table-cell OLMADAN) denemesinde gerçek bir görsel
-    // etki olmuştu (o zaman 22px fazla gelmişti). Bu yüzden table-cell'i tamamen bırakıp, kanıtlanmış
-    // sade-blok yöntemine, aradaki dengeyi bulacak bir değerle dönüyoruz.
-    const outerStyleExport = `height: 75px; border: 2px solid ${borderColor}; box-shadow: inset 0 0 15px ${borderColor}50; text-align: center;`;
-    const outerStyleLive = `height: 75px; border: 2px solid ${borderColor}; box-shadow: inset 0 0 15px ${borderColor}50; text-align: center; display: table; width: 100%;`;
-
+    // KESİN ÇÖZÜM: html2canvas'ın kendi metin motoru (table-cell/padding fark etmeksizin) güvenilmez
+    // çıktı üretiyor. Bunun yerine PNG'de isim+etiketleri SVG GÖRSEL olarak çiziyoruz (SVG kendi
+    // metin motorunu kullanır, html2canvas sadece görseli olduğu gibi kopyalar). Önceki denemede bu
+    // yöntem kutucukları BOŞ bırakmıştı çünkü html2canvas görsel tam yüklenmeden yakalama yapıyordu —
+    // bu sefer capturePlanExportPNG() görsellerin yüklenmesini GARANTİYLE bekliyor (aşağıya bakın).
     if (isExport) {
-        return `<div ${dragAttr} class="bg-[#020617] rounded-xl relative transition-all duration-300 w-full" style="${outerStyleExport}">
-            <div style="padding-top: 17px; padding-left: 10px; padding-right: 10px;">
-                <div class="text-white font-black text-[18px] md:text-[22px] uppercase break-words leading-none" style="font-family:'Inter',sans-serif; text-align: center; margin-bottom: 6px;">${plr.name}</div>
-                <div style="text-align: center; white-space: normal;">${pillsHtml}</div>
-            </div>
+        const slotImgSrc = buildSlotContentSVGDataUri(plr.name, pills);
+        return `<div ${dragAttr} class="bg-[#020617] rounded-xl relative transition-all duration-300 w-full" style="height: 75px; border: 2px solid ${borderColor}; box-shadow: inset 0 0 15px ${borderColor}50;">
+            <img src="${slotImgSrc}" style="width: 100%; height: 100%; display: block;" alt="${plr.name}">
             ${delBtn}
         </div>`;
     }
 
-    return `<div ${dragAttr} class="bg-[#020617] rounded-xl relative transition-all duration-300 w-full" style="${outerStyleLive}">
+    return `<div ${dragAttr} class="bg-[#020617] rounded-xl relative transition-all duration-300 w-full" style="height: 75px; border: 2px solid ${borderColor}; box-shadow: inset 0 0 15px ${borderColor}50; text-align: center; display: table; width: 100%;">
         <div style="display: table-cell; vertical-align: middle; padding: 4px 10px;">
             <div class="text-white font-black text-[18px] md:text-[22px] uppercase break-words leading-none" style="font-family:'Inter',sans-serif; text-align: center; margin-bottom: 6px;">${plr.name}</div>
             <div style="text-align: center; white-space: normal;">${pillsHtml}</div>
@@ -2590,6 +2585,37 @@
         ${delBtn}
     </div>`;
 };
+
+// XML/SVG içine güvenle gömebilmek için özel karakterleri kaçırır.
+function escapeXmlForSvg(str) {
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// İsim + rol/sınıf etiketlerini bir SVG görsel olarak üretir (data URI). SVG kendi metin motorunu
+// kullandığı için html2canvas'ın bilinen dikey hizalama hatasına hiç maruz kalmaz.
+function buildSlotContentSVGDataUri(name, pills) {
+    const W = 400, H = 75;
+    const upperName = escapeXmlForSvg(String(name).toUpperCase());
+    const nameY = pills.length > 0 ? 33 : 42;
+
+    let pillsSvg = '';
+    if (pills.length > 0) {
+        const pillWidths = pills.map(p => Math.max(56, p.text.length * 8.2 + 26));
+        const gap = 6;
+        const totalW = pillWidths.reduce((a, b) => a + b, 0) + gap * (pills.length - 1);
+        let curX = (W - totalW) / 2;
+        pills.forEach((p, i) => {
+            const w = pillWidths[i];
+            const label = escapeXmlForSvg(p.text.toUpperCase());
+            pillsSvg += `<rect x="${curX}" y="49" width="${w}" height="21" rx="10.5" fill="${p.color}" fill-opacity="0.44" stroke="${p.color}" stroke-width="2.5"/><text x="${curX + w / 2}" y="63.5" font-family="Inter, Arial, sans-serif" font-size="10" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="0.6">${label}</text>`;
+            curX += w + gap;
+        });
+    }
+
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><text x="${W / 2}" y="${nameY}" font-family="Inter, Arial, sans-serif" font-size="23" font-weight="900" fill="#ffffff" text-anchor="middle">${upperName}</text>${pillsSvg}</svg>`;
+
+    return 'data:image/svg+xml,' + encodeURIComponent(svg);
+}
 
         function startPlanDrag(e, idx) {
             e.dataTransfer.effectAllowed = 'move';
@@ -2781,6 +2807,22 @@
         
         function deleteActivePlan() { if(!activePlanId) return; showCustomConfirm(t("confirm"), () => { cloudData.raidPlans = cloudData.raidPlans.filter(p => p.id !== activePlanId); activePlanId = cloudData.raidPlans.length > 0 ? cloudData.raidPlans[0].id : null; triggerCloudSave(); renderAll(); }, t("confirm"), "🔥"); }
         // PNG yakalama mantığı ortak bir fonksiyona çıkarıldı — hem "Yayınla" hem "Sadece PNG İndir" butonları bunu kullanıyor.
+        // planExportContainer içindeki TÜM <img> etiketlerinin (SVG data-URI'ler dahil) tam
+        // yüklenmesini garanti eder. Önceki denemede html2canvas görseller yüklenmeden yakalama
+        // yaptığı için kutucuklar boş çıkmıştı — bu fonksiyon o kesin garantiyi sağlıyor.
+        function waitForImagesToLoad(container) {
+            const imgs = Array.from(container.querySelectorAll('img'));
+            if (imgs.length === 0) return Promise.resolve();
+            return Promise.all(imgs.map(img => {
+                if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+                return new Promise(resolve => {
+                    img.addEventListener('load', resolve, { once: true });
+                    img.addEventListener('error', resolve, { once: true }); // hata olsa bile takılıp kalmasın
+                    setTimeout(resolve, 3000); // son çare zaman aşımı
+                });
+            }));
+        }
+
         function capturePlanExportPNG(onCaptured) {
             const expArea = document.getElementById('planExportArea');
             expArea.style.left = '0';
@@ -2797,28 +2839,32 @@
             };
             let settled = false;
             const safeReset = () => { if (!settled) { settled = true; resetVisibility(); } };
-            setTimeout(safeReset, 8000); // html2canvas hiç yanıt vermezse (ne başarı ne hata) son çare
+            setTimeout(safeReset, 12000); // html2canvas hiç yanıt vermezse (ne başarı ne hata) son çare
 
-            // html2canvas'ın kendisi SENKRON olarak hata fırlatırsa (promise reddi değil, doğrudan throw),
-            // bu try/catch olmadan .then()/.catch() zincirine hiç ulaşılamaz ve ekran asılı kalırdı.
-            try {
-                // useCORS: true eklendi ki dışarıdaki resim yüklenirken siyah ekran vermesin
-                html2canvas(planContainer, { backgroundColor: '#020617', scale: 2, useCORS: true }).then(canvas => {
+            // ÖNEMLİ: html2canvas'ı çağırmadan ÖNCE, SVG görsellerin (karakter isim/etiket kutucukları)
+            // tam yüklenmesini bekliyoruz — yoksa kutucuklar boş çıkar (daha önce yaşandığı gibi).
+            waitForImagesToLoad(planContainer).then(() => {
+                // html2canvas'ın kendisi SENKRON olarak hata fırlatırsa (promise reddi değil, doğrudan throw),
+                // bu try/catch olmadan .then()/.catch() zincirine hiç ulaşılamaz ve ekran asılı kalırdı.
+                try {
+                    // useCORS: true eklendi ki dışarıdaki resim yüklenirken siyah ekran vermesin
+                    html2canvas(planContainer, { backgroundColor: '#020617', scale: 2, useCORS: true }).then(canvas => {
+                        settled = true;
+                        if (onCaptured) onCaptured(canvas);
+                        resetVisibility();
+                    }).catch(e => {
+                        settled = true;
+                        console.error('PNG yakalama hatası (promise):', e);
+                        showCustomAlert(t("png_capture_fail"), t("info"), "❌");
+                        resetVisibility();
+                    });
+                } catch (e) {
                     settled = true;
-                    if (onCaptured) onCaptured(canvas);
-                    resetVisibility();
-                }).catch(e => {
-                    settled = true;
-                    console.error('PNG yakalama hatası (promise):', e);
+                    console.error('PNG yakalama hatası (senkron):', e);
                     showCustomAlert(t("png_capture_fail"), t("info"), "❌");
                     resetVisibility();
-                });
-            } catch (e) {
-                settled = true;
-                console.error('PNG yakalama hatası (senkron):', e);
-                showCustomAlert(t("png_capture_fail"), t("info"), "❌");
-                resetVisibility();
-            }
+                }
+            });
         }
 
         // Sadece PNG indirir — yayınlamaz, Discord'a hiçbir şey göndermez.
