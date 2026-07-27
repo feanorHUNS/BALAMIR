@@ -2564,16 +2564,26 @@
     
     const delBtn = (!isExport && isAuth) ? `<button onclick="removeFromPlan(${idx}); event.stopPropagation();" class="absolute -top-2 -right-2 bg-red-950 border border-red-500 text-red-500 hover:bg-red-500 hover:text-white w-5 h-5 md:w-6 md:h-6 rounded-full flex items-center justify-center text-[10px] font-black z-50 transition-colors shadow-lg">✕</button>` : '';
 
-    // DENEME 4: 22px'lik sabit boşluk fazla geldi, içerik alt kenara yapıştı (yön doğruydu, miktar
-    // fazlaydı). Bu sefer "ortala" mekanizmasını (table-cell/vertical-middle) KORUYUP, üzerine
-    // SADECE KÜÇÜK bir aşağı-kaydırma ekliyoruz — tamamen farklı bir mekanizmaya geçmek yerine
-    // aynı yöntemi ince ayarlıyoruz.
-    const innerStyle = isExport
-        ? `display: table-cell; vertical-align: middle; padding: 4px 10px; padding-top: 21px;`
-        : `display: table-cell; vertical-align: middle; padding: 4px 10px;`;
+    // DENEME 5: table-cell + padding-top kombinasyonu html2canvas'ta HİÇ ETKİ YARATMADI (21px'e
+    // rağmen sonuç birebir aynı kaldı) — yani html2canvas bu tabloyu farklı yorumluyor ve o padding'i
+    // yok sayıyor. Daha önce SADE BLOK + padding-top (table-cell OLMADAN) denemesinde gerçek bir görsel
+    // etki olmuştu (o zaman 22px fazla gelmişti). Bu yüzden table-cell'i tamamen bırakıp, kanıtlanmış
+    // sade-blok yöntemine, aradaki dengeyi bulacak bir değerle dönüyoruz.
+    const outerStyleExport = `height: 75px; border: 2px solid ${borderColor}; box-shadow: inset 0 0 15px ${borderColor}50; text-align: center;`;
+    const outerStyleLive = `height: 75px; border: 2px solid ${borderColor}; box-shadow: inset 0 0 15px ${borderColor}50; text-align: center; display: table; width: 100%;`;
 
-    return `<div ${dragAttr} class="bg-[#020617] rounded-xl relative transition-all duration-300 w-full" style="height: 75px; border: 2px solid ${borderColor}; box-shadow: inset 0 0 15px ${borderColor}50; text-align: center; display: table; width: 100%;">
-        <div style="${innerStyle}">
+    if (isExport) {
+        return `<div ${dragAttr} class="bg-[#020617] rounded-xl relative transition-all duration-300 w-full" style="${outerStyleExport}">
+            <div style="padding-top: 17px; padding-left: 10px; padding-right: 10px;">
+                <div class="text-white font-black text-[18px] md:text-[22px] uppercase break-words leading-none" style="font-family:'Inter',sans-serif; text-align: center; margin-bottom: 6px;">${plr.name}</div>
+                <div style="text-align: center; white-space: normal;">${pillsHtml}</div>
+            </div>
+            ${delBtn}
+        </div>`;
+    }
+
+    return `<div ${dragAttr} class="bg-[#020617] rounded-xl relative transition-all duration-300 w-full" style="${outerStyleLive}">
+        <div style="display: table-cell; vertical-align: middle; padding: 4px 10px;">
             <div class="text-white font-black text-[18px] md:text-[22px] uppercase break-words leading-none" style="font-family:'Inter',sans-serif; text-align: center; margin-bottom: 6px;">${plr.name}</div>
             <div style="text-align: center; white-space: normal;">${pillsHtml}</div>
         </div>
