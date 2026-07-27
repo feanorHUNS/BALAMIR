@@ -92,7 +92,8 @@
         .plan-tab { border-bottom: 2px solid transparent; color: #64748b; padding: 6px 12px; font-size: 11px; font-weight: 900; text-transform: uppercase; cursor: pointer; white-space: nowrap; transition: all 0.2s; }
         .plan-tab:hover { color: #94a3b8; } .plan-tab.active { border-color: var(--neon-color); color: #fff; background: rgba(255,255,255,0.05); border-radius: 6px 6px 0 0; }
 
-        .fab-btn { position: fixed; bottom: 2rem; right: 2rem; z-index: 100; width: 3.5rem; height: 3.5rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--neon-color); color: white; box-shadow: 0 0 20px var(--neon-shadow); cursor: pointer; transition: transform 0.3s; }
+        .fab-btn { position: fixed; bottom: 2rem; right: 2rem; z-index: 100; width: 3.5rem; height: 3.5rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: #1e293b; border: 1.5px solid #475569; color: #cbd5e1; box-shadow: 0 4px 12px rgba(0,0,0,0.4); cursor: pointer; transition: transform 0.2s, background 0.2s, border-color 0.2s; }
+        .fab-btn:hover { background: #334155; border-color: #64748b; transform: scale(1.05); }
         @media (max-width: 767px) {
             .fab-btn { bottom: 1rem !important; right: 1rem !important; width: 3.2rem !important; height: 3.2rem !important; font-size: 1.25rem !important; }
             .fab-btn[style*="bottom: 8rem"] { bottom: 5.2rem !important; width: 2.7rem !important; height: 2.7rem !important; font-size: 1.05rem !important; }
@@ -210,9 +211,6 @@
                     <button onclick="if(!isEditMode) switchTab('discordlink')" id="tab-discordlink" class="tab-btn auth-only px-3 md:px-4 py-2 text-xs font-black uppercase tracking-widest border-b-2 border-transparent relative z-20">
                         <span data-i18n="tab_discordlink">🔗 Discord Linking</span>
                     </button>
-                    <button onclick="if(!isEditMode) switchTab('messages')" id="tab-messages" class="tab-btn px-3 md:px-4 py-2 text-xs font-black uppercase tracking-widest border-b-2 border-transparent relative z-20">
-                        <span data-i18n="tab_messages">💬 Messages</span>
-                    </button>
                 </div>
 
                 <div class="flex items-center gap-2 md:gap-3 flex-wrap justify-center mt-2 md:mt-0">
@@ -232,10 +230,6 @@
     </div>
 
     <nav id="raidSidebar" class="hidden fixed bottom-0 left-0 w-full h-16 bg-slate-950/60 backdrop-blur-xl border-t border-slate-800/50 flex-row justify-around items-center z-[45] shadow-2xl md:top-0 md:w-24 md:h-full md:flex-col md:justify-start md:pt-[100px] md:border-r md:border-t-0 md:gap-5">
-        <button onclick="openRosterModal()" class="group relative flex items-center justify-center w-12 h-12 md:w-14 md:h-14 bg-indigo-900/40 backdrop-blur-md rounded-2xl shadow-[0_0_15px_rgba(99,102,241,0.3)] border border-indigo-500/50 hover:border-indigo-400 hover:bg-indigo-800 z-50 text-indigo-300 hover:text-white transition-all icon-btn neon-theme-box">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-            <span class="absolute bottom-full mb-3 md:bottom-auto md:left-full md:mb-0 md:ml-4 px-3 py-1.5 bg-slate-900 border border-slate-700 text-white text-[10px] font-bold rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 whitespace-nowrap shadow-[0_0_15px_rgba(0,0,0,0.5)] z-[100] translate-y-2 group-hover:translate-y-0 md:translate-y-0 md:-translate-x-2 md:group-hover:translate-x-0 tracking-widest uppercase" data-i18n="heroes">Heroes</span>
-        </button>
         <button onclick="document.getElementById('addModal').classList.remove('hidden')" class="auth-only group relative flex items-center justify-center w-12 h-12 md:w-14 md:h-14 bg-slate-800/60 backdrop-blur-md rounded-2xl shadow-lg border border-slate-600/50 hover:border-blue-400 hover:bg-slate-800 z-50 text-slate-400 hover:text-blue-400 transition-all icon-btn neon-theme-box">
             <svg class="translate-x-[2px]" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="19" y1="8" x2="19" y2="14"></line><line x1="22" y1="11" x2="16" y2="11"></line></svg>
             <span class="absolute bottom-full mb-3 md:bottom-auto md:left-full md:mb-0 md:ml-4 px-3 py-1.5 bg-slate-900 border border-slate-700 text-white text-[10px] font-bold rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 whitespace-nowrap shadow-[0_0_15px_rgba(0,0,0,0.5)] z-[100] translate-y-2 group-hover:translate-y-0 md:translate-y-0 md:-translate-x-2 md:group-hover:translate-x-0 tracking-widest uppercase" data-i18n="add_character">Add Character</span>
@@ -442,6 +436,7 @@
                             <div class="flex justify-end gap-3">
                                 <button onclick="deleteActivePlan()" class="bg-red-900/50 hover:bg-red-600 text-red-400 hover:text-white px-6 py-2.5 rounded-xl text-xs font-black transition border border-red-800/50 uppercase shadow-sm" data-i18n="delete_plan">Delete Plan</button>
                                 <button onclick="downloadPlanPNGOnly()" class="bg-slate-700 hover:bg-slate-600 text-white px-6 py-2.5 rounded-xl text-xs font-black transition shadow-lg uppercase flex items-center gap-2" data-i18n="download_png_only">📥 DOWNLOAD PNG</button>
+                                <button onclick="sharePlanToDiscordManually()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2.5 rounded-xl text-xs font-black transition shadow-lg uppercase flex items-center gap-2" data-i18n="share_to_discord">📤 Share to Discord</button>
                                 <button onclick="publishActivePlan()" id="publishPlanBtn" class="bg-emerald-600 hover:bg-emerald-500 text-white px-8 py-2.5 rounded-xl text-xs font-black transition shadow-lg shadow-emerald-900/50 uppercase flex items-center gap-2" data-i18n="publish">PUBLISH</button>
                             </div>
                         </div>
@@ -526,17 +521,15 @@
 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
                     <div class="neon-theme-box p-5 rounded-2xl shadow-lg">
-                        <h3 class="text-xs font-black text-indigo-400 mb-4 tracking-widest border-b border-slate-800 pb-2 uppercase flex items-center gap-2" data-i18n="discord_webhook">🔔 Discord Webhook</h3>
-                        <p class="text-[10px] text-slate-400 mb-3" data-i18n="discord_webhook_desc">Enter the Discord Webhook URL to send notifications to.</p>
-                        <div class="flex gap-2 mb-4">
-                            <input type="text" id="discordWebhookInput" placeholder="https://discord.com/api/webhooks/..." class="flex-1 neon-theme-input px-3 py-2 rounded-lg text-[11px] outline-none font-mono">
-                            <button onclick="saveDiscordWebhook()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 text-xs font-black rounded-lg transition shadow-lg" data-i18n="save">SAVE</button>
-                        </div>
-                        <div class="mb-4 pt-4 border-t border-slate-800">
+                        <h3 class="text-xs font-black text-indigo-400 mb-4 tracking-widest border-b border-slate-800 pb-2 uppercase flex items-center gap-2" data-i18n="discord_bot_settings">🤖 Discord Bot Ayarları</h3>
+                        <div class="mb-4">
                             <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Motive Edici Başlama Mesajı (@everyone)</label>
-                            <input type="text" id="discordMotivationalInput" placeholder="WE RISE FROM ASHES TO CONQUER THE CHAOS!" class="w-full neon-theme-input px-3 py-2 rounded-lg text-[11px] outline-none font-mono">
+                            <div class="flex gap-2">
+                                <input type="text" id="discordMotivationalInput" placeholder="WE RISE FROM ASHES TO CONQUER THE CHAOS!" class="flex-1 neon-theme-input px-3 py-2 rounded-lg text-[11px] outline-none font-mono">
+                                <button onclick="saveDiscordBotSettings()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 text-xs font-black rounded-lg transition shadow-lg" data-i18n="save">SAVE</button>
+                            </div>
                         </div>
-                        <div class="space-y-2 mb-4">
+                        <div class="space-y-2 mb-2">
                             <label class="flex items-center justify-between bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg cursor-pointer hover:border-indigo-500/50 transition">
                                 <span class="text-[10px] font-bold text-slate-300 uppercase" data-i18n="discord_notify_publish">When Event Is Published</span>
                                 <input type="checkbox" id="discordNotifyPublish" onchange="updateDiscordNotifySettings()" class="w-4 h-4 cursor-pointer accent-indigo-500">
@@ -550,19 +543,20 @@
                                 <input type="checkbox" id="discordNotifyRoll" onchange="updateDiscordNotifySettings()" class="w-4 h-4 cursor-pointer accent-indigo-500">
                             </label>
                         </div>
-                        <button onclick="testDiscordWebhook()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border border-slate-700 transition" data-i18n="discord_test">Send Test Notification</button>
-
-                        <div class="mt-5 pt-4 border-t border-slate-800">
-                            <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1" data-i18n="discord_channels_title">📡 RSVP Bot Channels</label>
-                            <p class="text-[10px] text-slate-500 mb-3" data-i18n="discord_channels_desc">Add the channels the RSVP bot can publish to. You'll pick one each time you send an announcement.</p>
-                            <div class="flex gap-2 mb-2">
-                                <input type="text" id="discordChannelNameInput" placeholder="#raid-announcements" class="w-1/2 neon-theme-input px-3 py-2 rounded-lg text-[11px] outline-none">
-                                <input type="text" id="discordChannelIdInput" placeholder="Channel ID" class="w-1/2 neon-theme-input px-3 py-2 rounded-lg text-[11px] outline-none font-mono">
-                                <button onclick="addDiscordChannel()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 text-xs font-black rounded-lg transition shadow-lg shrink-0" data-i18n="add">ADD</button>
-                            </div>
-                            <div id="discordChannelList" class="space-y-1.5"></div>
-                        </div>
+                        <p class="text-[9px] text-slate-500 italic mt-2" data-i18n="discord_bot_settings_note">These notifications are sent by the bot to every channel added on the right.</p>
                     </div>
+
+                    <div class="neon-theme-box p-5 rounded-2xl shadow-lg">
+                        <label class="text-xs font-black text-indigo-400 mb-1 tracking-widest border-b border-slate-800 pb-2 uppercase flex items-center gap-2" data-i18n="discord_channels_title">📡 RSVP Bot Channels</label>
+                        <p class="text-[10px] text-slate-500 mb-3 mt-2" data-i18n="discord_channels_desc">Add the channels the RSVP bot can publish to. You'll pick one each time you send an announcement.</p>
+                        <div class="flex gap-2 mb-2">
+                            <input type="text" id="discordChannelNameInput" placeholder="#raid-announcements" class="w-1/2 neon-theme-input px-3 py-2 rounded-lg text-[11px] outline-none">
+                            <input type="text" id="discordChannelIdInput" placeholder="Channel ID" class="w-1/2 neon-theme-input px-3 py-2 rounded-lg text-[11px] outline-none font-mono">
+                            <button onclick="addDiscordChannel()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 text-xs font-black rounded-lg transition shadow-lg shrink-0" data-i18n="add">ADD</button>
+                        </div>
+                        <div id="discordChannelList" class="space-y-1.5"></div>
+                    </div>
+                </div>
 
                     <div class="neon-theme-box p-5 rounded-2xl shadow-lg">
                         <h3 class="text-xs font-black text-emerald-400 mb-4 tracking-widest border-b border-slate-800 pb-2 uppercase flex items-center gap-2" data-i18n="export_bg_title">🖼️ PNG Background Image</h3>
@@ -644,9 +638,12 @@
             <div id="discordLinkDeniedMsg" class="text-center py-20 text-slate-500 font-bold text-sm tracking-widest uppercase" style="display: none;" data-i18n="unauthorized">Unauthorized Access.</div>
         </div>
 
-        <div id="page-messages" class="tab-content">
-            <div class="max-w-5xl mx-auto">
-                <h1 class="text-3xl guild-font neon-theme-text mb-6 border-b border-slate-800 pb-2" data-i18n="messages_title">💬 Messages</h1>
+        <div id="page-messages" class="hidden fixed inset-0 bg-slate-950/97 z-[4000] backdrop-blur-md overflow-y-auto p-4 md:p-8">
+            <div class="max-w-5xl mx-auto pb-10">
+                <div class="flex justify-between items-center mb-6 border-b border-slate-800 pb-2">
+                    <h1 class="text-3xl guild-font neon-theme-text" data-i18n="messages_title">💬 Messages</h1>
+                    <button onclick="closeMessagesModal()" class="text-slate-500 hover:text-white text-2xl leading-none">✕</button>
+                </div>
 
                 <!-- Herkese açık hızlı mesaj kutusu -->
                 <div class="neon-theme-box p-6 rounded-2xl shadow-lg mb-8">
@@ -689,22 +686,55 @@
         </div>
     </main>
 
-    <!-- YENİ: Kayan Mesaj İkonu - herkes görebilir, sayfa kayarken sabit kalır, Mesajlar sekmesini açar -->
+    <!-- YENİ: Kayan Mesaj İkonu - herkes görebilir, sayfa kayarken sabit kalır, Mesajlar modalını açar -->
     <button onclick="openMessagesFromFab()" class="fab-btn" style="width: 4.5rem; height: 4.5rem; font-size: 1.75rem;" title="Messages">
         ✉️
         <span id="notifBadge" class="hidden absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-black rounded-full min-w-[1.4rem] h-[1.4rem] flex items-center justify-center border-2 border-slate-950 px-1">0</span>
     </button>
     <!-- İşlem Kaydı: tüm yetkililer (sadece admin değil) görebilsin diye mesaj butonunun hemen üstünde, sabit -->
-    <button onclick="openAuditLogModal()" class="fab-btn auth-only" style="width: 3.6rem; height: 3.6rem; font-size: 1.4rem; bottom: 8rem;" title="Audit Log">📜</button>
+    <button onclick="openAuditLogModal()" class="fab-btn auth-only" style="width: 3.6rem; height: 3.6rem; font-size: 1.4rem; bottom: 8rem;" title="Who's Online / Log">👥</button>
 
     <!-- İşlem Kaydı Modal - tüm yetkililer (admin + officer) görebilir -->
+    <!-- Discord'a Paylaş Modal (DKP raporu, Etkinlik Planı vb. için genel amaçlı) -->
+    <div id="shareToDiscordModal" class="hidden fixed inset-0 bg-slate-950/95 z-[5000] flex items-center justify-center backdrop-blur-md p-4">
+        <div class="neon-theme-box rounded-2xl shadow-2xl p-6 w-full max-w-md">
+            <div class="flex justify-between items-center mb-4 border-b border-slate-800 pb-3">
+                <h3 class="text-sm font-black text-indigo-400 uppercase tracking-widest" data-i18n="share_to_discord">📤 Share to Discord</h3>
+                <button onclick="document.getElementById('shareToDiscordModal').classList.add('hidden')" class="text-slate-500 hover:text-white text-xl leading-none">✕</button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-3" data-i18n="select_channels_for_share">Select which channel(s) to post this to:</p>
+            <div id="shareDiscordChannelList" class="space-y-1.5 mb-4 max-h-40 overflow-y-auto pr-1"></div>
+            <textarea id="shareDiscordCaptionText" rows="3" class="w-full neon-theme-input p-3 rounded-xl outline-none mb-4 text-xs"></textarea>
+            <button onclick="confirmShareToDiscord()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl text-xs font-black uppercase transition" data-i18n="share_now">Share</button>
+        </div>
+    </div>
+
     <div id="auditLogModal" class="hidden fixed inset-0 bg-slate-950/95 z-[5000] flex items-center justify-center backdrop-blur-md p-4">
-        <div class="neon-theme-box rounded-2xl shadow-2xl p-6 w-full max-w-2xl max-h-[80vh] flex flex-col">
+        <div class="neon-theme-box rounded-2xl shadow-2xl p-6 w-full max-w-2xl max-h-[85vh] flex flex-col">
             <div class="flex justify-between items-center mb-4 border-b border-slate-800 pb-3">
                 <h3 class="text-sm font-black text-cyan-400 uppercase tracking-widest" data-i18n="audit_log_title">📜 Audit Log</h3>
                 <button onclick="document.getElementById('auditLogModal').classList.add('hidden')" class="text-slate-500 hover:text-white text-xl leading-none">✕</button>
             </div>
-            <div id="auditLogModalList" class="space-y-1.5 overflow-y-auto flex-1 pr-2 custom-scrollbar"></div>
+
+            <div class="mb-4 pb-4 border-b border-slate-800">
+                <h4 class="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-2" data-i18n="online_now_title">🟢 Online Now</h4>
+                <div id="presenceList" class="flex flex-wrap gap-2"></div>
+            </div>
+
+            <div class="overflow-y-auto flex-1 pr-2 custom-scrollbar space-y-4">
+                <div>
+                    <h4 class="text-[10px] font-black text-purple-400 uppercase tracking-widest mb-2" data-i18n="category_dkp_loot">💰 DKP / Loot Changes</h4>
+                    <div id="auditLogModalListDkp" class="space-y-1.5"></div>
+                </div>
+                <div>
+                    <h4 class="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-2" data-i18n="category_discord_bot">📢 Discord Bot Shares</h4>
+                    <div id="auditLogModalListDiscord" class="space-y-1.5"></div>
+                </div>
+                <div>
+                    <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2" data-i18n="category_general">⚙️ General</h4>
+                    <div id="auditLogModalListGeneral" class="space-y-1.5"></div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -774,16 +804,6 @@
         </div>
     </div>
 
-    <div id="rosterModal" class="fixed inset-0 bg-slate-950/95 z-[6000] -translate-x-full transition-transform duration-500 overflow-y-auto backdrop-blur-xl custom-scrollbar">
-        <div class="max-w-7xl mx-auto p-4 md:p-8">
-            <div class="flex justify-between items-center mb-8 border-b border-slate-800 pb-4">
-                <h2 class="text-3xl md:text-5xl font-black text-indigo-400 guild-font drop-shadow-[0_0_15px_currentColor] uppercase tracking-widest" data-i18n="heroes">Heroes</h2>
-                <button onclick="document.getElementById('rosterModal').classList.add('-translate-x-full')" class="text-slate-400 hover:text-white bg-slate-900 px-4 py-2 rounded-xl text-xs font-black border border-slate-700 transition shadow-lg" data-i18n="cancel">CLOSE</button>
-            </div>
-            <div id="rosterGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
-        </div>
-    </div>
-
     <div id="planTypeModal" class="hidden fixed inset-0 bg-slate-950/90 z-[7000] flex items-center justify-center backdrop-blur-sm">
         <div class="neon-theme-box p-6 w-96 rounded-2xl shadow-2xl">
             <h3 class="text-lg font-black text-white mb-4 uppercase tracking-widest border-b border-slate-800 pb-2 text-center" data-i18n="select_event_type">Select Event Type</h3>
@@ -828,7 +848,7 @@
                 publish: "PUBLISH", system_management: "SYSTEM MANAGEMENT", system_theme: "🌌 SYSTEM THEME", 
                 penalty_mgmt: "⚖️ Penalty Management", mass_cut: "Mass Cut", history: "History", pending_penalties: "Pending Penalties", 
                 officer_accounts: "🛡️ Officer Accounts", add: "Add", audit_logs: "📋 Audit Logs", unauthorized: "Unauthorized Access.", 
-                heroes: "Heroes", roll_dice: "Roll Dice", save_raid: "Save & Finish Raid", character: "CHARACTER", 
+                roll_dice: "Roll Dice", save_raid: "Save & Finish Raid", character: "CHARACTER", 
                 info: "INFO", ok: "OK", confirm: "CONFIRM", approve: "APPROVE", new_char: "NEW CHARACTER", edit_char: "EDIT CHARACTER", 
                 loading: "LOADING...", login_failed: "Login Failed", login_error: "Invalid username or password!", 
                 system_entered: "System Entered", welcome_msg: "Welcome, {user}.", msg_leader: "Message to Leader", send_msg: "Send", 
@@ -856,6 +876,8 @@
                 finalize_success: "Announcement finalized (message removed from Discord, event closed on the site).", finalize_fail: "Failed to finalize.",
                 png_capture_fail: "Failed to generate PNG. Please try again.",
                 msg_cooldown: "Please wait {s} more second(s) before sending another message.", audit_log_title: "📜 Audit Log", no_audit_logs: "No actions logged yet.", delete_room_confirm: "Delete this room and all its messages? This cannot be undone.", player_search_placeholder: "🔍 Search player...", accepted: "Accepted", declined: "Declined", tentative: "Tentative", plan_channels_title: "📡 Discord Channels for this Event", plan_channels_none: "No channels configured yet — add some in Management first.",
+                edit: "Edit", discord_bot_settings: "🤖 Discord Bot Settings", discord_bot_settings_note: "These notifications are sent by the bot to every channel added on the right.", share_to_discord: "📤 Share to Discord", select_channels_for_share: "Select which channel(s) to post this to:", share_now: "Share", share_success: "Shared to Discord!", share_fail: "Failed to share.", who_online_title: "🟢 Who's Online", no_one_online: "No one else is online right now.", currently_viewing: "viewing", dkp_loot_log_title: "💰 DKP / Loot Changes", bot_shares_log_title: "📡 Bot Shares", other_actions_log_title: "📋 Other Actions", share_to_discord_prompt: "PNG downloaded! Would you also like to share it to Discord?", dkp_report_caption: "Raid DKP / Loot Report",
+                online_now_title: "🟢 Online Now", category_dkp_loot: "💰 DKP / Loot Changes", category_discord_bot: "📢 Discord Bot Shares", category_general: "⚙️ General", no_one_online: "No one online right now.",
                 delete_ann_confirm: "Delete this announcement completely? This will remove the message from Discord and delete it from the site entirely — this cannot be undone.", delete_ann_success: "Announcement deleted from Discord and the site.", delete_ann_fail: "Failed to delete."
             },
             tr: { 
@@ -870,7 +892,7 @@
                 publish: "YAYINLA", system_management: "SİSTEM YÖNETİMİ", system_theme: "🌌 SİSTEM TEMASI", 
                 penalty_mgmt: "⚖️ Ceza & Yaptırım Yönetimi", mass_cut: "Toplu Kes", history: "Geçmiş", pending_penalties: "Cezalı Bekleyenler", 
                 officer_accounts: "🛡️ Officer Hesapları", add: "Ekle", audit_logs: "📋 Denetim Kayıtları", unauthorized: "Yetkisiz Erişim.", 
-                heroes: "Kahramanlar", roll_dice: "Kader Zarı At", save_raid: "Raidi Kaydet & Bitir", character: "KARAKTER", 
+                roll_dice: "Kader Zarı At", save_raid: "Raidi Kaydet & Bitir", character: "KARAKTER", 
                 info: "BİLGİ", ok: "TAMAM", confirm: "ONAY", approve: "ONAYLA", new_char: "YENİ KARAKTER", edit_char: "KARAKTER DÜZENLE", 
                 loading: "YÜKLENİYOR...", login_failed: "Giriş Başarısız", login_error: "Kullanıcı adı veya şifre hatalı!", 
                 system_entered: "Sisteme Girildi", welcome_msg: "Hoş geldin, {user}.", msg_leader: "Lidere Mesaj Gönder", send_msg: "Gönder", 
@@ -898,7 +920,9 @@
                 finalize_success: "Duyuru sonlandırıldı (Discord'daki mesaj silindi, etkinlik sitede de kapatıldı).", finalize_fail: "Sonlandırma başarısız oldu.",
                 png_capture_fail: "PNG oluşturulamadı. Lütfen tekrar deneyin.",
                 delete_ann_confirm: "Bu duyuru tamamen silinsin mi? Bu işlem mesajı Discord'dan kaldırır ve siteden de tamamen siler — geri alınamaz.", delete_ann_success: "Duyuru hem Discord'dan hem siteden silindi.", delete_ann_fail: "Silme başarısız oldu.",
-                msg_cooldown: "Başka bir mesaj göndermeden önce {s} saniye daha bekle.", audit_log_title: "📜 İşlem Kaydı", no_audit_logs: "Henüz kayıtlı bir işlem yok.", delete_room_confirm: "Bu oda ve içindeki tüm mesajlar silinsin mi? Bu işlem geri alınamaz.", player_search_placeholder: "🔍 Oyuncu ara...", accepted: "Katılıyor", declined: "Katılmıyor", tentative: "Belki", plan_channels_title: "📡 Bu Etkinlik İçin Discord Kanalları", plan_channels_none: "Henüz kanal eklenmemiş — önce Yönetim'den ekle."
+                msg_cooldown: "Başka bir mesaj göndermeden önce {s} saniye daha bekle.", audit_log_title: "📜 İşlem Kaydı", no_audit_logs: "Henüz kayıtlı bir işlem yok.", delete_room_confirm: "Bu oda ve içindeki tüm mesajlar silinsin mi? Bu işlem geri alınamaz.", player_search_placeholder: "🔍 Oyuncu ara...", accepted: "Katılıyor", declined: "Katılmıyor", tentative: "Belki", plan_channels_title: "📡 Bu Etkinlik İçin Discord Kanalları", plan_channels_none: "Henüz kanal eklenmemiş — önce Yönetim'den ekle.",
+                edit: "Düzenle", discord_bot_settings: "🤖 Discord Bot Ayarları", discord_bot_settings_note: "Bu bildirimler, bot tarafından sağdaki tüm kanallara gönderilir.", share_to_discord: "📤 Discord'a Paylaş", select_channels_for_share: "Bunu hangi kanal(lar)a paylaşmak istersin:", share_now: "Paylaş", share_success: "Discord'a paylaşıldı!", share_fail: "Paylaşılamadı.", who_online_title: "🟢 Kim Online", no_one_online: "Şu an başka kimse online değil.", currently_viewing: "şurada", dkp_loot_log_title: "💰 DKP / Loot Değişiklikleri", bot_shares_log_title: "📡 Bot Paylaşımları", other_actions_log_title: "📋 Diğer İşlemler", share_to_discord_prompt: "PNG indirildi! Bunu Discord'a da paylaşmak ister misin?", dkp_report_caption: "Raid DKP / Loot Raporu",
+                online_now_title: "🟢 Şu An Online", category_dkp_loot: "💰 DKP / Loot Değişiklikleri", category_discord_bot: "📢 Discord Bot Paylaşımları", category_general: "⚙️ Genel", no_one_online: "Şu an online kimse yok."
             },
             de: { 
                 tab_announcements: "Ankündigungen", tab_raid: "Raid-Zone", tab_plan: "Eventplan", tab_admin: "Verwaltung", 
@@ -912,7 +936,7 @@
                 publish: "VERÖFFENTLICHEN", system_management: "SYSTEMVERWALTUNG", system_theme: "🌌 SYSTEM-THEMA", 
                 penalty_mgmt: "⚖️ Strafen-Verwaltung", mass_cut: "Massenkürzung", history: "Verlauf", pending_penalties: "Ausstehende Strafen", 
                 officer_accounts: "🛡️ Offizierskonten", add: "Hinzufügen", audit_logs: "📋 Audit-Protokolle", unauthorized: "Unbefugter Zugriff.", 
-                heroes: "Helden", roll_dice: "Würfeln", save_raid: "Raid beenden", character: "CHARAKTER", 
+                roll_dice: "Würfeln", save_raid: "Raid beenden", character: "CHARAKTER", 
                 info: "INFO", ok: "OK", confirm: "BESTÄTIGEN", approve: "GENEHMIGEN", new_char: "NEUER CHARAKTER", edit_char: "CHARAKTER BEARBEITEN", 
                 loading: "WIRD GELADEN...", login_failed: "Anmeldung fehlgeschlagen", login_error: "Falsches Passwort!", 
                 system_entered: "System betreten", welcome_msg: "Willkommen, {user}.", msg_leader: "Nachricht an Anführer", send_msg: "Senden", 
@@ -940,7 +964,9 @@
                 finalize_success: "Ankündigung abgeschlossen (Nachricht aus Discord entfernt, Event auf der Website geschlossen).", finalize_fail: "Abschluss fehlgeschlagen.",
                 png_capture_fail: "PNG konnte nicht erstellt werden. Bitte erneut versuchen.",
                 delete_ann_confirm: "Diese Ankündigung vollständig löschen? Dies entfernt die Nachricht aus Discord und löscht sie komplett von der Website — kann nicht rückgängig gemacht werden.", delete_ann_success: "Ankündigung aus Discord und der Website gelöscht.", delete_ann_fail: "Löschen fehlgeschlagen.",
-                msg_cooldown: "Bitte warte noch {s} Sekunde(n), bevor du eine weitere Nachricht sendest.", audit_log_title: "📜 Protokoll", no_audit_logs: "Noch keine Aktionen protokolliert.", delete_room_confirm: "Diesen Raum und alle Nachrichten löschen? Kann nicht rückgängig gemacht werden.", player_search_placeholder: "🔍 Spieler suchen...", accepted: "Zugesagt", declined: "Abgesagt", tentative: "Unsicher", plan_channels_title: "📡 Discord-Kanäle für dieses Event", plan_channels_none: "Noch keine Kanäle konfiguriert — zuerst in der Verwaltung hinzufügen."
+                msg_cooldown: "Bitte warte noch {s} Sekunde(n), bevor du eine weitere Nachricht sendest.", audit_log_title: "📜 Protokoll", no_audit_logs: "Noch keine Aktionen protokolliert.", delete_room_confirm: "Diesen Raum und alle Nachrichten löschen? Kann nicht rückgängig gemacht werden.", player_search_placeholder: "🔍 Spieler suchen...", accepted: "Zugesagt", declined: "Abgesagt", tentative: "Unsicher", plan_channels_title: "📡 Discord-Kanäle für dieses Event", plan_channels_none: "Noch keine Kanäle konfiguriert — zuerst in der Verwaltung hinzufügen.",
+                edit: "Bearbeiten", discord_bot_settings: "🤖 Discord-Bot-Einstellungen", discord_bot_settings_note: "Diese Benachrichtigungen werden vom Bot an alle rechts hinzugefügten Kanäle gesendet.", share_to_discord: "📤 Auf Discord teilen", select_channels_for_share: "Wähle die Kanäle für diesen Beitrag:", share_now: "Teilen", share_success: "Auf Discord geteilt!", share_fail: "Teilen fehlgeschlagen.", who_online_title: "🟢 Wer ist online", no_one_online: "Gerade ist niemand sonst online.", currently_viewing: "auf", dkp_loot_log_title: "💰 DKP-/Loot-Änderungen", bot_shares_log_title: "📡 Bot-Beiträge", other_actions_log_title: "📋 Weitere Aktionen", share_to_discord_prompt: "PNG heruntergeladen! Möchtest du es auch auf Discord teilen?", dkp_report_caption: "Raid-DKP-/Loot-Bericht",
+                online_now_title: "🟢 Gerade online", category_dkp_loot: "💰 DKP-/Loot-Änderungen", category_discord_bot: "📢 Discord-Bot-Beiträge", category_general: "⚙️ Allgemein", no_one_online: "Gerade niemand online."
             },
             fr: { 
                 tab_announcements: "Annonces", tab_raid: "Zone de Raid", tab_plan: "Plan d'Événement", tab_admin: "Gestion", 
@@ -954,7 +980,7 @@
                 publish: "PUBLIER", system_management: "GESTION DU SYSTÈME", system_theme: "🌌 THÈME", 
                 penalty_mgmt: "⚖️ Pénalités", mass_cut: "Coupe Massive", history: "Historique", pending_penalties: "Pénalités en Attente", 
                 officer_accounts: "🛡️ Comptes Officiers", add: "Ajouter", audit_logs: "📋 Audit", unauthorized: "Accès non autorisé.", 
-                heroes: "Héros", roll_dice: "Lancer les Dés", save_raid: "Terminer le Raid", character: "PERSONNAGE", 
+                roll_dice: "Lancer les Dés", save_raid: "Terminer le Raid", character: "PERSONNAGE", 
                 info: "INFO", ok: "OK", confirm: "CONFIRMER", approve: "APPROUVER", new_char: "NOUVEAU", edit_char: "MODIFIER", 
                 loading: "CHARGEMENT...", login_failed: "Échec de connexion", login_error: "Mot de passe invalide!", 
                 system_entered: "Système accédé", welcome_msg: "Bienvenue, {user}.", msg_leader: "Message au Chef", send_msg: "Envoyer", 
@@ -982,7 +1008,9 @@
                 finalize_success: "Annonce terminée (message supprimé de Discord, événement clôturé sur le site).", finalize_fail: "Échec de la clôture.",
                 png_capture_fail: "Échec de la génération du PNG. Veuillez réessayer.",
                 delete_ann_confirm: "Supprimer complètement cette annonce ? Cela retirera le message de Discord et le supprimera entièrement du site — irréversible.", delete_ann_success: "Annonce supprimée de Discord et du site.", delete_ann_fail: "Échec de la suppression.",
-                msg_cooldown: "Veuillez attendre encore {s} seconde(s) avant d'envoyer un autre message.", audit_log_title: "📜 Journal d'activité", no_audit_logs: "Aucune action enregistrée pour l'instant.", delete_room_confirm: "Supprimer ce salon et tous ses messages ? Irréversible.", player_search_placeholder: "🔍 Rechercher un joueur...", accepted: "Accepté", declined: "Refusé", tentative: "Incertain", plan_channels_title: "📡 Canaux Discord pour cet événement", plan_channels_none: "Aucun canal configuré — ajoutez-en d'abord dans Gestion."
+                msg_cooldown: "Veuillez attendre encore {s} seconde(s) avant d'envoyer un autre message.", audit_log_title: "📜 Journal d'activité", no_audit_logs: "Aucune action enregistrée pour l'instant.", delete_room_confirm: "Supprimer ce salon et tous ses messages ? Irréversible.", player_search_placeholder: "🔍 Rechercher un joueur...", accepted: "Accepté", declined: "Refusé", tentative: "Incertain", plan_channels_title: "📡 Canaux Discord pour cet événement", plan_channels_none: "Aucun canal configuré — ajoutez-en d'abord dans Gestion.",
+                edit: "Modifier", discord_bot_settings: "🤖 Paramètres du Bot Discord", discord_bot_settings_note: "Ces notifications sont envoyées par le bot à tous les canaux ajoutés à droite.", share_to_discord: "📤 Partager sur Discord", select_channels_for_share: "Choisissez le(s) canal/canaux pour ce partage :", share_now: "Partager", share_success: "Partagé sur Discord !", share_fail: "Échec du partage.", who_online_title: "🟢 Qui est en ligne", no_one_online: "Personne d'autre n'est en ligne actuellement.", currently_viewing: "sur", dkp_loot_log_title: "💰 Modifications DKP / Loot", bot_shares_log_title: "📡 Partages du Bot", other_actions_log_title: "📋 Autres actions", share_to_discord_prompt: "PNG téléchargé ! Voulez-vous aussi le partager sur Discord ?", dkp_report_caption: "Rapport DKP / Loot du Raid",
+                online_now_title: "🟢 En ligne actuellement", category_dkp_loot: "💰 Changements DKP / Loot", category_discord_bot: "📢 Partages du bot Discord", category_general: "⚙️ Général", no_one_online: "Personne en ligne actuellement."
             },
             ar: { 
                 tab_announcements: "الإعلانات", tab_raid: "منطقة الغارة", tab_plan: "خطة الحدث", tab_admin: "الإدارة", 
@@ -996,7 +1024,7 @@
                 publish: "نشر", system_management: "إدارة النظام", system_theme: "🌌 السمة", 
                 penalty_mgmt: "⚖️ العقوبات", mass_cut: "قطع جماعي", history: "سجل", pending_penalties: "عقوبات معلقة", 
                 officer_accounts: "🛡️ حسابات الضباط", add: "إضافة", audit_logs: "📋 سجلات التدقيق", unauthorized: "غير مصرح.", 
-                heroes: "أبطال", roll_dice: "رمي النرد", save_raid: "إنهاء الغارة", character: "شخصية", 
+                roll_dice: "رمي النرد", save_raid: "إنهاء الغارة", character: "شخصية", 
                 info: "معلومات", ok: "موافق", confirm: "تأكيد", approve: "موافقة", new_char: "شخصية جديدة", edit_char: "تعديل", 
                 loading: "تحميل...", login_failed: "فشل الدخول", login_error: "كلمة مرور خاطئة!", 
                 system_entered: "تم دخول النظام", welcome_msg: "مرحباً، {user}.", msg_leader: "رسالة للقائد", send_msg: "إرسال", 
@@ -1024,7 +1052,9 @@
                 finalize_success: "تم إنهاء الإعلان (تم حذف الرسالة من ديسكورد، وتم إغلاق الحدث في الموقع أيضًا).", finalize_fail: "فشل الإنهاء.",
                 png_capture_fail: "فشل إنشاء PNG. يرجى المحاولة مرة أخرى.",
                 delete_ann_confirm: "هل تريد حذف هذا الإعلان نهائيًا؟ سيؤدي هذا إلى إزالة الرسالة من ديسكورد وحذفها بالكامل من الموقع — لا يمكن التراجع عن هذا.", delete_ann_success: "تم حذف الإعلان من ديسكورد والموقع.", delete_ann_fail: "فشل الحذف.",
-                msg_cooldown: "يرجى الانتظار {s} ثانية إضافية قبل إرسال رسالة أخرى.", audit_log_title: "📜 سجل الإجراءات", no_audit_logs: "لا توجد إجراءات مسجلة بعد.", delete_room_confirm: "هل تريد حذف هذه الغرفة وجميع رسائلها؟ لا يمكن التراجع عن هذا.", player_search_placeholder: "🔍 البحث عن لاعب...", accepted: "موافق", declined: "غير موافق", tentative: "ربما", plan_channels_title: "📡 قنوات ديسكورد لهذا الحدث", plan_channels_none: "لا توجد قنوات مهيأة بعد — أضف بعضها في الإدارة أولاً."
+                msg_cooldown: "يرجى الانتظار {s} ثانية إضافية قبل إرسال رسالة أخرى.", audit_log_title: "📜 سجل الإجراءات", no_audit_logs: "لا توجد إجراءات مسجلة بعد.", delete_room_confirm: "هل تريد حذف هذه الغرفة وجميع رسائلها؟ لا يمكن التراجع عن هذا.", player_search_placeholder: "🔍 البحث عن لاعب...", accepted: "موافق", declined: "غير موافق", tentative: "ربما", plan_channels_title: "📡 قنوات ديسكورد لهذا الحدث", plan_channels_none: "لا توجد قنوات مهيأة بعد — أضف بعضها في الإدارة أولاً.",
+                edit: "تعديل", discord_bot_settings: "🤖 إعدادات بوت ديسكورد", discord_bot_settings_note: "يتم إرسال هذه الإشعارات بواسطة البوت إلى جميع القنوات المضافة على اليمين.", share_to_discord: "📤 مشاركة على ديسكورد", select_channels_for_share: "اختر القناة/القنوات لمشاركة هذا:", share_now: "مشاركة", share_success: "تمت المشاركة على ديسكورد!", share_fail: "فشلت المشاركة.", who_online_title: "🟢 من متصل الآن", no_one_online: "لا يوجد أحد آخر متصل حاليًا.", currently_viewing: "في", dkp_loot_log_title: "💰 تغييرات DKP / الغنائم", bot_shares_log_title: "📡 مشاركات البوت", other_actions_log_title: "📋 إجراءات أخرى", share_to_discord_prompt: "تم تنزيل PNG! هل تريد مشاركته على ديسكورد أيضًا؟", dkp_report_caption: "تقرير DKP / الغنائم للمداهمة",
+                online_now_title: "🟢 متصل الآن", category_dkp_loot: "💰 تغييرات DKP / الغنائم", category_discord_bot: "📢 مشاركات بوت ديسكورد", category_general: "⚙️ عام", no_one_online: "لا يوجد أحد متصل الآن."
             }
         };
 
@@ -1083,6 +1113,7 @@
         let rolesData = {}; // Yetki verilmiş kullanıcılar (admin/officer) - Firebase 'Roles' yolundan (UID -> {role, name})
         let pendingUsersData = {}; // Google ile giriş yapmış ama henüz yetkisi olmayan kullanıcılar - 'PendingUsers' yolundan
         let userCardsData = {}; // Kullanıcı kartları (telefon/e-posta, sadece admin) - Firebase 'UserCards' yolundan
+        let presenceData = {}; // Kim online, hangi sayfada - Firebase 'Presence' yolundan (sadece Google ile giriş yapanlar)
         let currentFirebaseUser = null; // Şu an giriş yapmış Google/Firebase kullanıcı nesnesi
         let chatRoomsData = {}; // Tüm sohbet odaları (metadata) - Firebase 'ChatRooms' yolundan
         let activeChatRoomId = null; // Şu an açık olan sohbet odası
@@ -1238,6 +1269,9 @@
                             userCardsData = snapshot.val() || {};
                             if (activeTab === 'discordlink' && currentUser.role === 'admin') renderUserCards();
                         });
+                        db.ref('Presence').on('value', (snapshot) => {
+                            presenceData = snapshot.val() || {};
+                        });
                     } catch(e) { /* Announcements yolu henüz kurulmamış olabilir, sorun değil */ }
                 } catch(e) { hideLoader(); }
             }
@@ -1263,7 +1297,7 @@
                     if (document.activeElement && document.activeElement.id === 'addDkp') { e.preventDefault(); addNewPlayer(); return; }
                     if (document.activeElement && document.activeElement.id === 'editTotalArti') { e.preventDefault(); saveEdit(); return; }
                     if (document.activeElement && document.activeElement.id === 'planQuoteInput') { e.preventDefault(); document.activeElement.blur(); return; }
-                    if (document.activeElement && document.activeElement.id === 'discordWebhookInput') { e.preventDefault(); saveDiscordWebhook(); return; }
+                    if (document.activeElement && document.activeElement.id === 'discordMotivationalInput') { e.preventDefault(); saveDiscordBotSettings(); return; }
                     if (document.activeElement && document.activeElement.id === 'exportBgInput') { e.preventDefault(); saveExportBackground(); return; }
                 }
             });
@@ -1316,50 +1350,14 @@
             applyExportBackgrounds();
         }
 
-        // ============ DISCORD WEBHOOK ENTEGRASYONU ============
-        async function sendDiscordWebhook(payload, fileBlob = null, fileName = 'export.png') {
-            if (!cloudData.discordWebhookUrl) return null;
-            // ?wait=true -> Discord, oluşturulan mesajı (id dahil) geri döndürür.
-            // Bu id'yi saklayarak ileride bu mesajı silebiliyoruz (hatırlatma temizliği için).
-            const urlWithWait = cloudData.discordWebhookUrl + (cloudData.discordWebhookUrl.includes('?') ? '&' : '?') + 'wait=true';
-            try {
-                if (fileBlob) {
-                    const formData = new FormData();
-                    formData.append('payload_json', JSON.stringify(payload));
-                    formData.append('files[0]', fileBlob, fileName);
-                    const res = await fetch(urlWithWait, { method: 'POST', body: formData });
-                    return res.ok ? await res.json() : null;
-                } else {
-                    const res = await fetch(urlWithWait, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                    return res.ok ? await res.json() : null;
-                }
-            } catch (e) { console.error('Discord webhook error:', e); return null; }
-        }
-
-        // Webhook üzerinden daha önce gönderilmiş bir mesajı siler (hatırlatma temizliği için).
-        async function deleteDiscordWebhookMessage(messageId) {
-            if (!cloudData.discordWebhookUrl || !messageId) return;
-            try {
-                await fetch(`${cloudData.discordWebhookUrl}/messages/${messageId}`, { method: 'DELETE' });
-            } catch (e) { console.error('Discord message delete error:', e); }
-        }
-
-        // Gönderilen hatırlatma mesajının ID'sini, bağlı olduğu Discord duyurusunun altına kaydeder.
-        // Etkinlik saati geldiğinde bu ID'ler kullanılarak hatırlatma mesajları otomatik silinir.
-        function saveReminderMsgId(plan, key, msg) {
-            if (!msg || !msg.id || !plan.linkedAnnId || typeof firebase === 'undefined') return;
-            firebase.database().ref(`Announcements/${plan.linkedAnnId}/reminderMsgIds/${key}`).set(msg.id).catch(e => console.error('saveReminderMsgId error:', e));
-        }
-
-        function saveDiscordWebhook() {
+        // ============ DISCORD BOT ENTEGRASYONU (webhook TAMAMEN kaldırıldı, her şey bot üzerinden) ============
+        function saveDiscordBotSettings() {
             if (currentUser.role !== 'admin') return;
-            const input = document.getElementById('discordWebhookInput');
             const motivInput = document.getElementById('discordMotivationalInput');
-            cloudData.discordWebhookUrl = input ? input.value.trim() : '';
             cloudData.discordMotivationalMsg = motivInput ? motivInput.value.trim() : 'WE RISE FROM ASHES TO CONQUER THE CHAOS!';
-            logAudit("Discord Webhook güncellendi.");
+            logAudit("Discord Bot ayarları güncellendi.");
             triggerCloudSave();
-            showCustomAlert(t("discord_saved"), t("success"), "🔔");
+            showCustomAlert(t("discord_saved"), t("success"), "🤖");
         }
 
         function updateDiscordNotifySettings() {
@@ -1372,20 +1370,6 @@
             triggerCloudSave();
         }
 
-        async function testDiscordWebhook() {
-            if (currentUser.role !== 'admin') return;
-            const input = document.getElementById('discordWebhookInput');
-            const url = input ? input.value.trim() : '';
-            if (!url) return showCustomAlert(t("discord_test_fail"), t("info"), "❌");
-            cloudData.discordWebhookUrl = url;
-            const ok = await sendDiscordWebhook({ 
-                username: DISCORD_BOT_NAME,
-                avatar_url: DISCORD_BOT_AVATAR,
-                embeds: [{ title: '✅ Test Bildirimi', description: `HUNS Guild Portal Discord entegrasyonu başarıyla çalışıyor.\n\nGönderen: **${currentUser.username}**`, color: 5763719, timestamp: new Date().toISOString(), footer: { text: 'HUNS Guild Portal' } }] 
-            });
-            if (ok) { triggerCloudSave(); showCustomAlert(t("discord_test_sent"), t("success"), "🔔"); } else { showCustomAlert(t("discord_test_fail"), t("info"), "❌"); }
-        }
-
         // ============ DISCORD KANAL YÖNETİMİ (RSVP botu için çoklu kanal) ============
         function renderDiscordChannelList() {
             const container = document.getElementById('discordChannelList');
@@ -1395,10 +1379,34 @@
                 container.innerHTML = `<p class="text-[10px] text-slate-500">${t("discord_channels_none")}</p>`;
                 return;
             }
-            container.innerHTML = channels.map((ch, idx) => `<div class="flex items-center justify-between bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg">
-                <span class="text-[11px] font-bold text-slate-200">${ch.name} <span class="text-slate-500 font-mono text-[10px]">(${ch.id})</span></span>
-                <button onclick="removeDiscordChannel(${idx})" class="text-red-400 hover:text-red-300 text-[10px] font-black uppercase">✕</button>
+            container.innerHTML = channels.map((ch, idx) => `<div class="flex items-center justify-between gap-2 bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg" id="channelRow_${idx}">
+                <div class="flex-1 flex gap-2 items-center min-w-0" id="channelDisplay_${idx}">
+                    <span class="text-[11px] font-bold text-slate-200 truncate">${ch.name} <span class="text-slate-500 font-mono text-[10px]">(${ch.id})</span></span>
+                </div>
+                <div class="flex gap-1 shrink-0">
+                    <button onclick="startEditDiscordChannel(${idx})" title="${t('edit')}" class="text-cyan-400 hover:text-cyan-300 text-[10px] font-black uppercase px-1.5">✎</button>
+                    <button onclick="removeDiscordChannel(${idx})" class="text-red-400 hover:text-red-300 text-[10px] font-black uppercase px-1.5">✕</button>
+                </div>
             </div>`).join('');
+        }
+
+        function startEditDiscordChannel(idx) {
+            if (currentUser.role !== 'admin') return;
+            const ch = cloudData.discordChannels[idx];
+            const display = document.getElementById(`channelDisplay_${idx}`);
+            display.innerHTML = `<input type="text" id="editChName_${idx}" value="${ch.name}" class="flex-1 neon-theme-input px-2 py-1 rounded text-[10px] outline-none">
+                <input type="text" id="editChId_${idx}" value="${ch.id}" class="flex-1 neon-theme-input px-2 py-1 rounded text-[10px] outline-none font-mono">
+                <button onclick="saveEditDiscordChannel(${idx})" class="bg-emerald-600 hover:bg-emerald-500 text-white px-2 py-1 rounded text-[9px] font-black uppercase shrink-0">${t('save')}</button>`;
+        }
+
+        function saveEditDiscordChannel(idx) {
+            if (currentUser.role !== 'admin') return;
+            const name = document.getElementById(`editChName_${idx}`).value.trim();
+            const id = document.getElementById(`editChId_${idx}`).value.trim();
+            if (!name || !id) return;
+            cloudData.discordChannels[idx] = { name, id };
+            triggerCloudSave();
+            renderDiscordChannelList();
         }
 
         function addDiscordChannel() {
@@ -1458,26 +1466,31 @@
             formData.append('planId', plan.id.toString());
 
             fetch('/api/send-plan-image', { method: 'POST', body: formData })
+                .then(() => logAudit(`Discord'a etkinlik görseli paylaşıldı: ${plan.title || 'Event'}`))
                 .catch(e => console.error('send-plan-image error:', e));
+        }
+
+        // Yapılandırılmış TÜM Discord kanallarına, bot üzerinden düz metin yayınlar.
+        // (Webhook artık hiçbir işlevde kullanılmıyor — hepsi bota devredildi.)
+        function broadcastBotTextToAllChannels(content) {
+            const channelIds = (cloudData.discordChannels || []).map(ch => ch.id);
+            if (channelIds.length === 0) return;
+            fetch('/api/send-plan-reminder', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content, channelIds })
+            }).catch(e => console.error('broadcastBotTextToAllChannels error:', e));
         }
 
         function notifyDiscordAnnouncement(html) {
             if (!cloudData.discordNotify || !cloudData.discordNotify.announce) return;
             const plainText = html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().substring(0, 300);
-            sendDiscordWebhook({
-                username: DISCORD_BOT_NAME,
-                avatar_url: DISCORD_BOT_AVATAR,
-                embeds: [{ title: '📜 Yeni Duyuru Yayınlandı', description: plainText || 'Duyuru güncellendi.', color: 15844367, timestamp: new Date().toISOString(), footer: { text: 'HUNS Guild Portal' } }]
-            });
+            broadcastBotTextToAllChannels(`📜 **Yeni Duyuru Yayınlandı**\n${plainText || 'Duyuru güncellendi.'}`);
         }
 
         function notifyDiscordRollWinner(winner, score, contenders) {
             if (!cloudData.discordNotify || !cloudData.discordNotify.roll) return;
-            sendDiscordWebhook({
-                username: DISCORD_BOT_NAME,
-                avatar_url: DISCORD_BOT_AVATAR,
-                embeds: [{ title: '🎲 Loot Çekilişi Sonucu', description: `🏆 **Kazanan:** ${winner}\n🎯 **Skor:** ${score}\n👥 **Katılımcı:** ${(contenders||[]).length}`, color: 16766720, timestamp: new Date().toISOString(), footer: { text: 'HUNS Guild Portal' } }]
-            });
+            broadcastBotTextToAllChannels(`🎲 **Loot Çekilişi Sonucu**\n🏆 Kazanan: **${winner}**\n🎯 Skor: **${score}**\n👥 Katılımcı: **${(contenders||[]).length}**`);
         }
 
         // ============ DISCORD RSVP BOTU (Buton Etkileşimli Duyurular) ============
@@ -1938,6 +1951,8 @@
                     return;
                 }
 
+                initPresenceSystem(); // Google ile giriş yapan HERKES için (rol ne olursa olsun) canlı "kim online" takibi başlar.
+
                 // Giriş yapan herkesi (isim + e-posta ile) otomatik olarak kayıt listesine ekle.
                 // UID sadece anahtar olarak kullanılıyor, hiçbir yerde gösterilmiyor.
                 try {
@@ -1985,7 +2000,7 @@
 
         
         function applyPermissions() { document.body.classList.remove('admin-mode', 'officer-mode'); const badge = document.getElementById('userRoleBadge'); document.getElementById('loginBtn').classList.remove('hidden'); document.getElementById('logoutBtn').classList.add('hidden'); document.getElementById('editModeBtn').classList.add('hidden'); if(currentUser.role !== 'visitor') { document.getElementById('loginBtn').classList.add('hidden'); document.getElementById('logoutBtn').classList.remove('hidden'); } if(currentUser.role === 'admin') { document.body.classList.add('admin-mode'); document.getElementById('editModeBtn').classList.remove('hidden'); if(badge) { currentUser.username = t("admin_role"); badge.className = "text-[9px] font-black uppercase tracking-widest text-white bg-red-900 border border-red-500 px-2 py-0.5 rounded"; badge.innerText = currentUser.username; } } else if (currentUser.role === 'officer') { document.body.classList.add('officer-mode'); if(badge) { badge.className = "text-[9px] font-black uppercase tracking-widest text-slate-900 bg-amber-400 border border-amber-600 px-2 py-0.5 rounded"; badge.innerText = currentUser.username; } } else { if(badge) { badge.className = "text-[9px] font-black uppercase tracking-widest text-slate-500 bg-slate-900 border border-slate-700 px-2 py-0.5 rounded"; badge.innerText = t("visitor"); } } const sb = document.getElementById('raidSidebar'); if(activeTab === 'raid' && currentUser.role !== 'visitor') { sb.style.display = 'flex'; document.body.classList.add('sidebar-active'); } else { sb.style.display = 'none'; document.body.classList.remove('sidebar-active'); } }
-        function switchTab(tabId) { activeTab = tabId; document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active')); document.getElementById(`page-${tabId}`).classList.add('active'); document.getElementById(`tab-${tabId}`).classList.add('active'); if (tabId === 'admin') { if (currentUser.role !== 'admin') { document.getElementById('accessDeniedMsg').style.display = 'block'; } else { document.getElementById('accessDeniedMsg').style.display = 'none'; } } if (tabId === 'discordann') { if (currentUser.role === 'visitor') { document.getElementById('discordAnnDeniedMsg').style.display = 'block'; } else { document.getElementById('discordAnnDeniedMsg').style.display = 'none'; renderDiscordAnnouncementsList(); renderDiscordAnnChannelSelect(); } } if (tabId === 'discordlink') { if (currentUser.role === 'visitor') { document.getElementById('discordLinkDeniedMsg').style.display = 'block'; } else { document.getElementById('discordLinkDeniedMsg').style.display = 'none'; renderDiscordLinkTable(); if (currentUser.role === 'admin') renderUserCards(); } } if (tabId === 'messages') { renderMessagesInbox(); renderChatRoomList(); } applyPermissions(); }
+        function switchTab(tabId) { activeTab = tabId; document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active')); document.getElementById(`page-${tabId}`).classList.add('active'); document.getElementById(`tab-${tabId}`).classList.add('active'); if (tabId === 'admin') { if (currentUser.role !== 'admin') { document.getElementById('accessDeniedMsg').style.display = 'block'; } else { document.getElementById('accessDeniedMsg').style.display = 'none'; } } if (tabId === 'discordann') { if (currentUser.role === 'visitor') { document.getElementById('discordAnnDeniedMsg').style.display = 'block'; } else { document.getElementById('discordAnnDeniedMsg').style.display = 'none'; renderDiscordAnnouncementsList(); renderDiscordAnnChannelSelect(); } } if (tabId === 'discordlink') { if (currentUser.role === 'visitor') { document.getElementById('discordLinkDeniedMsg').style.display = 'block'; } else { document.getElementById('discordLinkDeniedMsg').style.display = 'none'; renderDiscordLinkTable(); if (currentUser.role === 'admin') renderUserCards(); } } applyPermissions(); updatePresence(); }
         
         function toggleEditMode() { if(currentUser.role !== 'admin') return; isEditMode = !isEditMode; document.body.classList.toggle('edit-mode-active', isEditMode); const statusSpan = document.getElementById('editModeStatus'); const ed = document.getElementById('announcementEditor'); const tbar = document.getElementById('editorToolbar'); if(isEditMode) { statusSpan.innerText = t("on"); statusSpan.className = 'text-emerald-400'; ed.setAttribute('contenteditable','true'); tbar.classList.remove('hidden'); tbar.style.display = 'flex'; } else { statusSpan.innerText = t("off"); statusSpan.className = 'text-red-500'; ed.setAttribute('contenteditable','false'); tbar.classList.add('hidden'); tbar.style.display = 'none'; } }
         function handleTitleClick(e, key) { if(!isEditMode || currentUser.role !== 'admin') return; e.preventDefault(); e.stopPropagation(); openTitleEdit(key); }
@@ -2032,28 +2047,95 @@
             updateNotificationBadge();
         }
 
+        // ============ PRESENCE (KİM ONLİNE, HANGİ SAYFADA) ============
+        // Sadece Google ile giriş yapmış kullanıcılar için çalışır (ziyaretçilerin Firebase kimliği yok).
+        // Firebase'in onDisconnect() özelliğiyle, sekme kapanınca kayıt otomatik silinir.
+        function initPresenceSystem() {
+            if (!currentFirebaseUser) return;
+            const uid = currentFirebaseUser.uid;
+            const presenceRef = firebase.database().ref('Presence/' + uid);
+            firebase.database().ref('.info/connected').on('value', (snap) => {
+                if (snap.val() === true) {
+                    presenceRef.onDisconnect().remove();
+                    updatePresence();
+                }
+            });
+            if (!window._presenceHeartbeat) window._presenceHeartbeat = setInterval(updatePresence, 20000);
+        }
+
+        function updatePresence() {
+            if (!currentFirebaseUser || currentUser.role === 'visitor') return;
+            firebase.database().ref('Presence/' + currentFirebaseUser.uid).set({
+                name: currentUser.username,
+                role: currentUser.role,
+                page: activeTab,
+                lastSeen: Date.now()
+            }).catch(() => {});
+        }
+
+        // Bir işlem kaydı metnine bakarak kategorisini tahmin eder (her logAudit çağrısını
+        // tek tek etiketlemek yerine, mevcut metinlerdeki anahtar kelimelere göre otomatik ayırır).
+        function categorizeAuditAction(action) {
+            const a = action.toLowerCase();
+            if (a.includes('dkp') || a.includes('arti') || a.includes('raid:') || a.includes('roll win')) return 'dkp';
+            if (a.includes('discord') || a.includes('duyuru') || a.includes('webhook') || a.includes('sohbet odası')) return 'discord';
+            return 'general';
+        }
+
         // Tüm yetkililer (admin + officer) İşlem Kaydı'nı görebilsin diye, mesaj butonunun üstündeki
         // ayrı sabit butondan açılan bağımsız bir modal. Yönetim panelindeki liste ile aynı veriyi kullanır.
         function openAuditLogModal() {
             if (currentUser.role === 'visitor') return;
-            const list = document.getElementById('auditLogModalList');
-            if (!cloudData.auditLogs || cloudData.auditLogs.length === 0) {
-                list.innerHTML = `<p class="text-[11px] text-slate-500 italic text-center py-6">${t("no_audit_logs")}</p>`;
+
+            // Kim online paneli
+            const pageNames = { raid: 'DKP', plan: 'Event Plan', discordann: 'Discord Announcement', discordlink: 'Discord Linking', messages: 'Messages', admin: 'Management', announcements: 'Announcements' };
+            const now = Date.now();
+            const onlineEntries = Object.entries(presenceData || {}).filter(([uid, p]) => p.lastSeen && (now - p.lastSeen) < 60000);
+            const presenceList = document.getElementById('presenceList');
+            if (onlineEntries.length === 0) {
+                presenceList.innerHTML = `<p class="text-[10px] text-slate-500 italic">${t("no_one_online")}</p>`;
             } else {
-                list.innerHTML = cloudData.auditLogs.map(log => `<div class="text-[10px] bg-slate-950 p-2.5 rounded border border-slate-800"><span class="text-slate-500 font-mono mr-2">${log.time}</span><span class="text-cyan-400 font-bold">${log.user}:</span> <span class="text-slate-300 ml-1">${log.action}</span></div>`).join('');
+                presenceList.innerHTML = onlineEntries.map(([uid, p]) => `<div class="flex items-center gap-1.5 bg-slate-950 border border-emerald-900/50 px-2.5 py-1.5 rounded-lg text-[10px]">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_5px_#10b981]"></span>
+                    <span class="font-bold text-white">${p.name}</span>
+                    <span class="text-slate-500">·</span>
+                    <span class="text-cyan-400">${pageNames[p.page] || p.page || '—'}</span>
+                </div>`).join('');
             }
+
+            // Kategorili işlem kaydı
+            const dkpList = document.getElementById('auditLogModalListDkp');
+            const discordList = document.getElementById('auditLogModalListDiscord');
+            const generalList = document.getElementById('auditLogModalListGeneral');
+            const renderRow = log => `<div class="text-[10px] bg-slate-950 p-2.5 rounded border border-slate-800"><span class="text-slate-500 font-mono mr-2">${log.time}</span><span class="text-cyan-400 font-bold">${log.user}:</span> <span class="text-slate-300 ml-1">${log.action}</span></div>`;
+
+            const dkpLogs = [], discordLogs = [], generalLogs = [];
+            (cloudData.auditLogs || []).forEach(log => {
+                const cat = categorizeAuditAction(log.action);
+                if (cat === 'dkp') dkpLogs.push(log); else if (cat === 'discord') discordLogs.push(log); else generalLogs.push(log);
+            });
+
+            dkpList.innerHTML = dkpLogs.length ? dkpLogs.map(renderRow).join('') : `<p class="text-[10px] text-slate-600 italic">${t("no_audit_logs")}</p>`;
+            discordList.innerHTML = discordLogs.length ? discordLogs.map(renderRow).join('') : `<p class="text-[10px] text-slate-600 italic">${t("no_audit_logs")}</p>`;
+            generalList.innerHTML = generalLogs.length ? generalLogs.map(renderRow).join('') : `<p class="text-[10px] text-slate-600 italic">${t("no_audit_logs")}</p>`;
+
             document.getElementById('auditLogModal').classList.remove('hidden');
         }
 
-        // Sağ alttaki mesaj ikonuna basılınca doğrudan sohbet odaları görünsün diye Mesajlar
-        // sekmesine geçip, sayfayı sohbet odaları bölümüne kaydırıyor + bildirim sayacını sıfırlıyor.
+        // Sağ alttaki mesaj ikonuna basılınca Mesajlar modalı açılır ve doğrudan sohbet odalarına kaydırılır.
         function openMessagesFromFab() {
-            switchTab('messages');
+            document.getElementById('page-messages').classList.remove('hidden');
+            renderMessagesInbox();
+            renderChatRoomList();
             markNotificationsSeen();
             setTimeout(() => {
                 const roomsSection = document.getElementById('chatRoomList');
                 if (roomsSection) roomsSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }, 150);
+        }
+
+        function closeMessagesModal() {
+            document.getElementById('page-messages').classList.add('hidden');
         }
 
         function formatDoc(cmd, value=null) { document.execCommand(cmd, false, value); document.getElementById('announcementEditor').focus(); }
@@ -2274,8 +2356,51 @@
             }).join(''); 
             
             // Dış linkten arka plan resmi kullanıldığı için useCORS:true eklendi
-            html2canvas(exportCont,{backgroundColor:'#020617',scale:2, useCORS:true}).then(canvas=>{let a=document.createElement('a'); a.download=`HUNS_Raid_DKP.png`; a.href=canvas.toDataURL("image/png"); a.click();}).catch(e => { console.error('Raid PNG yakalama hatası:', e); showCustomAlert(t("png_capture_fail"), t("info"), "❌"); }); 
+            html2canvas(exportCont,{backgroundColor:'#020617',scale:2, useCORS:true}).then(canvas=>{
+                let a=document.createElement('a'); a.download=`HUNS_Raid_DKP.png`; a.href=canvas.toDataURL("image/png"); a.click();
+                // İndirdikten hemen sonra, isterse aynı görseli bot üzerinden Discord'a da paylaşabilsin diye soruyoruz.
+                canvas.toBlob(blob => {
+                    showCustomConfirm(t("share_to_discord_prompt"), () => {
+                        openShareToDiscordModal(blob, `💰 **${t('dkp_report_caption')}** — ${new Date().toLocaleDateString('tr-TR')}\n@everyone`);
+                    }, t("share_now"), "📤");
+                }, 'image/png');
+            }).catch(e => { console.error('Raid PNG yakalama hatası:', e); showCustomAlert(t("png_capture_fail"), t("info"), "❌"); }); 
         } 
+
+        // ============ DISCORD'A PAYLAŞ (genel amaçlı, hem DKP raporu hem Etkinlik Planı için kullanılabilir) ============
+        let shareToDiscordBlob = null;
+        function openShareToDiscordModal(imageBlob, captionText) {
+            shareToDiscordBlob = imageBlob;
+            const channels = cloudData.discordChannels || [];
+            const listEl = document.getElementById('shareDiscordChannelList');
+            if (channels.length === 0) {
+                listEl.innerHTML = `<p class="text-[11px] text-slate-500 italic">${t("plan_channels_none")}</p>`;
+            } else {
+                listEl.innerHTML = channels.map(ch => `<label class="flex items-center gap-2 bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg cursor-pointer text-[11px] text-slate-300">
+                    <input type="checkbox" value="${ch.id}" class="share-discord-channel-checkbox w-3.5 h-3.5 cursor-pointer accent-indigo-500">
+                    ${ch.name}
+                </label>`).join('');
+            }
+            document.getElementById('shareDiscordCaptionText').value = captionText || '';
+            document.getElementById('shareToDiscordModal').classList.remove('hidden');
+        }
+
+        function confirmShareToDiscord() {
+            const checked = Array.from(document.querySelectorAll('.share-discord-channel-checkbox:checked')).map(cb => cb.value);
+            if (checked.length === 0) return showCustomAlert(t("plan_channels_none"), t("info"), "❌");
+            if (!shareToDiscordBlob) return;
+            const content = document.getElementById('shareDiscordCaptionText').value;
+
+            const formData = new FormData();
+            formData.append('image', shareToDiscordBlob, 'share.png');
+            formData.append('content', content);
+            formData.append('channelIds', JSON.stringify(checked));
+
+            document.getElementById('shareToDiscordModal').classList.add('hidden');
+            fetch('/api/send-plan-image', { method: 'POST', body: formData })
+                .then(res => { if (res.ok) { showCustomAlert(t("share_success"), t("success"), "📤"); logAudit("Discord'a paylaşım yapıldı."); } else { showCustomAlert(t("share_fail"), t("info"), "❌"); } })
+                .catch(e => { console.error('confirmShareToDiscord error:', e); showCustomAlert(t("share_fail"), t("info"), "❌"); });
+        }
       
 
         function renderLogs() { document.getElementById('rollLogs').innerHTML=cloudData.rolls.map(log=>`<div class="bg-slate-900/40 p-3 border border-slate-800 rounded-xl flex justify-between items-center text-[10px] shadow-sm"><div class="flex-1"><span class="text-purple-400 font-black uppercase text-[11px]" style="font-family:Georgia,serif;">${log.winner}</span> <span class="text-slate-400 bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800 ml-2">Roll: ${log.score}</span></div><div class="flex items-center gap-2"><span class="text-slate-600 font-mono text-[8px]">${log.time||''}</span>${currentUser.role==='admin'?`<button onclick="delLog('r',${log.id})" class="text-[8px] text-slate-500 hover:text-red-500 font-bold transition">Delete</button>`:''}</div></div>`).join(''); document.getElementById('raidHistory').innerHTML=cloudData.history.map(h=>`<div class="bg-slate-900/40 p-4 border border-slate-800 rounded-xl flex flex-col gap-2 shadow-sm text-[10px]"><div class="flex justify-between items-center border-b border-slate-800 pb-2 mb-1"><span class="text-emerald-500 font-bold font-mono">${h.date}</span>${currentUser.role==='admin'?`<button onclick="delLog('h',${h.id})" class="text-[8px] text-slate-500 hover:text-red-500 font-bold transition">Delete</button>`:''}</div><div class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1">${h.data.map(d=>`<div class="text-[9px] text-slate-400 flex justify-between border-b border-slate-800/50 pb-0.5"><span style="font-family:Georgia,serif;">${d.name}</span> <span class="text-cyan-400 font-bold">${d.dkp}P <span class="text-slate-600 ml-1 font-normal">A:${d.arti} Dc:${d.dragon}</span></span></div>`).join('')}</div></div>`).join(''); }
@@ -2560,6 +2685,19 @@
                     planLink.download = `HUNS_Plan_${Date.now()}.png`;
                     planLink.href = canvas.toDataURL("image/png");
                     planLink.click();
+                });
+            }, 100);
+        }
+
+        // Admin/officer istediği zaman, planı yayınlamadan bile, elle Discord'a paylaşabilsin diye.
+        function sharePlanToDiscordManually() {
+            const plan = cloudData.raidPlans.find(p => p.id === activePlanId);
+            if (!plan) return;
+            setTimeout(() => {
+                capturePlanExportPNG((canvas) => {
+                    canvas.toBlob(blob => {
+                        openShareToDiscordModal(blob, `📢 **${plan.title || 'Event'}**\n@everyone\n\n🔗 **Web Portal:** ${GUILD_SITE_URL}`);
+                    }, 'image/png');
                 });
             }, 100);
         }
@@ -2956,7 +3094,8 @@
                 grantedContainer.innerHTML = grantedEntries.map(([uid, r]) => `<div class="flex items-center justify-between bg-slate-950/60 border border-slate-800 rounded-lg p-3 gap-2">
                     <div class="min-w-0">
                         <div class="text-xs font-bold text-white truncate">${r.name || '—'} <span class="text-[9px] font-black uppercase ${r.role === 'admin' ? 'text-fuchsia-400' : 'text-blue-400'}">(${r.role})</span></div>
-                        ${showUids ? `<div class="text-[9px] text-slate-500 font-mono truncate">${uid}</div>` : ''}
+                        <div class="text-[9px] text-slate-500 truncate">${r.email || '—'}</div>
+                        ${showUids ? `<div class="text-[9px] text-slate-600 font-mono truncate">${uid}</div>` : ''}
                     </div>
                     <button onclick="revokeRole('${uid}')" class="shrink-0 bg-red-700 hover:bg-red-600 text-white px-3 py-1.5 rounded text-[10px] font-black uppercase transition" data-i18n="revoke_access">Revoke</button>
                 </div>`).join('');
@@ -2998,8 +3137,7 @@
                 rbContainer.innerHTML = deletedPlayers.map(p => `<div class="flex items-center justify-between bg-slate-950/80 border border-red-900/30 p-3 rounded-xl shadow-sm"><div class="flex flex-col"><span class="text-sm font-black text-rose-400" style="font-family:'Cinzel',serif; letter-spacing: 1px;">${p.name} <span class="text-[10px] text-slate-500 ml-1 font-sans tracking-normal">(${p.role})</span></span><span class="text-[10px] text-cyan-400 font-bold mt-1">DKP: ${p.dkp} | Arti: ${p.totalArti} | DC: ${p.totalDragon}</span></div><div class="flex items-center gap-2"><button onclick="restorePlayer(${p.id})" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded shadow-[0_0_10px_rgba(16,185,129,0.5)] text-[10px] font-black uppercase transition" data-i18n="restore">Geri Getir</button><button onclick="hardDeletePlayer(${p.id})" class="bg-red-700 hover:bg-red-600 text-white px-3 py-1.5 rounded shadow-[0_0_10px_rgba(220,38,38,0.5)] text-[10px] font-black uppercase transition" data-i18n="perma_delete">Kalıcı Sil</button></div></div>`).join('');
             }
 
-            // Discord Webhook ayarlarını senkronize et
-            const dwInput = document.getElementById('discordWebhookInput'); if (dwInput && document.activeElement !== dwInput) dwInput.value = cloudData.discordWebhookUrl || '';
+            // Discord Bot ayarlarını senkronize et
             const dmInput = document.getElementById('discordMotivationalInput'); if (dmInput && document.activeElement !== dmInput) dmInput.value = cloudData.discordMotivationalMsg || 'WE RISE FROM ASHES TO CONQUER THE CHAOS!';
             const dnp = document.getElementById('discordNotifyPublish'); if (dnp) dnp.checked = !!(cloudData.discordNotify && cloudData.discordNotify.publish);
             const dna = document.getElementById('discordNotifyAnnounce'); if (dna) dna.checked = !!(cloudData.discordNotify && cloudData.discordNotify.announce);
