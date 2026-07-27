@@ -71,25 +71,47 @@ function computeNextWeeklyFireUTC(dayOfWeek, hh, mm, fromUTCms) {
 async function runScheduledPosts(env) {
     try {
         const res = await fetch(`${env.FIREBASE_DB_URL}/ScheduledPosts.json`);
+        console.log(`[runScheduledPosts] Firebase yanıt statusu: ${res.status}`);
         const all = await res.json();
-        if (!all) return;
+
+        if (!all) {
+            console.log('[runScheduledPosts] ScheduledPosts.json boş/null döndü — hiç kayıt yok ya da rules erişimi engelliyor. Erken çıkılıyor.');
+            return;
+        }
 
         const now = Date.now();
+        const postIds = Object.keys(all);
+        console.log(`[runScheduledPosts] ${postIds.length} kayıt bulundu: ${postIds.join(', ')}`);
 
         for (const [postId, post] of Object.entries(all)) {
-            if (!post || !post.active) continue;
-            if (!post.nextFireAt || post.nextFireAt > now) continue;
+            if (!post || !post.active) {
+                console.log(`[runScheduledPosts] ${postId} atlandı: active=false ya da post boş.`);
+                continue;
+            }
+            if (!post.nextFireAt || post.nextFireAt > now) {
+                const kalanSn = post.nextFireAt ? Math.round((post.nextFireAt - now) / 1000) : 'yok';
+                console.log(`[runScheduledPosts] ${postId} atlandı: sırası gelmedi. nextFireAt=${post.nextFireAt}, now=${now}, kalan_saniye=${kalanSn}`);
+                continue;
+            }
+
+            console.log(`[runScheduledPosts] ${postId} TETİKLENİYOR. Kanallar: ${JSON.stringify(post.channelIds)}`);
 
             // 1) Her seçili kanala gönder (metin + varsa görsel linki bir embed olarak).
             for (const channelId of (post.channelIds || [])) {
                 try {
                     const body = { content: post.content || '', allowed_mentions: { parse: ['everyone'] } };
                     if (post.imageUrl) body.embeds = [{ image: { url: post.imageUrl } }];
-                    await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
+                    const discordRes = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
                         method: 'POST',
                         headers: { 'Authorization': `Bot ${env.DISCORD_BOT_TOKEN}`, 'Content-Type': 'application/json' },
                         body: JSON.stringify(body)
                     });
+                    if (discordRes.ok) {
+                        console.log(`[runScheduledPosts] ${postId} -> kanal ${channelId}: BAŞARILI gönderildi.`);
+                    } else {
+                        const errText = await discordRes.text();
+                        console.error(`[runScheduledPosts] ${postId} -> kanal ${channelId}: Discord API hatası (status ${discordRes.status}): ${errText}`);
+                    }
                 } catch (e) { console.error(`ScheduledPost ${postId} -> kanal ${channelId} gönderim hatası:`, e); }
             }
 
@@ -109,11 +131,17 @@ async function runScheduledPosts(env) {
                 updates.nextFireAt = computeNextWeeklyFireUTC(post.dayOfWeek, post.hour, post.minute, now);
             }
 
-            await fetch(`${env.FIREBASE_DB_URL}/ScheduledPosts/${postId}.json`, {
+            console.log(`[runScheduledPosts] ${postId} durum güncelleniyor: ${JSON.stringify(updates)}`);
+            const patchRes = await fetch(`${env.FIREBASE_DB_URL}/ScheduledPosts/${postId}.json`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(updates)
-            }).catch(e => console.error(`ScheduledPost ${postId} durum güncelleme hatası:`, e));
+            }).catch(e => { console.error(`ScheduledPost ${postId} durum güncelleme hatası (network):`, e); return null; });
+            if (patchRes && !patchRes.ok) {
+                console.error(`[runScheduledPosts] ${postId} durum güncelleme Firebase hatası (status ${patchRes.status}): ${await patchRes.text()}`);
+            } else if (patchRes) {
+                console.log(`[runScheduledPosts] ${postId} durum güncelleme BAŞARILI.`);
+            }
         }
     } catch (e) {
         console.error('runScheduledPosts genel hata:', e);
