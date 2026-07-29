@@ -2,17 +2,23 @@
 // Adres: https://SITEN.pages.dev/api/send-announcement
 
 import { buildAnnouncementEmbed, buildRsvpComponents } from '../_embedHelper.js';
+import { fb } from '../_auth.js';
 
 export async function onRequestPost(context) {
-    const { request, env } = context;
+    const { request, env, auth } = context;
 
     let payload;
     try { payload = await request.json(); } catch (e) { return new Response('Invalid JSON', { status: 400 }); }
 
-    const { title, time, content, authorName, channelId } = payload;
+    const { title, time, content, channelId } = payload;
     if (!title || !content) {
         return new Response('title ve content alanları zorunludur.', { status: 400 });
     }
+
+    // GÜVENLİK (Madde 25): Yazar adı artık istemciden GELMİYOR. Eskiden istemci
+    // "authorName" alanını istediği gibi doldurabiliyordu — yani biri başkasının
+    // adına duyuru yayınlayabilirdi. Artık worker.js'in doğruladığı kimlikten alınıyor.
+    const authorName = (auth && auth.name) || 'Guild Portal';
 
     // Site üzerinden admin panelinde tanımlanan kanallardan biri seçilmişse onu kullan,
     // seçilmemişse (eski istekler / geriye dönük uyumluluk) ortam değişkenindeki varsayılana düş.
@@ -55,7 +61,7 @@ export async function onRequestPost(context) {
         // Bu durumda admin'e KARIŞTIRMADAN, net bir "kısmi başarı" mesajı dönüyoruz —
         // yoksa "hiç gönderilmedi" sanıp tekrar gönderip Discord'da mesajı ikiletebilir.
         try {
-            const fbRes = await fetch(`${env.FIREBASE_DB_URL}/Announcements/${annId}.json`, {
+            const fbRes = await fetch(fb(env, `Announcements/${annId}`), {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(ann)

@@ -5,6 +5,8 @@
 // başarısız olsa bile, sitedeki "finalized" durumu HER ZAMAN kaydedilir — yani biri mesajı
 // Discord'dan elle silmiş olsa da, "Finalize Now"a bastığında site senkron kalır.
 
+import { fb } from '../_auth.js';
+
 export async function onRequestPost(context) {
     const { request, env } = context;
 
@@ -15,7 +17,7 @@ export async function onRequestPost(context) {
     if (!annId) return new Response('annId zorunludur.', { status: 400 });
 
     try {
-        const annRes = await fetch(`${env.FIREBASE_DB_URL}/Announcements/${annId}.json`);
+        const annRes = await fetch(fb(env, `Announcements/${annId}`));
         const ann = await annRes.json();
         if (!ann) return new Response('Duyuru bulunamadı.', { status: 404 });
         if (ann.finalized) {
@@ -61,7 +63,7 @@ export async function onRequestPost(context) {
         } catch (e) { console.error('Hatırlatma mesajları silinemedi (yoksayıldı):', e); }
 
         // 4) Tekrar tetiklenmesin diye işaretle — Discord tarafında yukarıda ne olursa olsun BU HER ZAMAN ÇALIŞIR.
-        await fetch(`${env.FIREBASE_DB_URL}/Announcements/${annId}.json`, {
+        await fetch(fb(env, `Announcements/${annId}`), {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ finalized: true })

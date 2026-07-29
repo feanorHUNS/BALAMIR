@@ -9,6 +9,8 @@
 //
 // Adres: https://SITEN.workers.dev/api/sync-announcements
 
+import { fb } from '../_auth.js';
+
 export async function onRequestPost(context) {
     const { request, env } = context;
 
@@ -27,7 +29,7 @@ export async function onRequestPost(context) {
 
         // Mesaj Discord'da artık yoksa (404) -> demek ki biri elle silmiş. Sitede de kapatıyoruz.
         if (msgRes.status === 404) {
-            await fetch(`${env.FIREBASE_DB_URL}/Announcements/${annId}.json`, {
+            await fetch(fb(env, `Announcements/${annId}`), {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ finalized: true, autoClosedReason: 'discord_message_deleted' })

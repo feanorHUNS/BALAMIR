@@ -2,6 +2,8 @@
 // duyuruyu sitedeki listeden de TAMAMEN kaldırır (sadece finalized=true işaretlemez, Firebase'den siler).
 // Adres: https://SITEN.workers.dev/api/delete-announcement
 
+import { fb } from '../_auth.js';
+
 export async function onRequestPost(context) {
     const { request, env } = context;
 
@@ -12,7 +14,7 @@ export async function onRequestPost(context) {
     if (!annId) return new Response('annId zorunludur.', { status: 400 });
 
     try {
-        const annRes = await fetch(`${env.FIREBASE_DB_URL}/Announcements/${annId}.json`);
+        const annRes = await fetch(fb(env, `Announcements/${annId}`));
         const ann = await annRes.json();
         if (!ann) return new Response('Duyuru bulunamadı (zaten silinmiş olabilir).', { status: 404 });
 
@@ -38,7 +40,7 @@ export async function onRequestPost(context) {
         } catch (e) { console.error('Hatırlatma mesajları silinemedi (yoksayıldı):', e); }
 
         // 3) Siteden TAMAMEN kaldır (sadece finalized işaretlemek değil, tam silme).
-        await fetch(`${env.FIREBASE_DB_URL}/Announcements/${annId}.json`, { method: 'DELETE' });
+        await fetch(fb(env, `Announcements/${annId}`), { method: 'DELETE' });
 
         return new Response(JSON.stringify({ success: true }), {
             status: 200, headers: { 'Content-Type': 'application/json' }

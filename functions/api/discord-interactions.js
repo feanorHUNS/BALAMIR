@@ -6,6 +6,7 @@
 
 import { verifyKey, InteractionType, InteractionResponseType } from 'discord-interactions';
 import { buildAnnouncementEmbed, buildRsvpComponents } from '../_embedHelper.js';
+import { fb } from '../_auth.js';
 
 export async function onRequestPost(context) {
     const { request, env } = context;
@@ -46,16 +47,16 @@ export async function onRequestPost(context) {
             const fallbackName = serverNickname || user.global_name || user.username;
 
             const [annRes, , linkedPlayerIdRes, playersRes] = await Promise.all([
-                fetch(`${env.FIREBASE_DB_URL}/Announcements/${annId}.json`),
+                fetch(fb(env, `Announcements/${annId}`)),
                 // Kullanıcı adı + sunucu nicki her etkileşimde güncellenir (nick değişse bile userId sabit kalır).
-                fetch(`${env.FIREBASE_DB_URL}/DiscordUsers/${userId}.json`, {
+                fetch(fb(env, `DiscordUsers/${userId}`), {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username: discordUsername, nickname: serverNickname || discordUsername, lastSeen: Date.now() })
                 }),
                 // Bu Discord kullanıcısı site üzerinden bir karakterle eşleştirilmiş mi? (Discord Linking sekmesi)
-                fetch(`${env.FIREBASE_DB_URL}/GuildData/discordLinks/${userId}.json`),
-                fetch(`${env.FIREBASE_DB_URL}/GuildData/players.json`)
+                fetch(fb(env, `GuildData/discordLinks/${userId}`)),
+                fetch(fb(env, `GuildData/players`))
             ]);
             const ann = await annRes.json();
 
@@ -87,7 +88,7 @@ export async function onRequestPost(context) {
             multiPathUpdate[`Announcements/${annId}/declined/${userId}`] = choice === 'decline' ? displayName : null;
             multiPathUpdate[`Announcements/${annId}/tentative/${userId}`] = choice === 'tentative' ? displayName : null;
 
-            await fetch(`${env.FIREBASE_DB_URL}/.json`, {
+            await fetch(fb(env, ``), {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(multiPathUpdate)
@@ -95,7 +96,7 @@ export async function onRequestPost(context) {
 
             // Embed'i güncel göstermek için duyuruyu bu atomik yazımdan SONRA tazeden okuyoruz
             // (böylece o an başka biri tıklamış olsa bile en güncel tam listeyi gösteririz).
-            const freshAnnRes = await fetch(`${env.FIREBASE_DB_URL}/Announcements/${annId}.json`);
+            const freshAnnRes = await fetch(fb(env, `Announcements/${annId}`));
             const freshAnn = await freshAnnRes.json();
 
             const embed = buildAnnouncementEmbed(freshAnn);

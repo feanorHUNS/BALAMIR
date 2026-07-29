@@ -3,6 +3,8 @@
 // Adres: https://SITEN.workers.dev/api/send-plan-image
 // İstek: multipart/form-data { image: <PNG dosyası>, content: <metin>, channelIds: <JSON dizi>, planId: <string> }
 
+import { fb } from '../_auth.js';
+
 export async function onRequestPost(context) {
     const { request, env } = context;
 
@@ -49,7 +51,7 @@ export async function onRequestPost(context) {
 
         // İleride takip/temizlik için, hangi plana hangi kanallarda hangi mesajın gittiğini kaydet.
         if (planId) {
-            await fetch(`${env.FIREBASE_DB_URL}/PlanDiscordPosts/${planId}.json`, {
+            await fetch(fb(env, `PlanDiscordPosts/${planId}`), {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(results)
