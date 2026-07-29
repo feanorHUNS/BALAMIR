@@ -1282,7 +1282,12 @@
                     // Discord Duyuruları - ayrı bir Firebase yolu (GuildData'nın büyük blob'undan bağımsız,
                     // her buton tıklamasında bütün siteyi yeniden kaydetmemek için)
                     try {
-                        db.ref('Announcements').on('value', (snapshot) => {
+                        // MADDE 33: Eskiden TUM duyuru gecmisi her sayfa acilisinda
+                        // indiriliyordu (sonra .slice(0,15) ile 15'i gosteriliyordu).
+                        // Bir yil sonra bu yuzlerce kayit demekti. Duyuru kimlikleri
+                        // 'ann_<zaman damgasi>' bicimindeyse anahtar sirasi = zaman sirasi,
+                        // bu yuzden limitToLast(60) en yeni 60 kaydi getirir.
+                        db.ref('Announcements').orderByKey().limitToLast(60).on('value', (snapshot) => {
                             announcementsData = snapshot.val() || {};
                             if (activeTab === 'discordann') renderDiscordAnnouncementsList();
                             if (activeTab === 'plan') renderPlanUI();
@@ -2169,7 +2174,13 @@
 
         // Etkinliğe 1 saat kala: butonları kaldır + katılım onaylayanlara TR/EN teşekkür mesajı gönder.
         // Aynı anda açık birden fazla sekme olsa bile, tryClaimReminder() sayesinde sadece BİR tanesi tetikler.
+        // MADDE 31: Bu is artik SUNUCUDA, her dakika calisan cron gorevinde yapiliyor
+        // (worker.js -> runTimeBasedAutomation). Eskiden yalnizca birileri siteyi acik
+        // tuttugunda calisiyordu; kimse acmazsa duyurular sonlanmiyordu.
+        // Fonksiyon, eski cagirici kodu bozmamak icin duruyor ama artik is yapmiyor.
         function checkAnnouncementExpiry() {
+            return; // sunucuya tasindi
+            /* eslint-disable no-unreachable */
             if (currentUser.role === 'visitor') return;
             if (!announcementsData) return;
             const timeNow = Date.now();
@@ -2194,7 +2205,10 @@
         // YENİ: Biri bir duyuru mesajını Discord'dan ELLE silerse, Discord bize bunu haber vermez
         // (bot sürekli açık bir bağlantı tutmuyor). Bu yüzden site açıkken arada bir kontrol edip,
         // mesajı artık olmayan duyuruları otomatik "sonlandırılmış" yapıyoruz.
+        // MADDE 31: Bu kontrol de artik sunucuda (cron, 10 dakikada bir) yapiliyor.
         function checkDiscordMessagesSync() {
+            return; // sunucuya tasindi
+            /* eslint-disable no-unreachable */
             if (currentUser.role === 'visitor') return;
             if (!announcementsData) return;
 
@@ -2484,8 +2498,29 @@
             if (!window._presenceHeartbeat) window._presenceHeartbeat = setInterval(updatePresence, 20000);
         }
 
+        // MADDE 34: updatePresence her switchTab cagrisinda Firebase'e yaziyordu —
+        // aktif bir kullanicida dakikada onlarca gereksiz yazma. Artik en fazla
+        // 15 saniyede bir yaziliyor; arada gelen cagrilar tek bir yazmada birlesiyor.
+        let lastPresenceWrite = 0;
+        let presenceTimer = null;
+        const PRESENCE_MIN_INTERVAL = 15000;
+
         function updatePresence() {
             if (!currentFirebaseUser || currentUser.role === 'visitor') return;
+
+            const sinceLast = Date.now() - lastPresenceWrite;
+            if (sinceLast < PRESENCE_MIN_INTERVAL) {
+                // Cok erken: son cagriyi bekleyen tek bir yazmaya cevir.
+                clearTimeout(presenceTimer);
+                presenceTimer = setTimeout(writePresenceNow, PRESENCE_MIN_INTERVAL - sinceLast);
+                return;
+            }
+            writePresenceNow();
+        }
+
+        function writePresenceNow() {
+            if (!currentFirebaseUser || currentUser.role === 'visitor') return;
+            lastPresenceWrite = Date.now();
             firebase.database().ref('Presence/' + currentFirebaseUser.uid).set({
                 name: currentUser.username,
                 role: currentUser.role,
@@ -3270,59 +3305,10 @@ function buildSlotContentCanvasDataUri(name, pills) {
                     isChanged = true; 
                 } 
                 
-                // DISCORD HATIRLATMALARI — ARTIK WEBHOOK DEĞİL, BOT üzerinden plan.discordChannelIds'e gönderiliyor.
-                const planChannelIds = plan.discordChannelIds || [];
-                if (plan.published && planChannelIds.length > 0) {
-                    // 30 Dakika Kala Hatırlatması
-                    if (timeNow >= timePlan - (30 * 60000) && timeNow < timePlan - (15 * 60000) && !plan.reminded30) {
-                        plan.reminded30 = true; // bu istemcide anında tekrar tetiklenmesin (senkron, ucuz kontrol)
-                        isChanged = true;
-                        tryClaimReminder(plan.id, '30').then(claimed => {
-                            if (!claimed) return; // başka bir istemci zaten gönderdi
-                            apiFetch('/api/send-plan-reminder', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    content: `@everyone ⏳ **${plan.title || 'Event'}** başlamasına 30 dakika kaldı!\n\n🔗 **Web Portal:** ${GUILD_SITE_URL}`,
-                                    channelIds: planChannelIds
-                                })
-                            }).catch(e => console.error('send-plan-reminder (30) error:', e));
-                        });
-                    }
-                    // 15 Dakika Kala Hatırlatması
-                    if (timeNow >= timePlan - (15 * 60000) && timeNow < timePlan && !plan.reminded15) {
-                        plan.reminded15 = true;
-                        isChanged = true;
-                        tryClaimReminder(plan.id, '15').then(claimed => {
-                            if (!claimed) return;
-                            apiFetch('/api/send-plan-reminder', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    content: `@everyone ⚠️ **${plan.title || 'Event'}** başlamasına 15 dakika kaldı! Hazırlıklarınızı tamamlayın.\n\n🔗 **Web Portal:** ${GUILD_SITE_URL}`,
-                                    channelIds: planChannelIds
-                                })
-                            }).catch(e => console.error('send-plan-reminder (15) error:', e));
-                        });
-                    }
-                    // Başlama Saati Hatırlatması
-                    if (timeNow >= timePlan && timeNow < timePlan + (60 * 60000) && !plan.reminded0) {
-                        plan.reminded0 = true;
-                        isChanged = true;
-                        const motivMsg = cloudData.discordMotivationalMsg || "WE RISE FROM ASHES TO CONQUER THE CHAOS!";
-                        tryClaimReminder(plan.id, '0').then(claimed => {
-                            if (!claimed) return;
-                            apiFetch('/api/send-plan-reminder', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    content: `@everyone ⚔️ **${plan.title || 'Event'}** BAŞLIYOR!\n\n**"${motivMsg}"**\n\n🔗 **Web Portal:** ${GUILD_SITE_URL}`,
-                                    channelIds: planChannelIds
-                                })
-                            }).catch(e => console.error('send-plan-reminder (0) error:', e));
-                        });
-                    }
-                }
+                // MADDE 32: 30/15/0 dakika hatirlatmalari artik SUNUCUDA, her dakika
+                // calisan cron gorevinde gonderiliyor (worker.js -> runTimeBasedAutomation).
+                // Eskiden yalnizca tarayicida calisiyordu; raid saatinde kimse siteyi
+                // acmamissa hatirlatma HIC gitmiyordu. Buradan kaldirildi.
 
                 if (timeNow >= timePlan + (2 * 3600000)) { 
                     plan.active = false; 

@@ -5,6 +5,7 @@
 // ÖNEMLİ: Bu dosya GitHub reponun KÖKÜNDE olmalı (functions/ klasörüyle aynı seviyede).
 
 import { authenticate, hasAtLeast, checkRateLimit, fb } from './functions/_auth.js';
+import { finalizeAnnouncementCore, syncAnnouncementCore, claimLock } from './functions/_announcementTasks.js';
 import { onRequestPost as discordInteractions } from './functions/api/discord-interactions.js';
 import { onRequestPost as sendAnnouncement } from './functions/api/send-announcement.js';
 import { onRequestPost as finalizeAnnouncement } from './functions/api/finalize-announcement.js';
@@ -77,8 +78,133 @@ export default {
     async scheduled(event, env, ctx) {
         ctx.waitUntil(runScheduledPosts(env));
         ctx.waitUntil(runDailyBackup(env));
+        ctx.waitUntil(runTimeBasedAutomation(env));
     }
 };
+
+// ============================================================================
+// ZAMAN TABANLI OTOMASYON (Madde 31 + 32)
+// ============================================================================
+// ESKI SORUN: Duyuru sonlandirma ve raid hatirlatmalari SADECE tarayicida
+// calisiyordu. Yani:
+//   - Raid saatinde admin siteyi acmamissa 30/15/0 dk hatirlatmalari HIC gitmiyordu.
+//   - Kimse siteyi acmazsa duyurular sonlanmiyor, Discord'da asili kaliyordu.
+//
+// Artik bunlar sunucuda, her dakika calisan cron icinde yapiliyor. Kimsenin
+// tarayici acmasina gerek yok.
+//
+// Cift gonderim korumasi: tarayici tarafiyla AYNI ReminderLocks yollari
+// kullaniliyor, bu yuzden gecis doneminde ikisi ayni anda calissa bile mesaj
+// iki kez gitmez.
+
+async function runTimeBasedAutomation(env) {
+    try {
+        const now = Date.now();
+
+        // --- 1) Suresi gelen duyurulari sonlandir ------------------------
+        const annRes = await fetch(fb(env, `Announcements`));
+        const announcements = await annRes.json();
+
+        if (announcements) {
+            for (const [annId, ann] of Object.entries(announcements)) {
+                if (!ann || ann.finalized) continue;
+
+                // a) Etkinlik saati geldi mi?
+                if (ann.time) {
+                    const annTime = new Date(ann.time).getTime();
+                    if (!isNaN(annTime) && now >= annTime) {
+                        if (await claimLock(env, `${annId}_finalize`)) {
+                            console.log(`[automation] ${annId} suresi doldu, sonlandiriliyor.`);
+                            await finalizeAnnouncementCore(env, annId, null, 'auto_expired');
+                        }
+                        continue; // sonlandirildi, senkron kontrolune gerek yok
+                    }
+                }
+
+                // b) Discord mesaji elle silinmis mi?
+                // Her dakika kontrol etmek Discord API'sini gereksiz yorar —
+                // 10 dakikada bir yeterli.
+                const minute = Math.floor(now / 60000) % 10;
+                if (minute === 0 && ann.channelId && ann.messageId) {
+                    const wasDeleted = await syncAnnouncementCore(env, annId, ann.channelId, ann.messageId);
+                    if (wasDeleted) console.log(`[automation] ${annId} mesaji Discord'dan silinmis, site senkronlandi.`);
+                }
+            }
+        }
+
+        // --- 2) Raid plani hatirlatmalari --------------------------------
+        const gdRes = await fetch(fb(env, `GuildData`));
+        const guildData = await gdRes.json();
+        if (!guildData || !Array.isArray(guildData.raidPlans)) return;
+
+        const siteUrl = env.GUILD_SITE_URL || 'https://balamir.huns.workers.dev';
+        const motivMsg = guildData.discordMotivationalMsg || 'WE RISE FROM ASHES TO CONQUER THE CHAOS!';
+        let plansChanged = false;
+
+        for (const plan of guildData.raidPlans) {
+            if (!plan || !plan.active || !plan.time) continue;
+            const planTime = new Date(plan.time).getTime();
+            if (isNaN(planTime)) continue;
+
+            const channelIds = plan.discordChannelIds || [];
+            if (!plan.published || channelIds.length === 0) continue;
+
+            // 30 dakika kala
+            if (now >= planTime - 30 * 60000 && now < planTime - 15 * 60000 && !plan.reminded30) {
+                if (await claimLock(env, `${plan.id}_30`)) {
+                    await sendReminder(env, channelIds,
+                        `@everyone ⏳ **${plan.title || 'Event'}** başlamasına 30 dakika kaldı!\n\n🔗 **Web Portal:** ${siteUrl}`);
+                    plan.reminded30 = true; plansChanged = true;
+                }
+            }
+
+            // 15 dakika kala
+            if (now >= planTime - 15 * 60000 && now < planTime && !plan.reminded15) {
+                if (await claimLock(env, `${plan.id}_15`)) {
+                    await sendReminder(env, channelIds,
+                        `@everyone ⚠️ **${plan.title || 'Event'}** başlamasına 15 dakika kaldı! Hazırlıklarınızı tamamlayın.\n\n🔗 **Web Portal:** ${siteUrl}`);
+                    plan.reminded15 = true; plansChanged = true;
+                }
+            }
+
+            // Baslama ani
+            if (now >= planTime && now < planTime + 60 * 60000 && !plan.reminded0) {
+                if (await claimLock(env, `${plan.id}_0`)) {
+                    await sendReminder(env, channelIds,
+                        `@everyone 🔥 **${plan.title || 'Event'}** BAŞLIYOR!\n\n*${motivMsg}*\n\n🔗 **Web Portal:** ${siteUrl}`);
+                    plan.reminded0 = true; plansChanged = true;
+                }
+            }
+        }
+
+        // Hatirlatma bayraklarini kaydet. SADECE raidPlans yolu yaziliyor —
+        // ayni anda site uzerinden calisan birinin degisiklikleri ezilmesin (Madde 2).
+        if (plansChanged) {
+            await fetch(fb(env, `GuildData/raidPlans`), {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(guildData.raidPlans)
+            }).catch(e => console.error('[automation] raidPlans yazilamadi:', e));
+        }
+    } catch (e) {
+        console.error('runTimeBasedAutomation genel hata:', e);
+    }
+}
+
+async function sendReminder(env, channelIds, content) {
+    for (const channelId of channelIds) {
+        try {
+            const res = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bot ${env.DISCORD_BOT_TOKEN}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content, allowed_mentions: { parse: ['everyone'] } })
+            });
+            if (!res.ok) console.error(`[automation] hatirlatma kanal ${channelId} hata ${res.status}: ${await res.text()}`);
+        } catch (e) {
+            console.error(`[automation] hatirlatma kanal ${channelId} ag hatasi:`, e);
+        }
+    }
+}
 
 // ============================================================================
 // GUNLUK OTOMATIK YEDEK (Madde 4)
