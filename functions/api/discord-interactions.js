@@ -43,16 +43,19 @@ export async function onRequestPost(context) {
             const userId = user.id;
             const discordUsername = user.username;
             const serverNickname = (interaction.member && interaction.member.nick) || null;
-            const displayName = serverNickname || user.global_name || user.username;
+            const fallbackName = serverNickname || user.global_name || user.username;
 
-            const [annRes] = await Promise.all([
+            const [annRes, , linkedPlayerIdRes, playersRes] = await Promise.all([
                 fetch(`${env.FIREBASE_DB_URL}/Announcements/${annId}.json`),
                 // Kullanıcı adı + sunucu nicki her etkileşimde güncellenir (nick değişse bile userId sabit kalır).
                 fetch(`${env.FIREBASE_DB_URL}/DiscordUsers/${userId}.json`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username: discordUsername, nickname: serverNickname || discordUsername, lastSeen: Date.now() })
-                })
+                }),
+                // Bu Discord kullanıcısı site üzerinden bir karakterle eşleştirilmiş mi? (Discord Linking sekmesi)
+                fetch(`${env.FIREBASE_DB_URL}/GuildData/discordLinks/${userId}.json`),
+                fetch(`${env.FIREBASE_DB_URL}/GuildData/players.json`)
             ]);
             const ann = await annRes.json();
 
@@ -61,26 +64,41 @@ export async function onRequestPost(context) {
                 return jsonResponse({ type: InteractionResponseType.DEFERRED_UPDATE_MESSAGE });
             }
 
-            ann.accepted = ann.accepted || {};
-            ann.declined = ann.declined || {};
-            ann.tentative = ann.tentative || {};
+            // Eşleştirme varsa (örn. Discord'da "kolirtu" -> sitede "Restital" olarak linklenmiş),
+            // Discord embed'inde de site karakterinin adı görünsün diye displayName'i buna göre belirle.
+            let displayName = fallbackName;
+            try {
+                const linkedPlayerId = await linkedPlayerIdRes.json();
+                if (linkedPlayerId !== null && linkedPlayerId !== undefined) {
+                    const playersRaw = await playersRes.json();
+                    const playersArr = Array.isArray(playersRaw) ? playersRaw : Object.values(playersRaw || {});
+                    const linkedPlayer = playersArr.find(p => p && String(p.id) === String(linkedPlayerId));
+                    if (linkedPlayer && linkedPlayer.name) displayName = linkedPlayer.name;
+                }
+            } catch (e) { console.error('discordLinks çözümleme hatası (yoksayıldı, fallback isim kullanılacak):', e); }
 
-            // Kullanıcı oyunu değiştirebilsin diye önce her 3 listeden de temizle.
-            delete ann.accepted[userId];
-            delete ann.declined[userId];
-            delete ann.tentative[userId];
+            // ÖNEMLİ: Tüm accepted/declined/tentative objesini okuyup GERİ YAZMAK yerine (bu, aynı anda
+            // birden fazla kişi tıkladığında YARIŞ DURUMU yaratıp başkalarının cevabını SİLEBİLİRDİ),
+            // sadece bu kullanıcının 3 haritadaki KENDİ anahtarına, Firebase'in atomik çoklu-yol (multi-path)
+            // update özelliğiyle hedefli yazıyoruz. Böylece kaç kişi aynı anda tıklarsa tıklasın birbirlerinin
+            // cevabını asla ezemezler.
+            const multiPathUpdate = {};
+            multiPathUpdate[`Announcements/${annId}/accepted/${userId}`] = choice === 'accept' ? displayName : null;
+            multiPathUpdate[`Announcements/${annId}/declined/${userId}`] = choice === 'decline' ? displayName : null;
+            multiPathUpdate[`Announcements/${annId}/tentative/${userId}`] = choice === 'tentative' ? displayName : null;
 
-            if (choice === 'accept') ann.accepted[userId] = displayName;
-            else if (choice === 'decline') ann.declined[userId] = displayName;
-            else if (choice === 'tentative') ann.tentative[userId] = displayName;
-
-            await fetch(`${env.FIREBASE_DB_URL}/Announcements/${annId}.json`, {
+            await fetch(`${env.FIREBASE_DB_URL}/.json`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ accepted: ann.accepted, declined: ann.declined, tentative: ann.tentative })
+                body: JSON.stringify(multiPathUpdate)
             });
 
-            const embed = buildAnnouncementEmbed(ann);
+            // Embed'i güncel göstermek için duyuruyu bu atomik yazımdan SONRA tazeden okuyoruz
+            // (böylece o an başka biri tıklamış olsa bile en güncel tam listeyi gösteririz).
+            const freshAnnRes = await fetch(`${env.FIREBASE_DB_URL}/Announcements/${annId}.json`);
+            const freshAnn = await freshAnnRes.json();
+
+            const embed = buildAnnouncementEmbed(freshAnn);
             const components = buildRsvpComponents(annId, false);
 
             // type 7 (UPDATE_MESSAGE): orijinal mesajı TEK istekte güncelliyoruz,
