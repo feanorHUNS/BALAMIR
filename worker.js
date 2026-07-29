@@ -40,7 +40,9 @@ export default {
             try {
                 // --- Herkese açık uç (yalnızca Discord etkileşimleri) ----------
                 if (route.public) {
-                    return await route.handler({ request, env });
+                    // ctx da geciriliyor: discord-interactions, Discord'un 3 saniye
+                    // sinirina takilmamak icin isi ctx.waitUntil ile arka plana aliyor.
+                    return await route.handler({ request, env, ctx });
                 }
 
                 // --- 1) Kimlik doğrulama --------------------------------------
@@ -60,7 +62,7 @@ export default {
 
                 // Dogrulanmis kimlik fonksiyona geciriliyor; fonksiyonlar artik
                 // istemciden gelen "authorName" gibi alanlara guvenmek zorunda degil.
-                return await route.handler({ request, env, auth });
+                return await route.handler({ request, env, ctx, auth });
             } catch (e) {
                 console.error(`worker.js routing error @ ${url.pathname}:`, e);
                 return jsonError(500, 'Sunucu hatasi: ' + e.message);
