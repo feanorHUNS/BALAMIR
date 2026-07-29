@@ -31,7 +31,7 @@ const ROLE_RANK = { visitor: 0, member: 1, officer: 2, admin: 3 };
  * ama o zaman kurallar gevşek kalmak zorundadır.
  */
 export function fb(env, path) {
-    const base = fb(env, `${path}`);
+    const base = `${env.FIREBASE_DB_URL}/${path}.json`;
     return env.FIREBASE_DB_SECRET ? `${base}?auth=${env.FIREBASE_DB_SECRET}` : base;
 }
 
