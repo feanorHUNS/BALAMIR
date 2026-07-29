@@ -76,8 +76,77 @@ export default {
     // Cloudflare Cron Trigger tarafindan HER DAKIKA otomatik cagrilir.
     async scheduled(event, env, ctx) {
         ctx.waitUntil(runScheduledPosts(env));
+        ctx.waitUntil(runDailyBackup(env));
     }
 };
+
+// ============================================================================
+// GUNLUK OTOMATIK YEDEK (Madde 4)
+// ============================================================================
+// Tek bir hatali islem (yanlis toplu silme, bozuk bir kayit, kotu bir migrasyon)
+// tum guild verisini ucurabilir. Bu gorev her gun bir kez GuildData'nin tam
+// kopyasini Backups/YYYY-MM-DD altina yazar ve 30 gunden eski olanlari siler.
+//
+// Her dakika cagriliyor ama gunde yalnizca BIR kez is yapiyor: o gunun yedegi
+// zaten varsa hemen cikiyor (tek kucuk bir kontrol istegi).
+const BACKUP_RETENTION_DAYS = 30;
+
+async function runDailyBackup(env) {
+    try {
+        // Gun siniri Turkiye saatine gore belirleniyor.
+        const trNow = new Date(Date.now() + TR_OFFSET_MS);
+        const today = trNow.toISOString().slice(0, 10); // YYYY-MM-DD
+
+        // Bugunun yedegi var mi? shallow=true sadece varligi kontrol eder,
+        // tum veriyi indirmez.
+        const checkUrl = fb(env, `Backups/${today}/savedAt`);
+        const checkRes = await fetch(checkUrl);
+        const existing = await checkRes.json();
+        if (existing) return; // bugun zaten yedeklenmis
+
+        const dataRes = await fetch(fb(env, `GuildData`));
+        if (!dataRes.ok) {
+            console.error('[backup] GuildData okunamadi:', dataRes.status);
+            return;
+        }
+        const guildData = await dataRes.json();
+        if (!guildData) {
+            console.log('[backup] GuildData bos, yedek alinmadi.');
+            return;
+        }
+
+        const putRes = await fetch(fb(env, `Backups/${today}`), {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ savedAt: Date.now(), data: guildData })
+        });
+
+        if (!putRes.ok) {
+            console.error('[backup] Yedek yazilamadi:', putRes.status, await putRes.text());
+            return;
+        }
+        console.log(`[backup] ${today} yedegi alindi.`);
+
+        // --- Eski yedekleri temizle --------------------------------------
+        // shallow=true: sadece tarih anahtarlarini getirir, iceriklerini degil.
+        const listUrl = fb(env, `Backups`) + (fb(env, `Backups`).includes('?') ? '&' : '?') + 'shallow=true';
+        const listRes = await fetch(listUrl);
+        const keys = await listRes.json();
+        if (!keys) return;
+
+        const cutoff = new Date(trNow.getTime() - BACKUP_RETENTION_DAYS * 86400000)
+            .toISOString().slice(0, 10);
+
+        for (const key of Object.keys(keys)) {
+            if (key < cutoff) {
+                await fetch(fb(env, `Backups/${key}`), { method: 'DELETE' })
+                    .catch(e => console.error(`[backup] ${key} silinemedi:`, e));
+            }
+        }
+    } catch (e) {
+        console.error('runDailyBackup genel hata:', e);
+    }
+}
 
 function jsonError(status, message) {
     return new Response(JSON.stringify({ error: message }), {
