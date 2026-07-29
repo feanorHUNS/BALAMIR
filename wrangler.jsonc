@@ -3,6 +3,27 @@
   "compatibility_date": "2026-01-01",
   "compatibility_flags": ["nodejs_compat"],
   "main": "worker.js",
+
+  // ------------------------------------------------------------------
+  // ORTAM DEĞİŞKENLERİ
+  // Cloudflare'in GitHub entegrasyonu, Dashboard'daki "Variables and
+  // Secrets" alanını arada bir sıfırlıyor. Gizli OLMAYAN değerler bu
+  // yüzden burada, kodun içinde tutuluyor — asla kaybolmuyorlar.
+  //
+  // Buradaki iki değer de zaten istemci tarafında (index.html) herkese
+  // açık görünüyor, gizli bilgi değiller.
+  //
+  // GİZLİ olanlar Cloudflare Dashboard'da Secret olarak durmalı:
+  //   DISCORD_BOT_TOKEN    (bot yetkisi)
+  //   DISCORD_PUBLIC_KEY   (Discord imza doğrulaması)
+  //   DISCORD_CHANNEL_ID   (varsayılan kanal)
+  //   FIREBASE_DB_SECRET   (worker'ın Firebase'e yazma yetkisi - YENİ)
+  // ------------------------------------------------------------------
+  "vars": {
+    "FIREBASE_DB_URL": "https://hunsguild-default-rtdb.firebaseio.com",
+    "FIREBASE_API_KEY": "AIzaSyBKOIS5aTqw6YuTiCq1q0xpeK_sdJtssCo"
+  },
+
   "assets": {
     "directory": "./",
     "binding": "ASSETS",

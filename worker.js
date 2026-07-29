@@ -1,10 +1,10 @@
 // Bu dosya, düz Cloudflare Workers deploy'unun (Pages Functions DEĞİL) TEK giriş noktasıdır.
-// Görevi: hangi adrese istek geldiğine bakıp doğru fonksiyona yönlendirmek, eşleşen bir
+// Görevi: gelen isteğin kimliğini doğrulamak, doğru fonksiyona yönlendirmek, eşleşen bir
 // API adresi yoksa statik dosyaları (index.html vb.) olduğu gibi servis etmek.
 //
-// ÖNEMLİ: Bu dosyayı GitHub reponun KÖKÜNE yükle (functions/ klasörüyle aynı seviyeye).
-// wrangler.jsonc ile birlikte, ikisi de repo kökünde olmalı.
+// ÖNEMLİ: Bu dosya GitHub reponun KÖKÜNDE olmalı (functions/ klasörüyle aynı seviyede).
 
+import { authenticate, hasAtLeast, checkRateLimit, fb } from './functions/_auth.js';
 import { onRequestPost as discordInteractions } from './functions/api/discord-interactions.js';
 import { onRequestPost as sendAnnouncement } from './functions/api/send-announcement.js';
 import { onRequestPost as finalizeAnnouncement } from './functions/api/finalize-announcement.js';
@@ -13,49 +13,84 @@ import { onRequestPost as syncAnnouncements } from './functions/api/sync-announc
 import { onRequestPost as sendPlanImage } from './functions/api/send-plan-image.js';
 import { onRequestPost as sendPlanReminder } from './functions/api/send-plan-reminder.js';
 
+// ============================================================================
+// ADRES TABLOSU  (Madde 25 + 27)
+// ============================================================================
+// public   : true  -> kimlik doğrulaması ARANMAZ. Yalnızca Discord'un kendi imzasıyla
+//                     doğrulanan uç için geçerli (Discord bize token gönderemez).
+// minRole  : bu işlemi yapabilmek için gereken en düşük rol.
+// limit / windowMs : hız sınırı (kullanıcı başına, kayan pencere).
 const ROUTES = {
-    '/api/discord-interactions': discordInteractions,
-    '/api/send-announcement': sendAnnouncement,
-    '/api/finalize-announcement': finalizeAnnouncement,
-    '/api/delete-announcement': deleteAnnouncement,
-    '/api/sync-announcements': syncAnnouncements,
-    '/api/send-plan-image': sendPlanImage,
-    '/api/send-plan-reminder': sendPlanReminder
+    '/api/discord-interactions':  { handler: discordInteractions,  public: true },
+
+    '/api/send-announcement':     { handler: sendAnnouncement,     minRole: 'member', limit: 5,  windowMs: 600000 },
+    '/api/finalize-announcement': { handler: finalizeAnnouncement, minRole: 'member', limit: 30, windowMs: 600000 },
+    '/api/delete-announcement':   { handler: deleteAnnouncement,   minRole: 'member', limit: 30, windowMs: 600000 },
+    '/api/sync-announcements':    { handler: syncAnnouncements,    minRole: 'member', limit: 90, windowMs: 600000 },
+    '/api/send-plan-image':       { handler: sendPlanImage,        minRole: 'member', limit: 10, windowMs: 600000 },
+    '/api/send-plan-reminder':    { handler: sendPlanReminder,     minRole: 'member', limit: 25, windowMs: 600000 }
 };
 
 export default {
     async fetch(request, env, ctx) {
         const url = new URL(request.url);
-        const handler = request.method === 'POST' ? ROUTES[url.pathname] : null;
+        const route = request.method === 'POST' ? ROUTES[url.pathname] : null;
 
-        if (handler) {
+        if (route) {
             try {
-                return await handler({ request, env });
+                // --- Herkese açık uç (yalnızca Discord etkileşimleri) ----------
+                if (route.public) {
+                    return await route.handler({ request, env });
+                }
+
+                // --- 1) Kimlik doğrulama --------------------------------------
+                const auth = await authenticate(request, env);
+                if (!auth.ok) return auth.response;
+
+                // --- 2) Yetki seviyesi ----------------------------------------
+                if (route.minRole && !hasAtLeast(auth.role, route.minRole)) {
+                    return jsonError(403, 'Bu islem icin yetkiniz yok.');
+                }
+
+                // --- 3) Hiz siniri --------------------------------------------
+                if (route.limit) {
+                    const rl = await checkRateLimit(env, auth.uid, url.pathname, route.limit, route.windowMs);
+                    if (!rl.ok) return rl.response;
+                }
+
+                // Dogrulanmis kimlik fonksiyona geciriliyor; fonksiyonlar artik
+                // istemciden gelen "authorName" gibi alanlara guvenmek zorunda degil.
+                return await route.handler({ request, env, auth });
             } catch (e) {
                 console.error(`worker.js routing error @ ${url.pathname}:`, e);
-                return new Response('Sunucu hatası: ' + e.message, { status: 500 });
+                return jsonError(500, 'Sunucu hatasi: ' + e.message);
             }
         }
 
-        // Eşleşen bir API adresi yoksa: index.html ve diğer statik dosyaları servis et.
+        // Eslesen bir API adresi yoksa: index.html ve diger statik dosyalari servis et.
         return env.ASSETS.fetch(request);
     },
 
-    // Cloudflare Cron Trigger tarafından HER DAKİKA otomatik çağrılır (wrangler.jsonc → triggers.crons).
-    // Kimse siteyi açık tutmasa bile, "sırası gelmiş" zamanlanmış paylaşımları bulup Discord'a gönderir.
+    // Cloudflare Cron Trigger tarafindan HER DAKIKA otomatik cagrilir.
     async scheduled(event, env, ctx) {
         ctx.waitUntil(runScheduledPosts(env));
     }
 };
 
-// Türkiye 2016'dan beri kalıcı olarak UTC+3'te (yaz saati uygulaması yok) — bu yüzden
-// hesaplama basit, sabit bir ofsetle yapılabiliyor.
+function jsonError(status, message) {
+    return new Response(JSON.stringify({ error: message }), {
+        status, headers: { 'Content-Type': 'application/json' }
+    });
+}
+
+// Turkiye 2016'dan beri kalici olarak UTC+3'te (yaz saati uygulamasi yok).
 const TR_OFFSET_MS = 3 * 60 * 60 * 1000;
 
-// Belirtilen haftanın günü + saat:dakika (TR saatiyle) için, "fromUTCms"den SONRAKİ
-// ilk gerçekleşme anını UTC epoch (ms) olarak hesaplar. Haftalık tekrar için kullanılır.
+// Bir zamanlanmis paylasim kac kez ust uste basarisiz olursa pes edilir (Madde 28).
+const MAX_SCHEDULED_ATTEMPTS = 5;
+
 function computeNextWeeklyFireUTC(dayOfWeek, hh, mm, fromUTCms) {
-    const trShifted = new Date(fromUTCms + TR_OFFSET_MS); // TR duvar saatini UTC getter'larla okumak için kaydırılmış zaman
+    const trShifted = new Date(fromUTCms + TR_OFFSET_MS);
     const curDay = trShifted.getUTCDay();
 
     let daysUntil = (dayOfWeek - curDay + 7) % 7;
@@ -64,59 +99,84 @@ function computeNextWeeklyFireUTC(dayOfWeek, hh, mm, fromUTCms) {
     candidate.setUTCHours(hh, mm, 0, 0);
 
     let candidateUTCms = candidate.getTime() - TR_OFFSET_MS;
-    if (candidateUTCms <= fromUTCms) candidateUTCms += 7 * 24 * 60 * 60 * 1000; // bu hafta geçtiyse bir sonraki haftaya kaydır
+    if (candidateUTCms <= fromUTCms) candidateUTCms += 7 * 24 * 60 * 60 * 1000;
     return candidateUTCms;
 }
 
 async function runScheduledPosts(env) {
     try {
-        const res = await fetch(`${env.FIREBASE_DB_URL}/ScheduledPosts.json`);
-        console.log(`[runScheduledPosts] Firebase yanıt statusu: ${res.status}`);
+        const res = await fetch(fb(env, `ScheduledPosts`));
         const all = await res.json();
 
-        if (!all) {
-            console.log('[runScheduledPosts] ScheduledPosts.json boş/null döndü — hiç kayıt yok ya da rules erişimi engelliyor. Erken çıkılıyor.');
-            return;
-        }
+        if (!all) return;
 
         const now = Date.now();
-        const postIds = Object.keys(all);
-        console.log(`[runScheduledPosts] ${postIds.length} kayıt bulundu: ${postIds.join(', ')}`);
 
         for (const [postId, post] of Object.entries(all)) {
-            if (!post || !post.active) {
-                console.log(`[runScheduledPosts] ${postId} atlandı: active=false ya da post boş.`);
-                continue;
-            }
-            if (!post.nextFireAt || post.nextFireAt > now) {
-                const kalanSn = post.nextFireAt ? Math.round((post.nextFireAt - now) / 1000) : 'yok';
-                console.log(`[runScheduledPosts] ${postId} atlandı: sırası gelmedi. nextFireAt=${post.nextFireAt}, now=${now}, kalan_saniye=${kalanSn}`);
-                continue;
-            }
+            if (!post || !post.active) continue;
+            if (!post.nextFireAt || post.nextFireAt > now) continue;
 
-            console.log(`[runScheduledPosts] ${postId} TETİKLENİYOR. Kanallar: ${JSON.stringify(post.channelIds)}`);
+            // ================================================================
+            // Madde 28: Gonderim BASARISIZ olursa durumu ilerletme.
+            // Eskiden Discord'a mesaj gitmese bile firedCount artip nextFireAt
+            // ileri aliniyordu -- yani bot bir dakikaligina erisilemezse o
+            // paylasim KALICI OLARAK kayboluyordu. Artik en az bir kanala
+            // basariyla gitmedikce paylasim "gonderildi" sayilmiyor.
+            // ================================================================
+            let anySuccess = false;
+            const channelIds = post.channelIds || [];
 
-            // 1) Her seçili kanala gönder (metin + varsa görsel linki bir embed olarak).
-            for (const channelId of (post.channelIds || [])) {
+            for (const channelId of channelIds) {
                 try {
                     const body = { content: post.content || '', allowed_mentions: { parse: ['everyone'] } };
                     if (post.imageUrl) body.embeds = [{ image: { url: post.imageUrl } }];
-                    const discordRes = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
+                    const dRes = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
                         method: 'POST',
                         headers: { 'Authorization': `Bot ${env.DISCORD_BOT_TOKEN}`, 'Content-Type': 'application/json' },
                         body: JSON.stringify(body)
                     });
-                    if (discordRes.ok) {
-                        console.log(`[runScheduledPosts] ${postId} -> kanal ${channelId}: BAŞARILI gönderildi.`);
+                    if (dRes.ok) {
+                        anySuccess = true;
                     } else {
-                        const errText = await discordRes.text();
-                        console.error(`[runScheduledPosts] ${postId} -> kanal ${channelId}: Discord API hatası (status ${discordRes.status}): ${errText}`);
+                        console.error(`[scheduled] ${postId} -> kanal ${channelId} hata ${dRes.status}: ${await dRes.text()}`);
                     }
-                } catch (e) { console.error(`ScheduledPost ${postId} -> kanal ${channelId} gönderim hatası:`, e); }
+                } catch (e) {
+                    console.error(`[scheduled] ${postId} -> kanal ${channelId} ag hatasi:`, e);
+                }
             }
 
-            // 2) Zamanlama tipine göre bir sonraki durumu hesapla.
-            const updates = { lastFiredAt: now, firedCount: (post.firedCount || 0) + 1 };
+            // --- Hicbir kanala gidemediyse: durumu ilerletme, tekrar dene ----
+            if (!anySuccess) {
+                const attempts = (post.failedAttempts || 0) + 1;
+                const updates = { failedAttempts: attempts, lastErrorAt: now };
+
+                if (attempts >= MAX_SCHEDULED_ATTEMPTS) {
+                    // Surekli basarisiz oluyorsa sonsuz donguye girmesin; durdur ve
+                    // sitede gorunur bir hata birak.
+                    updates.active = false;
+                    updates.lastError = `${MAX_SCHEDULED_ATTEMPTS} denemede gonderilemedi, durduruldu.`;
+                    console.error(`[scheduled] ${postId} ${MAX_SCHEDULED_ATTEMPTS} denemede gonderilemedi -- durduruldu.`);
+                } else {
+                    console.log(`[scheduled] ${postId} gonderilemedi (deneme ${attempts}/${MAX_SCHEDULED_ATTEMPTS}), sonraki dakikada tekrar denenecek.`);
+                }
+
+                await fetch(fb(env, `ScheduledPosts/${postId}`), {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updates)
+                }).catch(e => console.error(`[scheduled] ${postId} hata kaydi yazilamadi:`, e));
+
+                continue; // nextFireAt'e DOKUNMUYORUZ -> bir sonraki cron'da tekrar denenecek
+            }
+
+            // --- Basarili: siradaki gonderim zamanini hesapla ----------------
+            const updates = {
+                lastFiredAt: now,
+                firedCount: (post.firedCount || 0) + 1,
+                failedAttempts: 0,
+                lastError: null
+            };
+
             if (post.scheduleType === 'once') {
                 updates.active = false;
             } else if (post.scheduleType === 'interval_count') {
@@ -131,17 +191,11 @@ async function runScheduledPosts(env) {
                 updates.nextFireAt = computeNextWeeklyFireUTC(post.dayOfWeek, post.hour, post.minute, now);
             }
 
-            console.log(`[runScheduledPosts] ${postId} durum güncelleniyor: ${JSON.stringify(updates)}`);
-            const patchRes = await fetch(`${env.FIREBASE_DB_URL}/ScheduledPosts/${postId}.json`, {
+            await fetch(fb(env, `ScheduledPosts/${postId}`), {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(updates)
-            }).catch(e => { console.error(`ScheduledPost ${postId} durum güncelleme hatası (network):`, e); return null; });
-            if (patchRes && !patchRes.ok) {
-                console.error(`[runScheduledPosts] ${postId} durum güncelleme Firebase hatası (status ${patchRes.status}): ${await patchRes.text()}`);
-            } else if (patchRes) {
-                console.log(`[runScheduledPosts] ${postId} durum güncelleme BAŞARILI.`);
-            }
+            }).catch(e => console.error(`[scheduled] ${postId} durum guncelleme hatasi:`, e));
         }
     } catch (e) {
         console.error('runScheduledPosts genel hata:', e);
