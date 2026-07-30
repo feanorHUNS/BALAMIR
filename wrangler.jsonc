@@ -27,7 +27,7 @@
     "FIREBASE_DB_URL": "https://hunsguild-default-rtdb.firebaseio.com",
     "FIREBASE_API_KEY": "AIzaSyBKOIS5aTqw6YuTiCq1q0xpeK_sdJtssCo",
     "DISCORD_CHANNEL_ID": "1386044843461181460",
-    "DISCORD_PUBLIC_KEY": "6ad72d5bfcf251c29c3abaf206dd3781b5d1b57eccb33ab93879c22688ab64f2"
+    "DISCORD_PUBLIC_KEY": "BURAYA_PUBLIC_KEY_YAPISTIR"
   },
 
   "assets": {

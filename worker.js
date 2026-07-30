@@ -153,7 +153,7 @@ async function runTimeBasedAutomation(env) {
             if (now >= planTime - 30 * 60000 && now < planTime - 15 * 60000 && !plan.reminded30) {
                 if (await claimLock(env, `${plan.id}_30`)) {
                     await sendReminder(env, channelIds,
-                        `@everyone ⏳ **${plan.title || 'Event'}** başlamasına 30 dakika kaldı!\n\n🔗 **Web Portal:** ${siteUrl}`);
+                        `@everyone ⏳ **${plan.title || 'Event'}** başlamasına 30 dakika kaldı!`);
                     plan.reminded30 = true; plansChanged = true;
                 }
             }
@@ -162,7 +162,7 @@ async function runTimeBasedAutomation(env) {
             if (now >= planTime - 15 * 60000 && now < planTime && !plan.reminded15) {
                 if (await claimLock(env, `${plan.id}_15`)) {
                     await sendReminder(env, channelIds,
-                        `@everyone ⚠️ **${plan.title || 'Event'}** başlamasına 15 dakika kaldı! Hazırlıklarınızı tamamlayın.\n\n🔗 **Web Portal:** ${siteUrl}`);
+                        `@everyone ⚠️ **${plan.title || 'Event'}** başlamasına 15 dakika kaldı! Hazırlıklarınızı tamamlayın.`);
                     plan.reminded15 = true; plansChanged = true;
                 }
             }
@@ -171,7 +171,7 @@ async function runTimeBasedAutomation(env) {
             if (now >= planTime && now < planTime + 60 * 60000 && !plan.reminded0) {
                 if (await claimLock(env, `${plan.id}_0`)) {
                     await sendReminder(env, channelIds,
-                        `@everyone 🔥 **${plan.title || 'Event'}** BAŞLIYOR!\n\n*${motivMsg}*\n\n🔗 **Web Portal:** ${siteUrl}`);
+                        `@everyone 🔥 **${plan.title || 'Event'}** BAŞLIYOR!\n\n*${motivMsg}*`);
                     plan.reminded0 = true; plansChanged = true;
                 }
             }
