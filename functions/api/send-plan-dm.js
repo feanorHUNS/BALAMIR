@@ -118,3 +118,38 @@ export async function onRequestPost(context) {
         status: 200, headers: { 'Content-Type': 'application/json' }
     });
 }
+
+// ============================================================================
+// RSVP HATIRLATMASI  (Madde 60)
+// ============================================================================
+// Duyuruya henuz oy vermemis kisilere ozel mesaj gonderir. worker.js icindeki
+// cron gorevi tarafindan cagrilir.
+export async function sendDmToUser(env, discordUid, embed) {
+    try {
+        const chRes = await fetch('https://discord.com/api/v10/users/@me/channels', {
+            method: 'POST',
+            headers: { 'Authorization': `Bot ${env.DISCORD_BOT_TOKEN}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ recipient_id: String(discordUid) })
+        });
+        if (!chRes.ok) {
+            let code = null;
+            try { code = (await chRes.json()).code; } catch (e) { /* govde okunamadi */ }
+            return { ok: false, reason: reasonFor(chRes.status, code) };
+        }
+        const ch = await chRes.json();
+        const msgRes = await fetch(`https://discord.com/api/v10/channels/${ch.id}/messages`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bot ${env.DISCORD_BOT_TOKEN}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ embeds: [embed, buildPortalEmbed()] })
+        });
+        if (!msgRes.ok) {
+            let code = null;
+            try { code = (await msgRes.json()).code; } catch (e) { /* govde okunamadi */ }
+            return { ok: false, reason: reasonFor(msgRes.status, code) };
+        }
+        return { ok: true };
+    } catch (e) {
+        console.error('sendDmToUser error:', e);
+        return { ok: false, reason: 'error' };
+    }
+}
