@@ -13,7 +13,7 @@ import { onRequestPost as deleteAnnouncement } from './functions/api/delete-anno
 import { onRequestPost as syncAnnouncements } from './functions/api/sync-announcements.js';
 import { onRequestPost as sendPlanImage } from './functions/api/send-plan-image.js';
 import { onRequestPost as sendPlanReminder } from './functions/api/send-plan-reminder.js';
-import { onRequestPost as sendPlanDm } from './functions/api/send-plan-dm.js';
+import { onRequestPost as sendPlanDm, sendDmToUser } from './functions/api/send-plan-dm.js';
 
 // ============================================================================
 // ADRES TABLOSU  (Madde 25 + 27)
@@ -157,7 +157,7 @@ async function runTimeBasedAutomation(env) {
             if (now >= planTime - 30 * 60000 && now < planTime - 15 * 60000 && !plan.reminded30) {
                 if (await claimLock(env, `${plan.id}_30`)) {
                     await sendReminder(env, channelIds,
-                        `@everyone ⏳ **${plan.title || 'Event'}** başlamasına 30 dakika kaldı!`);
+                        `@everyone ⏳ **${plan.title || 'Event'}** başlamasına **30 dakika** kaldı!\n⏳ **30 minutes** until **${plan.title || 'Event'}** starts!`);
                     plan.reminded30 = true; plansChanged = true;
                 }
             }
@@ -166,7 +166,7 @@ async function runTimeBasedAutomation(env) {
             if (now >= planTime - 15 * 60000 && now < planTime && !plan.reminded15) {
                 if (await claimLock(env, `${plan.id}_15`)) {
                     await sendReminder(env, channelIds,
-                        `@everyone ⚠️ **${plan.title || 'Event'}** başlamasına 15 dakika kaldı! Hazırlıklarınızı tamamlayın.`);
+                        `@everyone ⚠️ **${plan.title || 'Event'}** başlamasına **15 dakika** kaldı! Hazırlıklarınızı tamamlayın.\n⚠️ **15 minutes** until **${plan.title || 'Event'}**! Finish your preparations.`);
                     plan.reminded15 = true; plansChanged = true;
                 }
             }
@@ -174,8 +174,10 @@ async function runTimeBasedAutomation(env) {
             // Baslama ani
             if (now >= planTime && now < planTime + 60 * 60000 && !plan.reminded0) {
                 if (await claimLock(env, `${plan.id}_0`)) {
+                    // Motive edici cumle bilerek TEK DIL (Ingilizce) birakiliyor --
+                    // guild sloganı olarak tek bir bicimde kalmasi isteniyor.
                     await sendReminder(env, channelIds,
-                        `@everyone 🔥 **${plan.title || 'Event'}** BAŞLIYOR!\n\n*${motivMsg}*`);
+                        `@everyone 🔥 **${plan.title || 'Event'}** BAŞLIYOR!\n🔥 **${plan.title || 'Event'}** is STARTING!\n\n*${motivMsg}*`);
                     plan.reminded0 = true; plansChanged = true;
                 }
             }
@@ -190,8 +192,95 @@ async function runTimeBasedAutomation(env) {
                 body: JSON.stringify(guildData.raidPlans)
             }).catch(e => console.error('[automation] raidPlans yazilamadi:', e));
         }
+        // --- 3) RSVP hatirlatmalari (Madde 60) --------------------------
+        await runRsvpReminders(env, announcements, guildData, now);
     } catch (e) {
         console.error('runTimeBasedAutomation genel hata:', e);
+    }
+}
+
+// ============================================================================
+// RSVP HATIRLATMASI (Madde 60)
+// ============================================================================
+// Duyuruya henuz OY VERMEMIS kisilere, etkinlik saatine belirli sureler kala
+// ozel mesaj gonderir. Yonetim sayfasindan:
+//   - kac saat kala gonderilecegi (3 ayri zaman)
+//   - mesaj metni
+// ayarlanabilir.
+//
+// "Oy vermemis" = accepted / declined / tentative listelerinin hicbirinde yok.
+// Kime gonderilecegi DiscordUsers'tan degil, siteyle ESLESTIRILMIS kisilerden
+// belirlenir -- boylece guild disindan kimseye mesaj gitmez.
+
+const RSVP_DEFAULT_HOURS = [24, 6, 1];
+
+async function runRsvpReminders(env, announcements, guildData, now) {
+    if (!announcements) return;
+
+    const cfg = (guildData && guildData.rsvpReminder) || {};
+    if (cfg.enabled === false) return;
+
+    const hours = Array.isArray(cfg.hours) && cfg.hours.length ? cfg.hours : RSVP_DEFAULT_HOURS;
+    const links = (guildData && guildData.discordLinks) || {};
+    const linkedUids = Object.keys(links);
+    if (linkedUids.length === 0) return;
+
+    for (const [annId, ann] of Object.entries(announcements)) {
+        if (!ann || ann.finalized || !ann.time) continue;
+        const annTime = new Date(ann.time).getTime();
+        if (isNaN(annTime) || annTime <= now) continue;
+
+        const hoursLeft = (annTime - now) / 3600000;
+
+        // Hangi esige denk geliyoruz?
+        // Pencere 15 dakika genis tutuluyor: cron bir tur gecikirse ya da
+        // Cloudflare bir calistirmayi atlarsa hatirlatma TAMAMEN kacmasin.
+        // Ayni esigin tekrar tetiklenmesini asagidaki kilit engelliyor.
+        // Pencere dar tutulmazsa da, 2 saat kala olusturulan bir duyuruda
+        // 24 ve 6 saatlik esikler geriye donuk tetiklenip spam yapardi.
+        const SLOT_WINDOW_HOURS = 0.25;
+        let slotIndex = -1;
+        for (let i = 0; i < hours.length; i++) {
+            const h = Number(hours[i]);
+            if (!h || h <= 0) continue;
+            if (hoursLeft <= h && hoursLeft > h - SLOT_WINDOW_HOURS) { slotIndex = i; break; }
+        }
+        if (slotIndex === -1) continue;
+
+        // Bu esik icin daha once gonderildi mi?
+        if (!(await claimLock(env, `${annId}_rsvp_${slotIndex}`))) continue;
+
+        const voted = new Set([
+            ...Object.keys(ann.accepted || {}),
+            ...Object.keys(ann.declined || {}),
+            ...Object.keys(ann.tentative || {})
+        ]);
+        const targets = linkedUids.filter(uid => !voted.has(uid));
+        if (targets.length === 0) continue;
+
+        const unix = Math.floor(annTime / 1000);
+        const hLabel = Number(hours[slotIndex]);
+        const customText = (cfg.message || '').trim();
+
+        const embed = {
+            title: `⏰ ${ann.title || 'Etkinlik'}`,
+            description: customText || 'Bu etkinlik için henüz oy vermediniz. / You have not voted for this event yet.',
+            color: 0x3b82f6,
+            fields: [
+                { name: 'Kalan / Remaining', value: `~${hLabel} saat / hours`, inline: true },
+                { name: 'Zaman / Time', value: `<t:${unix}:F>\n<t:${unix}:R>`, inline: false },
+                { name: 'Ne yapmalıyım? / What to do?', value: 'Duyuru mesajındaki butonlardan birine basın.\nPress one of the buttons on the announcement message.', inline: false }
+            ],
+            footer: { text: 'HUNS Guild Portal' }
+        };
+
+        let sent = 0;
+        for (const uid of targets) {
+            const r = await sendDmToUser(env, uid, embed);
+            if (r.ok) sent++;
+            await new Promise(res => setTimeout(res, 350)); // oran limiti
+        }
+        console.log(`[rsvp] ${annId}: ${hLabel}s kala ${sent}/${targets.length} kisiye hatirlatma gonderildi.`);
     }
 }
 
