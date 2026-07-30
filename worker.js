@@ -13,6 +13,7 @@ import { onRequestPost as deleteAnnouncement } from './functions/api/delete-anno
 import { onRequestPost as syncAnnouncements } from './functions/api/sync-announcements.js';
 import { onRequestPost as sendPlanImage } from './functions/api/send-plan-image.js';
 import { onRequestPost as sendPlanReminder } from './functions/api/send-plan-reminder.js';
+import { onRequestPost as sendPlanDm } from './functions/api/send-plan-dm.js';
 
 // ============================================================================
 // ADRES TABLOSU  (Madde 25 + 27)
@@ -29,7 +30,10 @@ const ROUTES = {
     '/api/delete-announcement':   { handler: deleteAnnouncement,   minRole: 'member', limit: 30, windowMs: 600000 },
     '/api/sync-announcements':    { handler: syncAnnouncements,    minRole: 'member', limit: 90, windowMs: 600000 },
     '/api/send-plan-image':       { handler: sendPlanImage,        minRole: 'member', limit: 10, windowMs: 600000 },
-    '/api/send-plan-reminder':    { handler: sendPlanReminder,     minRole: 'member', limit: 25, windowMs: 600000 }
+    '/api/send-plan-reminder':    { handler: sendPlanReminder,     minRole: 'member', limit: 25, windowMs: 600000 },
+    // Raid Dominion kisiye ozel DM: her cagri onlarca DM gonderdigi icin
+    // limit bilerek dusuk tutuldu.
+    '/api/send-plan-dm':          { handler: sendPlanDm,          minRole: 'officer', limit: 8,  windowMs: 600000 }
 };
 
 export default {
