@@ -3,6 +3,8 @@
 // Adres: https://SITEN.workers.dev/api/send-plan-reminder
 // İstek (JSON): { content: string, channelIds: string[] }
 
+import { buildPortalEmbed } from '../_embedHelper.js';
+
 export async function onRequestPost(context) {
     const { request, env } = context;
 
@@ -25,6 +27,7 @@ export async function onRequestPost(context) {
                 // Verilmemisse eski davranis: @everyone.
                 body: JSON.stringify({
                     content,
+                    embeds: [buildPortalEmbed()],
                     allowed_mentions: Array.isArray(mentionUsers) && mentionUsers.length
                         ? { parse: [], users: mentionUsers }
                         : { parse: ['everyone'] }

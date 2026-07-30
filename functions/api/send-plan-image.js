@@ -5,6 +5,8 @@
 
 import { fb } from '../_auth.js';
 
+import { buildPortalEmbed } from '../_embedHelper.js';
+
 export async function onRequestPost(context) {
     const { request, env } = context;
 
@@ -29,7 +31,7 @@ export async function onRequestPost(context) {
         for (const channelId of channelIds) {
             try {
                 const discordForm = new FormData();
-                discordForm.append('payload_json', JSON.stringify({ content, allowed_mentions: { parse: ['everyone'] } }));
+                discordForm.append('payload_json', JSON.stringify({ content, embeds: [buildPortalEmbed()], allowed_mentions: { parse: ['everyone'] } }));
                 discordForm.append('files[0]', new Blob([imageBuffer], { type: 'image/png' }), 'plan.png');
 
                 const discordRes = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
