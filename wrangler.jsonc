@@ -7,27 +7,25 @@
   // ------------------------------------------------------------------
   // ORTAM DEĞİŞKENLERİ
   //
-  // DİKKAT: Buradaki "vars" bloğu, Cloudflare tarafından DÜZ METİN
-  // değişkenlerin TAM LİSTESİ olarak kabul edilir. Dashboard'da olup
-  // burada OLMAYAN düz metin değişkenler her deploy'da SİLİNİR.
-  // Bu yüzden gizli olmayan TÜM değişkenler burada listelenmelidir.
+  // Buradaki "vars" bloğu, Cloudflare tarafından DÜZ METİN değişkenlerin
+  // TAM LİSTESİ olarak kabul edilir: dashboard'da olup burada olmayan düz
+  // metin değişkenler her deploy'da SİLİNİR.
   //
-  // Buradakilerin hiçbiri gizli bilgi değildir:
-  //  - FIREBASE_API_KEY / FIREBASE_DB_URL : zaten index.html içinde açık
-  //  - DISCORD_PUBLIC_KEY : adı üstünde "public"; imza DOĞRULAMAK için
-  //    kullanılır, imza ÜRETMEK için değil. Discord portalda açıkça gösterir.
-  //  - DISCORD_CHANNEL_ID : sadece bir kanal numarası
+  // "Secret" tipindeki değişkenler bundan ETKİLENMEZ — deploy onlara
+  // dokunmaz. Bu yüzden değeri bilinmeyen / gizli olan her şey Secret
+  // olarak Dashboard'da tutulur ve buraya YAZILMAZ.
   //
-  // GİZLİ olanlar Cloudflare Dashboard'da "Gizli" (Secret) olarak kalmalı,
-  // buraya ASLA yazılmamalı:
-  //   DISCORD_BOT_TOKEN
-  //   FIREBASE_DB_SECRET
+  // Dashboard'da SECRET olarak durması gerekenler:
+  //   DISCORD_BOT_TOKEN     (bot yetkisi)
+  //   DISCORD_PUBLIC_KEY    (Discord imza doğrulaması — butonlar bunsuz çalışmaz)
+  //   FIREBASE_DB_SECRET    (worker'ın Firebase'e yazma yetkisi)
+  //
+  // Aşağıdakiler gizli değil, değerleri zaten index.html içinde açık:
   // ------------------------------------------------------------------
   "vars": {
     "FIREBASE_DB_URL": "https://hunsguild-default-rtdb.firebaseio.com",
     "FIREBASE_API_KEY": "AIzaSyBKOIS5aTqw6YuTiCq1q0xpeK_sdJtssCo",
-    "DISCORD_CHANNEL_ID": "1386044843461181460",
-    "DISCORD_PUBLIC_KEY": "6ad72d5bfcf251c29c3abaf206dd3781b5d1b57eccb33ab93879c22688ab64f2"
+    "DISCORD_CHANNEL_ID": "1386044843461181460"
   },
 
   "assets": {
