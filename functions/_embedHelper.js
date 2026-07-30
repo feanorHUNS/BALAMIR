@@ -42,3 +42,19 @@ export function buildRsvpComponents(annId, disabled = false) {
         ]
     }];
 }
+
+/**
+ * Bot mesajlarinin altina eklenen "HUNS Guild Portal" karti.
+ * Ciplak link yerine bu kullaniliyor -- Discord'da baslikli, aciklamali,
+ * renkli bir kart olarak gorunuyor. Metin INGILIZCE.
+ */
+export const PORTAL_URL = 'https://balamir.huns.workers.dev';
+
+export function buildPortalEmbed() {
+    return {
+        title: 'HUNS Guild Portal',
+        url: PORTAL_URL,
+        description: 'DKP tracking, raid roster planning and Discord event management. Allods Online EU.',
+        color: 0xf59e0b
+    };
+}

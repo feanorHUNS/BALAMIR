@@ -9,15 +9,17 @@
 // her dakika calisan cron gorevinden kullaniliyor. Tek kaynak, iki cagiran.
 
 import { fb } from './_auth.js';
+import { buildAnnouncementEmbed, buildRsvpComponents } from './_embedHelper.js';
 
 /**
  * Bir duyuruyu sonlandirir:
  *   1) Katilimi onaylayanlara tesekkur mesaji atar
- *   2) Orijinal duyuru mesajini Discord'dan siler
- *   3) Varsa hatirlatma mesajlarini siler
+ *   2) Orijinal duyuru mesajini SILMEZ -- yalnizca RSVP butonlarini devre disi
+ *      birakir, boylece kayit gecmisi Discord'da kalici olarak durur
+ *   3) Hatirlatma mesajlarina da DOKUNMAZ
  *   4) Firebase'de finalized=true isaretler
  *
- * Discord tarafindaki adimlar basarisiz olsa bile 4. adim HER ZAMAN calisir —
+ * Discord tarafindaki adimlar basarisiz olsa bile 4. adim HER ZAMAN calisir --
  * boylece mesaj elle silinmis olsa da site senkron kalir.
  *
  * @returns {{ok: boolean, alreadyFinalized?: boolean, notFound?: boolean, error?: string}}
@@ -45,24 +47,37 @@ export async function finalizeAnnouncementCore(env, annId, webhookUrl, reason) {
             }
         } catch (e) { console.error('[finalize] tesekkur mesaji gonderilemedi (yoksayildi):', e); }
 
-        // 2) Orijinal mesaji sil (zaten silinmisse Discord 404 doner, normal)
+        // 2) Orijinal mesaj SILINMEZ. Bunun yerine RSVP butonlari devre disi birakilir,
+        //    boylece kimin katildigi Discord'da kalici bir kayit olarak durur ama
+        //    saat gectikten sonra kimse oyunu degistiremez.
+        //    En guncel sayilari gostermek icin duyuru tazeden okunuyor.
         try {
             if (ann.channelId && ann.messageId) {
-                await fetch(`https://discord.com/api/v10/channels/${ann.channelId}/messages/${ann.messageId}`, {
-                    method: 'DELETE',
-                    headers: { 'Authorization': `Bot ${env.DISCORD_BOT_TOKEN}` }
-                });
-            }
-        } catch (e) { console.error('[finalize] mesaj silinemedi (yoksayildi):', e); }
+                const freshRes = await fetch(fb(env, `Announcements/${annId}`));
+                const freshAnn = (await freshRes.json()) || ann;
 
-        // 3) Hatirlatma mesajlari
-        try {
-            if (webhookUrl && ann.reminderMsgIds) {
-                await Promise.all(Object.values(ann.reminderMsgIds).map(msgId =>
-                    fetch(`${webhookUrl}/messages/${msgId}`, { method: 'DELETE' }).catch(() => null)
-                ));
+                const embed = buildAnnouncementEmbed(freshAnn);
+                const closedComponents = buildRsvpComponents(annId, true); // disabled = true
+
+                const patchRes = await fetch(
+                    `https://discord.com/api/v10/channels/${ann.channelId}/messages/${ann.messageId}`, {
+                        method: 'PATCH',
+                        headers: {
+                            'Authorization': `Bot ${env.DISCORD_BOT_TOKEN}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ embeds: [embed], components: closedComponents })
+                    });
+
+                if (!patchRes.ok) {
+                    // 404 = mesaj elle silinmis; bu normal bir durum, hata sayilmaz.
+                    console.error('[finalize] butonlar devre disi birakilamadi:',
+                        patchRes.status, await patchRes.text());
+                }
             }
-        } catch (e) { console.error('[finalize] hatirlatmalar silinemedi (yoksayildi):', e); }
+        } catch (e) { console.error('[finalize] mesaj guncellenemedi (yoksayildi):', e); }
+
+        // 3) Hatirlatma mesajlarina DOKUNULMUYOR -- Discord'daki paylasimlar silinmiyor.
 
         // 4) Isaretle — yukarida ne olursa olsun BU CALISIR.
         const patch = { finalized: true, finalizedAt: Date.now() };
