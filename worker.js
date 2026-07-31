@@ -6,6 +6,7 @@
 
 import { authenticate, hasAtLeast, checkRateLimit, fb } from './functions/_auth.js';
 import { finalizeAnnouncementCore, syncAnnouncementCore, claimLock } from './functions/_announcementTasks.js';
+import { buildPortalEmbed } from './functions/_embedHelper.js';
 import { onRequestPost as discordInteractions } from './functions/api/discord-interactions.js';
 import { onRequestPost as sendAnnouncement } from './functions/api/send-announcement.js';
 import { onRequestPost as finalizeAnnouncement } from './functions/api/finalize-announcement.js';
@@ -14,6 +15,7 @@ import { onRequestPost as syncAnnouncements } from './functions/api/sync-announc
 import { onRequestPost as sendPlanImage } from './functions/api/send-plan-image.js';
 import { onRequestPost as sendPlanReminder } from './functions/api/send-plan-reminder.js';
 import { onRequestPost as sendPlanDm, sendDmToUser, onRequestPostDecision as sendAppDecision } from './functions/api/send-plan-dm.js';
+import { onRequestPost as linkPreview } from './functions/api/link-preview.js';
 
 // ============================================================================
 // ADRES TABLOSU  (Madde 25 + 27)
@@ -35,7 +37,9 @@ const ROUTES = {
     // limit bilerek dusuk tutuldu.
     '/api/send-plan-dm':          { handler: sendPlanDm,          minRole: 'officer', limit: 8,  windowMs: 600000 },
     // Madde 72: Basvuru onay/red bildirimi
-    '/api/send-app-decision':     { handler: sendAppDecision,     minRole: 'officer', limit: 40, windowMs: 600000 }
+    '/api/send-app-decision':     { handler: sendAppDecision,     minRole: 'officer', limit: 40, windowMs: 600000 },
+    // Link onizleme: bot mesajlarindaki baglantilar icin OG etiketi okur
+    '/api/link-preview':          { handler: linkPreview,         minRole: 'member',  limit: 60, windowMs: 600000 }
 };
 
 export default {
@@ -155,11 +159,24 @@ async function runTimeBasedAutomation(env) {
             const channelIds = plan.discordChannelIds || [];
             if (!plan.published || channelIds.length === 0) continue;
 
+            // Gonderilen hatirlatmalarin kimlikleri bagli duyuruya yazilir;
+            // temizlik gorevi 2 saat sonra bu mesajlari siler.
+            const recordReminder = async (slot, sent) => {
+                if (!plan.linkedAnnId || !sent.length) return;
+                const patch = {};
+                sent.forEach((x, i) => { patch[`${slot}_${i}`] = x.messageId; });
+                await fetch(fb(env, `Announcements/${plan.linkedAnnId}/reminderMsgIds`), {
+                    method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(patch)
+                }).catch(e => console.error('[automation] hatirlatma kimligi yazilamadi:', e));
+            };
+
             // 30 dakika kala
             if (now >= planTime - 30 * 60000 && now < planTime - 15 * 60000 && !plan.reminded30) {
                 if (await claimLock(env, `${plan.id}_30`)) {
-                    await sendReminder(env, channelIds,
+                    const _sent30 = await sendReminder(env, channelIds,
                         `@everyone ⏳ **${plan.title || 'Event'}** başlamasına **30 dakika** kaldı!\n⏳ **30 minutes** until **${plan.title || 'Event'}** starts!`);
+                    await recordReminder('r30', _sent30);
                     plan.reminded30 = true; plansChanged = true;
                 }
             }
@@ -167,8 +184,9 @@ async function runTimeBasedAutomation(env) {
             // 15 dakika kala
             if (now >= planTime - 15 * 60000 && now < planTime && !plan.reminded15) {
                 if (await claimLock(env, `${plan.id}_15`)) {
-                    await sendReminder(env, channelIds,
+                    const _sent15 = await sendReminder(env, channelIds,
                         `@everyone ⚠️ **${plan.title || 'Event'}** başlamasına **15 dakika** kaldı! Hazırlıklarınızı tamamlayın.\n⚠️ **15 minutes** until **${plan.title || 'Event'}**! Finish your preparations.`);
+                    await recordReminder('r15', _sent15);
                     plan.reminded15 = true; plansChanged = true;
                 }
             }
@@ -178,8 +196,9 @@ async function runTimeBasedAutomation(env) {
                 if (await claimLock(env, `${plan.id}_0`)) {
                     // Motive edici cumle bilerek TEK DIL (Ingilizce) birakiliyor --
                     // guild sloganı olarak tek bir bicimde kalmasi isteniyor.
-                    await sendReminder(env, channelIds,
+                    const _sent0 = await sendReminder(env, channelIds,
                         `@everyone 🔥 **${plan.title || 'Event'}** BAŞLIYOR!\n🔥 **${plan.title || 'Event'}** is STARTING!\n\n*${motivMsg}*`);
+                    await recordReminder('r0', _sent0);
                     plan.reminded0 = true; plansChanged = true;
                 }
             }
@@ -196,8 +215,82 @@ async function runTimeBasedAutomation(env) {
         }
         // --- 3) RSVP hatirlatmalari (Madde 60) --------------------------
         await runRsvpReminders(env, announcements, guildData, now);
+
+        // --- 4) Temizlik: etkinlikten 2 saat sonra her seyi sil ----------
+        await runPostEventCleanup(env, announcements, guildData, now);
     } catch (e) {
         console.error('runTimeBasedAutomation genel hata:', e);
+    }
+}
+
+// ============================================================================
+// ETKINLIK SONRASI TEMIZLIK
+// ============================================================================
+// Etkinlik saatinin uzerinden 2 saat gectiginde:
+//   - Duyuru mesaji Discord'dan silinir
+//   - Bota ait 3 otomatik mesaj (30dk / 15dk / baslangic hatirlatmasi ve
+//     tesekkur mesaji) silinir
+//   - Bagli raid plani siteden kaldirilir
+//   - Duyuru kaydi siteden kaldirilir
+//
+// Boylece kanal her hafta temiz kalir, eski kadrolar ortalikta durmaz.
+const CLEANUP_AFTER_HOURS = 2;
+
+async function runPostEventCleanup(env, announcements, guildData, now) {
+    if (!announcements) return;
+
+    const cutoffMs = CLEANUP_AFTER_HOURS * 3600000;
+    const plans = (guildData && Array.isArray(guildData.raidPlans)) ? guildData.raidPlans : [];
+    let plansChanged = false;
+    let remainingPlans = plans.slice();
+
+    for (const [annId, ann] of Object.entries(announcements)) {
+        if (!ann || !ann.time) continue;
+        const annTime = new Date(ann.time).getTime();
+        if (isNaN(annTime) || now < annTime + cutoffMs) continue;
+
+        if (!(await claimLock(env, `${annId}_cleanup`))) continue;
+        console.log(`[cleanup] ${annId}: etkinlikten ${CLEANUP_AFTER_HOURS} saat gecti, temizleniyor.`);
+
+        // 1) Bota ait otomatik mesajlari sil (hatirlatmalar + tesekkur).
+        const botMsgIds = []
+            .concat(Object.values(ann.reminderMsgIds || {}))
+            .concat(ann.thanksMsgId ? [ann.thanksMsgId] : []);
+        for (const msgId of botMsgIds) {
+            try {
+                await fetch(`https://discord.com/api/v10/channels/${ann.channelId}/messages/${msgId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bot ${env.DISCORD_BOT_TOKEN}` }
+                });
+            } catch (e) { console.error(`[cleanup] bot mesaji ${msgId} silinemedi:`, e); }
+        }
+
+        // 2) Duyuru mesajini sil.
+        if (ann.channelId && ann.messageId) {
+            try {
+                await fetch(`https://discord.com/api/v10/channels/${ann.channelId}/messages/${ann.messageId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bot ${env.DISCORD_BOT_TOKEN}` }
+                });
+            } catch (e) { console.error('[cleanup] duyuru mesaji silinemedi:', e); }
+        }
+
+        // 3) Bagli raid planini siteden kaldir.
+        const before = remainingPlans.length;
+        remainingPlans = remainingPlans.filter(p => !(p && String(p.linkedAnnId) === String(annId)));
+        if (remainingPlans.length !== before) plansChanged = true;
+
+        // 4) Duyuru kaydini siteden kaldir.
+        await fetch(fb(env, `Announcements/${annId}`), { method: 'DELETE' })
+            .catch(e => console.error('[cleanup] duyuru kaydi silinemedi:', e));
+    }
+
+    if (plansChanged) {
+        await fetch(fb(env, `GuildData/raidPlans`), {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(remainingPlans)
+        }).catch(e => console.error('[cleanup] raidPlans yazilamadi:', e));
     }
 }
 
@@ -371,19 +464,30 @@ async function collectOptedOutDiscordUids(env, links, cfg) {
     return out;
 }
 
+/**
+ * Hatirlatma gonderir ve gonderilen mesajlarin kimliklerini dondurur.
+ * Kimlikler duyuru kaydina yazilir; etkinlikten 2 saat sonra bu mesajlar
+ * runPostEventCleanup tarafindan silinir.
+ */
 async function sendReminder(env, channelIds, content) {
+    const sentIds = [];
     for (const channelId of channelIds) {
         try {
             const res = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bot ${env.DISCORD_BOT_TOKEN}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ content, allowed_mentions: { parse: ['everyone'] } })
+                body: JSON.stringify({ content, embeds: [buildPortalEmbed()], allowed_mentions: { parse: ['everyone'] } })
             });
-            if (!res.ok) console.error(`[automation] hatirlatma kanal ${channelId} hata ${res.status}: ${await res.text()}`);
+            if (res.ok) {
+                try { const m = await res.json(); if (m && m.id) sentIds.push({ channelId, messageId: m.id }); } catch (e) { /* govde okunamadi */ }
+            } else {
+                console.error(`[automation] hatirlatma kanal ${channelId} hata ${res.status}: ${await res.text()}`);
+            }
         } catch (e) {
             console.error(`[automation] hatirlatma kanal ${channelId} ag hatasi:`, e);
         }
     }
+    return sentIds;
 }
 
 // ============================================================================
