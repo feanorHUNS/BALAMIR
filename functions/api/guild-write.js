@@ -112,11 +112,31 @@ function checkSection(name, value) {
         if (value.gold !== undefined && (typeof value.gold !== 'number' || !isFinite(value.gold))) {
             return 'guildBank: altin sayi olmali';
         }
-        if (value.items !== undefined) {
-            if (!Array.isArray(value.items) || value.items.length > 500) return 'guildBank: esya listesi gecersiz';
-            for (const it of value.items) {
-                if (!it || typeof it.name !== 'string' || it.name.length > 80) return 'guildBank: esya adi gecersiz';
-                if (typeof it.qty !== 'number' || it.qty < 0) return 'guildBank: adet gecersiz';
+        // Canta slotlari: sabit sayida, bos slotlar null.
+        if (value.slots !== undefined) {
+            if (!Array.isArray(value.slots) || value.slots.length > 100) return 'guildBank: slot listesi gecersiz';
+            for (const it of value.slots) {
+                if (it === null || it === undefined) continue;
+                if (typeof it !== 'object') return 'guildBank: slot gecersiz';
+                if (typeof it.name !== 'string' || !it.name.length || it.name.length > 80) return 'guildBank: esya adi gecersiz';
+                if (typeof it.qty !== 'number' || it.qty < 0 || it.qty > 1000000) return 'guildBank: adet gecersiz';
+                if (it.img && (typeof it.img !== 'string' || !/^https?:\/\//i.test(it.img) || it.img.length > 600)) {
+                    return 'guildBank: gorsel adresi gecersiz';
+                }
+                if (it.desc && String(it.desc).length > 400) return 'guildBank: aciklama cok uzun';
+                if (it.note && String(it.note).length > 400) return 'guildBank: not cok uzun';
+            }
+        }
+        // Istekler
+        if (value.requests !== undefined) {
+            if (!Array.isArray(value.requests) || value.requests.length > 300) return 'guildBank: istek listesi gecersiz';
+            for (const r of value.requests) {
+                if (!r || typeof r !== 'object') return 'guildBank: istek gecersiz';
+                if (typeof r.qty !== 'number' || r.qty < 1) return 'guildBank: istek adedi gecersiz';
+                if (r.status && ['pending','approved','rejected'].indexOf(r.status) === -1) {
+                    return 'guildBank: istek durumu gecersiz';
+                }
+                if (r.reason && String(r.reason).length > 500) return 'guildBank: istek gerekcesi cok uzun';
             }
         }
         if (value.log !== undefined && (!Array.isArray(value.log) || value.log.length > 200)) {
