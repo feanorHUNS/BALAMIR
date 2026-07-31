@@ -175,7 +175,7 @@ async function runTimeBasedAutomation(env) {
             if (now >= planTime - 30 * 60000 && now < planTime - 15 * 60000 && !plan.reminded30) {
                 if (await claimLock(env, `${plan.id}_30`)) {
                     const _sent30 = await sendReminder(env, channelIds,
-                        `@everyone ⏳ **${plan.title || 'Event'}** başlamasına **30 dakika** kaldı!\n⏳ **30 minutes** until **${plan.title || 'Event'}** starts!`);
+                        `@everyone ⏳ **30 minutes** until **${plan.title || 'Event'}** starts!\n⏳ **${plan.title || 'Event'}** başlamasına **30 dakika** kaldı!`);
                     await recordReminder('r30', _sent30);
                     plan.reminded30 = true; plansChanged = true;
                 }
@@ -185,7 +185,7 @@ async function runTimeBasedAutomation(env) {
             if (now >= planTime - 15 * 60000 && now < planTime && !plan.reminded15) {
                 if (await claimLock(env, `${plan.id}_15`)) {
                     const _sent15 = await sendReminder(env, channelIds,
-                        `@everyone ⚠️ **${plan.title || 'Event'}** başlamasına **15 dakika** kaldı! Hazırlıklarınızı tamamlayın.\n⚠️ **15 minutes** until **${plan.title || 'Event'}**! Finish your preparations.`);
+                        `@everyone ⚠️ **15 minutes** until **${plan.title || 'Event'}**! Finish your preparations.\n⚠️ **${plan.title || 'Event'}** başlamasına **15 dakika** kaldı! Hazırlıklarınızı tamamlayın.`);
                     await recordReminder('r15', _sent15);
                     plan.reminded15 = true; plansChanged = true;
                 }
@@ -197,7 +197,7 @@ async function runTimeBasedAutomation(env) {
                     // Motive edici cumle bilerek TEK DIL (Ingilizce) birakiliyor --
                     // guild sloganı olarak tek bir bicimde kalmasi isteniyor.
                     const _sent0 = await sendReminder(env, channelIds,
-                        `@everyone 🔥 **${plan.title || 'Event'}** BAŞLIYOR!\n🔥 **${plan.title || 'Event'}** is STARTING!\n\n*${motivMsg}*`);
+                        `@everyone 🔥 **${plan.title || 'Event'}** is STARTING!\n🔥 **${plan.title || 'Event'}** BAŞLIYOR!\n\n*${motivMsg}*`);
                     await recordReminder('r0', _sent0);
                     plan.reminded0 = true; plansChanged = true;
                 }
@@ -439,11 +439,14 @@ async function runRsvpReminders(env, announcements, guildData, now) {
         });
 
         const embed = {
-            title: `⏰ ${ann.title || 'Etkinlik'}`,
-            description: customText || 'Bu etkinlik için henüz oy vermediniz. / You have not voted for this event yet.',
+            title: `⏰ ${ann.title || 'Event'}`,
+            description: customText || 'You have not voted for this event yet.\nBu etkinlik için henüz oy vermediniz.',
             color: 0x3b82f6,
-            url: jumpUrl || undefined,
-            fields,
+            fields: [
+                { name: 'Remaining / Kalan', value: `~${hLabel} hours / saat`, inline: true },
+                { name: 'Time / Zaman', value: `<t:${unix}:F>\n<t:${unix}:R>`, inline: false },
+                { name: 'What to do? / Ne yapmalıyım?', value: 'Press one of the buttons on the announcement message.\nDuyuru mesajındaki butonlardan birine basın.', inline: false }
+            ],
             footer: { text: 'HUNS Guild Portal' }
         };
 

@@ -311,7 +311,7 @@
                     <button type="button" id="userRoleBadge" onclick="openDisplayNameModal()" class="text-[9px] font-black uppercase tracking-widest text-slate-400 bg-slate-900 border border-slate-700 px-2 py-0.5 rounded">Visitor</button>
                     <button id="applyBtn" onclick="startGuildApply()" class="guest-only bg-emerald-900/30 text-emerald-400 border border-emerald-700/50 hover:bg-emerald-600 hover:text-white px-4 py-1.5 rounded text-xs font-black transition" data-i18n="app_apply_btn">GUILD APPLY</button>
                     <button id="loginBtn" onclick="document.getElementById('loginModal').classList.remove('hidden')" class="guest-only bg-cyan-900/30 text-cyan-400 border border-cyan-700/50 hover:bg-cyan-600 hover:text-white px-4 py-1.5 rounded text-xs font-black transition" data-i18n="login">LOGIN</button>
-                    <button id="changeNameBtn" onclick="openDisplayNameModal()" class="logged-in-only bg-slate-800 text-slate-300 border border-slate-600 hover:bg-indigo-600 hover:text-white px-3 py-1.5 rounded text-xs font-black transition items-center gap-1" title="Change display name">&#9998;</button>
+                    
                     <button id="logoutBtn" onclick="handleLogout()" class="logged-in-only bg-red-900/30 text-red-400 border border-red-700/50 hover:bg-red-600 hover:text-white px-4 py-1.5 rounded text-xs font-black transition" data-i18n="logout">LOGOUT</button>
                     <button id="editModeBtn" onclick="toggleEditMode()" class="hidden bg-slate-900 text-slate-400 border border-slate-700 hover:bg-slate-800 hover:text-white px-3 py-1.5 rounded text-[10px] font-black transition whitespace-nowrap">
                         <span data-i18n="edit_mode">EDIT MODE:</span> <span id="editModeStatus" class="text-red-500" data-i18n="off">OFF</span>
@@ -1772,7 +1772,7 @@
                         });
                         db.ref('UserCards').on('value', (snapshot) => {
                             userCardsData = snapshot.val() || {};
-                            if (activeTab === 'discordlink' && currentUser.role === 'admin') renderUserCards();
+                            if (activeTab === 'discordlink' && isAdmin()) renderUserCards();
                         });
                         db.ref('ScheduledPosts').on('value', (snapshot) => {
                             scheduledPostsData = snapshot.val() || {};
@@ -2540,7 +2540,7 @@
         }
 
         function saveRsvpSettings() {
-            if (currentUser.role !== 'admin') return;
+            if (!isAdmin()) return;
             const count = parseInt(document.getElementById('rsvpCount').value) || 3;
             const hours = [1, 2, 3].slice(0, count)
                 .map(i => parseInt(document.getElementById('rsvpHour' + i).value) || 0)
@@ -2577,7 +2577,7 @@
         function renderApplicationQuestionEditor() {
             const box = document.getElementById('appQuestionEditor');
             if (!box) return;
-            const isAdmin = currentUser.role === 'admin';
+            const isAdmin = isAdmin();
             const qs = getApplicationQuestions();
 
             box.innerHTML = qs.map((q, i) => `
@@ -2595,7 +2595,7 @@
         }
 
         function addAppQuestion() {
-            if (currentUser.role !== 'admin') return;
+            if (!isAdmin()) return;
             const label = document.getElementById('newAppQLabel').value.trim();
             const type = document.getElementById('newAppQType').value;
             const required = document.getElementById('newAppQRequired').checked;
@@ -2611,7 +2611,7 @@
         }
 
         function deleteAppQuestion(idx) {
-            if (currentUser.role !== 'admin') return;
+            if (!isAdmin()) return;
             const qs = getApplicationQuestions().slice();
             const removed = qs[idx];
             showCustomConfirm(t('app_delete_confirm').replace('{q}', removed.label), () => {
@@ -2624,7 +2624,7 @@
         }
 
         function moveAppQuestion(idx, dir) {
-            if (currentUser.role !== 'admin') return;
+            if (!isAdmin()) return;
             const qs = getApplicationQuestions().slice();
             const tgt = idx + dir;
             if (tgt < 0 || tgt >= qs.length) return;
@@ -2715,7 +2715,7 @@
                         <span class="text-[10px] text-slate-500 font-mono">${a.at ? new Date(a.at).toLocaleString('tr-TR') : ''}</span>
                         <div class="flex items-center gap-2">
                             ${badge}
-                            ${currentUser.role === 'admin' ? `<button onclick="deleteApplication('${a._id}')" title="${t('app_delete')}" aria-label="${t('app_delete')}" class="w-6 h-6 rounded bg-slate-900 border border-slate-700 text-red-500 hover:bg-red-900 hover:text-white text-xs font-black">&times;</button>` : ''}
+                            ${isAdmin() ? `<button onclick="deleteApplication('${a._id}')" title="${t('app_delete')}" aria-label="${t('app_delete')}" class="w-6 h-6 rounded bg-slate-900 border border-slate-700 text-red-500 hover:bg-red-900 hover:text-white text-xs font-black">&times;</button>` : ''}
                         </div>
                     </div>
                     <div class="space-y-1 mb-3">
@@ -2891,7 +2891,7 @@
 
         /** Guild basvurusunu kalici olarak siler (yalnizca admin). */
         function deleteApplication(appId) {
-            if (currentUser.role !== 'admin') {
+            if (!isAdmin()) {
                 return showCustomAlert(t('app_delete_admin_only'), t('info'), '🔒');
             }
             const app = (applicationsData || {})[appId] || {};
@@ -2990,11 +2990,36 @@
             }).join('');
         }
 
+        // ============================================================================
+        // ROL BELIRLEME — TEK KAYNAK
+        // ============================================================================
+        // ESKI HATA 1: isAuthed() govdesi toplu donusum sirasinda yanlislikla
+        //   `return canEdit();` olmustu. Bu yuzden ONAYLI BIR UYE "giris yapmamis"
+        //   sayiliyor, ismini degistiremiyor ve duyurulari goremiyordu.
+        // ESKI HATA 2: Rol yalnizca `currentUser.role` degiskeninde tutuluyordu;
+        //   giris akisindaki herhangi bir hata bunu 'visitor'a dusurebiliyordu.
+        //
+        // ARTIK: Rol her zaman Firebase'deki Roles kaydindan TURETILIYOR,
+        // currentUser yalnizca yedek. Arayuzdeki bir hata rolu bozamaz.
+        function currentRole() {
+            try {
+                if (currentFirebaseUser && rolesData) {
+                    const mine = rolesData[currentFirebaseUser.uid];
+                    if (mine && mine.role) return mine.role;
+                }
+            } catch (e) { /* rolesData henuz yuklenmemis olabilir */ }
+            return (currentUser && currentUser.role) || 'visitor';
+        }
+
         function canEdit() {
-            return currentUser.role === 'officer' || currentUser.role === 'admin';
+            const r = currentRole();
+            return r === 'officer' || r === 'admin';
         }
         function isAuthed() {
-            return canEdit();
+            return currentRole() !== 'visitor';
+        }
+        function isAdmin() {
+            return currentRole() === 'admin';
         }
 
         // ============================================================================
@@ -3266,7 +3291,7 @@
             if (!file) return;
             inputEl.value = ''; // ayni dosya tekrar secilebilsin
 
-            if (currentUser.role !== 'admin') {
+            if (!isAdmin()) {
                 showCustomAlert(t('backup_admin_only'), t('info'), '🔒');
                 return;
             }
@@ -3389,7 +3414,7 @@
             }
         }
 
-        function applyTheme(id) { const tObj = NEON_THEMES.find(x => x.id === id) || NEON_THEMES[0]; document.getElementById('dynamicTheme').innerHTML = `:root { --neon-color: ${tObj.color}; --neon-bg: ${tObj.bg}; --neon-shadow: ${tObj.color}80; }`; if (cloudData.activeTheme !== id && currentUser.role === 'admin') { cloudData.activeTheme = id; triggerCloudSave(); } renderThemeButtons(); }
+        function applyTheme(id) { const tObj = NEON_THEMES.find(x => x.id === id) || NEON_THEMES[0]; document.getElementById('dynamicTheme').innerHTML = `:root { --neon-color: ${tObj.color}; --neon-bg: ${tObj.bg}; --neon-shadow: ${tObj.color}80; }`; if (cloudData.activeTheme !== id && isAdmin()) { cloudData.activeTheme = id; triggerCloudSave(); } renderThemeButtons(); }
 
         // ============ PNG EXPORT ARKAPLAN GÖRSELİ ============
         function applyExportBackgrounds() {
@@ -3405,7 +3430,7 @@
         }
 
         function saveExportBackground() {
-            if (currentUser.role !== 'admin') return;
+            if (!isAdmin()) return;
             const urlInput = document.getElementById('exportBgInput');
             const opInput = document.getElementById('exportBgOpacityInput');
             cloudData.exportBgUrl = urlInput ? urlInput.value.trim() : '';
@@ -3417,7 +3442,7 @@
         }
 
         function resetExportBackground() {
-            if (currentUser.role !== 'admin') return;
+            if (!isAdmin()) return;
             cloudData.exportBgUrl = "";
             cloudData.exportBgOpacity = 35;
             const urlInput = document.getElementById('exportBgInput'); if (urlInput) urlInput.value = "";
@@ -3430,7 +3455,7 @@
 
         // ============ DISCORD BOT ENTEGRASYONU (webhook TAMAMEN kaldırıldı, her şey bot üzerinden) ============
         function saveDiscordBotSettings() {
-            if (currentUser.role !== 'admin') return;
+            if (!isAdmin()) return;
             const motivInput = document.getElementById('discordMotivationalInput');
             cloudData.discordMotivationalMsg = motivInput ? motivInput.value.trim() : 'WE RISE FROM ASHES TO CONQUER THE CHAOS!';
             logAudit("Discord Bot ayarları güncellendi.");
@@ -3439,7 +3464,7 @@
         }
 
         function updateDiscordNotifySettings() {
-            if (currentUser.role !== 'admin') return;
+            if (!isAdmin()) return;
             if (!cloudData.discordNotify) cloudData.discordNotify = { publish: true, announce: true, roll: true };
             const p = document.getElementById('discordNotifyPublish'); const a = document.getElementById('discordNotifyAnnounce'); const r = document.getElementById('discordNotifyRoll');
             if (p) cloudData.discordNotify.publish = p.checked;
@@ -3481,7 +3506,7 @@
          * donuyor ve sonuc tum kanallara gidiyordu.
          */
         function setChannelPurpose(idx, purpose) {
-            if (currentUser.role !== 'admin') return;
+            if (!isAdmin()) return;
             if (!cloudData.discordChannels || !cloudData.discordChannels[idx]) return;
             cloudData.discordChannels[idx].purpose = purpose || null;
             logAudit(`Kanal amacı: ${cloudData.discordChannels[idx].name} -> ${purpose || 'yok'}`);
@@ -3490,7 +3515,7 @@
         }
 
         function startEditDiscordChannel(idx) {
-            if (currentUser.role !== 'admin') return;
+            if (!isAdmin()) return;
             const ch = cloudData.discordChannels[idx];
             const display = document.getElementById(`channelDisplay_${idx}`);
             display.innerHTML = `<input type="text" id="editChName_${idx}" value="${ch.name}" class="flex-1 neon-theme-input px-2 py-1 rounded text-[10px] outline-none">
@@ -3499,7 +3524,7 @@
         }
 
         function saveEditDiscordChannel(idx) {
-            if (currentUser.role !== 'admin') return;
+            if (!isAdmin()) return;
             const name = document.getElementById(`editChName_${idx}`).value.trim();
             const id = document.getElementById(`editChId_${idx}`).value.trim();
             if (!name || !id) return;
@@ -3509,7 +3534,7 @@
         }
 
         function addDiscordChannel() {
-            if (currentUser.role !== 'admin') return;
+            if (!isAdmin()) return;
             const nameInput = document.getElementById('discordChannelNameInput');
             const idInput = document.getElementById('discordChannelIdInput');
             const name = nameInput.value.trim();
@@ -3523,7 +3548,7 @@
         }
 
         function removeDiscordChannel(idx) {
-            if (currentUser.role !== 'admin') return;
+            if (!isAdmin()) return;
             cloudData.discordChannels.splice(idx, 1);
             triggerCloudSave();
             renderDiscordChannelList();
@@ -4182,7 +4207,7 @@
         // Her Discord kullanıcısı için: bağlı site karakterinin DKP/loot bilgisi + admin'e özel telefon/e-posta.
         function renderUserCards() {
             const container = document.getElementById('userCardsList');
-            if (!container || currentUser.role !== 'admin') return;
+            if (!container || !isAdmin()) return;
 
             const entries = Object.entries(discordUsersData || {}).sort((a, b) => (b[1].lastSeen || 0) - (a[1].lastSeen || 0));
             if (entries.length === 0) {
@@ -4221,7 +4246,7 @@
         }
 
         function saveUserCard(uid) {
-            if (currentUser.role !== 'admin') return;
+            if (!isAdmin()) return;
             const phoneInput = document.getElementById('cardPhone_' + uid);
             const emailInput = document.getElementById('cardEmail_' + uid);
             const phone = phoneInput ? phoneInput.value.trim() : '';
@@ -4355,7 +4380,7 @@
             // GUILD BASVURU butonu yalnizca ROLU OLMAYANLARA gorunur: member zaten
             // guild uyesi, yetkili/admin de oyle -- onlarin basvurmasi anlamsiz.
             const applyBtn = document.getElementById('applyBtn');
-            if (applyBtn) applyBtn.classList.toggle('hidden', isAuthed()); if(currentUser.role === 'admin') { document.body.classList.add('admin-mode'); document.getElementById('editModeBtn').classList.remove('hidden'); if(badge) { badge.className = "text-[9px] font-black uppercase tracking-widest text-white bg-red-900 border border-red-500 px-2 py-0.5 rounded cursor-pointer hover:bg-red-800"; badge.innerText = currentUser.username; badge.title = t('change_display_name'); /* onclick artik HTML uzerinde sabit */ } } else if (currentUser.role === 'officer') { document.body.classList.add('officer-mode'); if(badge) { badge.className = "text-[9px] font-black uppercase tracking-widest text-slate-900 bg-amber-400 border border-amber-600 px-2 py-0.5 rounded cursor-pointer hover:bg-amber-300"; badge.innerText = currentUser.username; badge.title = t('change_display_name'); /* onclick artik HTML uzerinde sabit */ } } else if (currentUser.role === 'member') { document.body.classList.add('member-mode'); if(badge) { badge.className = "text-[9px] font-black uppercase tracking-widest text-slate-900 bg-emerald-400 border border-emerald-600 px-2 py-0.5 rounded cursor-pointer hover:bg-emerald-300"; badge.innerText = currentUser.username; badge.title = t('change_display_name'); /* onclick artik HTML uzerinde sabit */ } } else { if(badge) { badge.className = "text-[9px] font-black uppercase tracking-widest text-slate-500 bg-slate-900 border border-slate-700 px-2 py-0.5 rounded"; badge.innerText = t("visitor"); } } const sb = document.getElementById('raidSidebar'); if(activeTab === 'raid' && canEdit()) { sb.style.display = 'flex'; document.body.classList.add('sidebar-active'); } else { sb.style.display = 'none'; document.body.classList.remove('sidebar-active'); } }
+            if (applyBtn) applyBtn.classList.toggle('hidden', isAuthed()); if(isAdmin()) { document.body.classList.add('admin-mode'); document.getElementById('editModeBtn').classList.remove('hidden'); if(badge) { badge.className = "text-[9px] font-black uppercase tracking-widest text-white bg-red-900 border border-red-500 px-2 py-0.5 rounded cursor-pointer hover:bg-red-800"; badge.innerText = currentUser.username; badge.title = t('change_display_name'); /* onclick artik HTML uzerinde sabit */ } } else if (currentRole() === 'officer') { document.body.classList.add('officer-mode'); if(badge) { badge.className = "text-[9px] font-black uppercase tracking-widest text-slate-900 bg-amber-400 border border-amber-600 px-2 py-0.5 rounded cursor-pointer hover:bg-amber-300"; badge.innerText = currentUser.username; badge.title = t('change_display_name'); /* onclick artik HTML uzerinde sabit */ } } else if (currentRole() === 'member') { document.body.classList.add('member-mode'); if(badge) { badge.className = "text-[9px] font-black uppercase tracking-widest text-slate-900 bg-emerald-400 border border-emerald-600 px-2 py-0.5 rounded cursor-pointer hover:bg-emerald-300"; badge.innerText = currentUser.username; badge.title = t('change_display_name'); /* onclick artik HTML uzerinde sabit */ } } else { if(badge) { badge.className = "text-[9px] font-black uppercase tracking-widest text-slate-500 bg-slate-900 border border-slate-700 px-2 py-0.5 rounded"; badge.innerText = t("visitor"); } } const sb = document.getElementById('raidSidebar'); if(activeTab === 'raid' && canEdit()) { sb.style.display = 'flex'; document.body.classList.add('sidebar-active'); } else { sb.style.display = 'none'; document.body.classList.remove('sidebar-active'); } }
         // Hangi sekmeyi hangi rol gorebilir. Sekme butonu CSS ile gizleniyor ama
         // burada da kontrol ediliyor -- boylece butona baska bir yoldan ulasilsa
         // (eski kod, klavye, konsol) bile erisim engellenir.
@@ -4373,7 +4398,7 @@
 
         function canSeeTab(tabId) {
             const need = TAB_MIN_ROLE[tabId] || 'officer';
-            return (ROLE_LEVEL[currentUser.role] || 0) >= (ROLE_LEVEL[need] || 0);
+            return (ROLE_LEVEL[currentRole()] || 0) >= (ROLE_LEVEL[need] || 0);
         }
 
         function switchTab(tabId) {
@@ -4382,14 +4407,14 @@
                 showCustomAlert(t('tab_access_denied'), t('info'), '🔒');
                 tabId = 'announcements';
             }
-            activeTab = tabId; document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active')); document.getElementById(`page-${tabId}`).classList.add('active'); document.getElementById(`tab-${tabId}`).classList.add('active'); if (tabId === 'admin') { if (currentUser.role !== 'admin') { document.getElementById('accessDeniedMsg').style.display = 'block'; } else { document.getElementById('accessDeniedMsg').style.display = 'none'; } } if (tabId === 'discordann') { if (!canEdit()) { document.getElementById('discordAnnDeniedMsg').style.display = 'block'; } else { document.getElementById('discordAnnDeniedMsg').style.display = 'none'; renderDiscordAnnouncementsList(); renderDiscordAnnChannelSelect(); } } if (tabId === 'discordlink') { if (!canEdit()) { document.getElementById('discordLinkDeniedMsg').style.display = 'block'; } else { document.getElementById('discordLinkDeniedMsg').style.display = 'none'; renderDiscordLinkTable(); if (currentUser.role === 'admin') renderUserCards(); } } if (tabId === 'scheduledposts') { if (!canEdit()) { document.getElementById('scheduledPostsDeniedMsg').style.display = 'block'; } else { document.getElementById('scheduledPostsDeniedMsg').style.display = 'none'; renderSchedPostChannels(); renderSchedTypeFields(); renderScheduledPostsList(); } } applyPermissions(); updatePresence(); }
+            activeTab = tabId; document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active')); document.getElementById(`page-${tabId}`).classList.add('active'); document.getElementById(`tab-${tabId}`).classList.add('active'); if (tabId === 'admin') { if (!isAdmin()) { document.getElementById('accessDeniedMsg').style.display = 'block'; } else { document.getElementById('accessDeniedMsg').style.display = 'none'; } } if (tabId === 'discordann') { if (!canEdit()) { document.getElementById('discordAnnDeniedMsg').style.display = 'block'; } else { document.getElementById('discordAnnDeniedMsg').style.display = 'none'; renderDiscordAnnouncementsList(); renderDiscordAnnChannelSelect(); } } if (tabId === 'discordlink') { if (!canEdit()) { document.getElementById('discordLinkDeniedMsg').style.display = 'block'; } else { document.getElementById('discordLinkDeniedMsg').style.display = 'none'; renderDiscordLinkTable(); if (isAdmin()) renderUserCards(); } } if (tabId === 'scheduledposts') { if (!canEdit()) { document.getElementById('scheduledPostsDeniedMsg').style.display = 'block'; } else { document.getElementById('scheduledPostsDeniedMsg').style.display = 'none'; renderSchedPostChannels(); renderSchedTypeFields(); renderScheduledPostsList(); } } applyPermissions(); updatePresence(); }
         
-        function toggleEditMode() { if(currentUser.role !== 'admin') return; isEditMode = !isEditMode; document.body.classList.toggle('edit-mode-active', isEditMode); const statusSpan = document.getElementById('editModeStatus'); const ed = document.getElementById('announcementEditor'); const tbar = document.getElementById('editorToolbar'); if(isEditMode) { statusSpan.innerText = t("on"); statusSpan.className = 'text-emerald-400'; ed.setAttribute('contenteditable','true'); tbar.classList.remove('hidden'); tbar.style.display = 'flex'; } else { statusSpan.innerText = t("off"); statusSpan.className = 'text-red-500'; ed.setAttribute('contenteditable','false'); tbar.classList.add('hidden'); tbar.style.display = 'none'; } }
-        function handleTitleClick(e, key) { if(!isEditMode || currentUser.role !== 'admin') return; e.preventDefault(); e.stopPropagation(); openTitleEdit(key); }
+        function toggleEditMode() { if(!isAdmin()) return; isEditMode = !isEditMode; document.body.classList.toggle('edit-mode-active', isEditMode); const statusSpan = document.getElementById('editModeStatus'); const ed = document.getElementById('announcementEditor'); const tbar = document.getElementById('editorToolbar'); if(isEditMode) { statusSpan.innerText = t("on"); statusSpan.className = 'text-emerald-400'; ed.setAttribute('contenteditable','true'); tbar.classList.remove('hidden'); tbar.style.display = 'flex'; } else { statusSpan.innerText = t("off"); statusSpan.className = 'text-red-500'; ed.setAttribute('contenteditable','false'); tbar.classList.add('hidden'); tbar.style.display = 'none'; } }
+        function handleTitleClick(e, key) { if(!isEditMode || !isAdmin()) return; e.preventDefault(); e.stopPropagation(); openTitleEdit(key); }
         function initColorPalette() { const pal = document.getElementById('titleColorPalette'); if(pal) { pal.innerHTML = PALETTE.map(c => `<div onclick="selectTitleColor('${c}')" class="w-6 h-6 rounded-full cursor-pointer border-2 border-transparent transition transform hover:scale-110 color-circle" style="background-color:${c};" data-color="${c}"></div>`).join(''); } }
         function selectTitleColor(c) { document.querySelectorAll('.color-circle').forEach(el => { el.classList.remove('border-white', 'shadow-[0_0_10px_currentColor]', 'scale-110'); el.classList.add('border-transparent'); }); const target = document.querySelector(`.color-circle[data-color="${c}"]`); if (target) { target.classList.remove('border-transparent'); target.classList.add('border-white', 'shadow-[0_0_10px_currentColor]', 'scale-110'); } }
         function openTitleEdit(key) {
-            if(!isEditMode || currentUser.role !== 'admin') return;
+            if(!isEditMode || !isAdmin()) return;
             currentEditTitleKey = key;
             // ÖNEMLİ: Bu anahtar için, ŞU ANKİ dile ait daha önce kaydedilmiş bir düzenleme varsa onu göster;
             // yoksa (ilk kez düzenleniyorsa) sabit "Title" yazısı değil, o başlığın GERÇEK mevcut metnini
@@ -4584,7 +4609,7 @@
         const PURGE_AFTER_DAYS = 180;
 
         function purgeOldDeletedPlayers() {
-            if (currentUser.role !== 'admin') {
+            if (!isAdmin()) {
                 showCustomAlert(t('backup_admin_only'), t('info'), '🔒');
                 return;
             }
@@ -4780,7 +4805,7 @@
         function insertLink() { const url = prompt(t('prompt_url'), "https://"); if (url) formatDoc('createLink', url); }
         function promptForImage() { const url = prompt(t('prompt_image_url')); if (url) formatDoc('insertImage', url); }
         function insertYouTube() { let url = prompt(t('prompt_youtube')); if(!url) return; let vId = ""; if(url.includes("v=")) vId = url.split("v=")[1].split("&")[0]; else if(url.includes("youtu.be/")) vId = url.split("youtu.be/")[1].split("?")[0]; if(vId) { let frame = `<div style="display:flex;justify-content:center;margin:15px 0;"><iframe width="560" height="315" src="https://www.youtube.com/embed/${vId}" frameborder="0" allowfullscreen style="border: 2px solid var(--neon-color); border-radius: 12px; box-shadow: 0 0 20px rgba(0,0,0,0.7);"></iframe></div><br/>`; document.execCommand('insertHTML', false, frame); } else alert(t('invalid_link')); }
-        function saveAnnouncement() { if(currentUser.role !== 'admin') return; cloudData.announcementHtml = document.getElementById('announcementEditor').innerHTML; logAudit("Bulletin updated."); triggerCloudSave(); notifyDiscordAnnouncement(cloudData.announcementHtml); toggleEditMode(); showCustomAlert(t("save_changes"), t("ok"), "✅"); }
+        function saveAnnouncement() { if(!isAdmin()) return; cloudData.announcementHtml = document.getElementById('announcementEditor').innerHTML; logAudit("Bulletin updated."); triggerCloudSave(); notifyDiscordAnnouncement(cloudData.announcementHtml); toggleEditMode(); showCustomAlert(t("save_changes"), t("ok"), "✅"); }
 
         const LEGENDARY_TITLES = { "Tank": ["Shield of HUNS", "Iron Guardian", "Goliath", "Immortal Defender"], "Healer": ["Lightbringer", "Life Weaver", "Holy Guide", "Soul Mystic"], "Support": ["Architect of Fate", "Aura Master", "Time Bender", "Shadow Whisperer"], "DPS": ["Harbinger of Death", "Shadow Dancer", "Crimson Executioner", "Storm Caller"] };
         function getLegendaryTitle(name, role, customTitle) { if (customTitle && customTitle.trim() !== '') return customTitle; let hash = 0; for(let i=0; i<name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash); const arr = LEGENDARY_TITLES[role] || ["Hero"]; return arr[Math.abs(hash) % arr.length]; }
@@ -4825,7 +4850,7 @@
         function addNewPlayer() { if(!canEdit()) return; const n = document.getElementById('addName').value; const r = document.getElementById('addRole').value; const d = parseInt(document.getElementById('addDkp').value)||0; if(!n) return; confirmIfDuplicateName(n, () => { const _isReinc = document.getElementById('addIsReinc')?.checked || false; const _reincOf = _isReinc ? (document.getElementById('addReincOf')?.value || null) : null; if (_isReinc && !_reincOf) return showCustomAlert(t('reinc_parent_required'), t('error'), '⚠️'); cloudData.players.push({ isReinc: _isReinc, reincOf: _reincOf, id: Date.now(), name:n, role:r, dkp:d, inRaid:false, rollTicket:false, arti:0, dragon:0, totalArti:0, totalDragon:0, hasPenaltyMark:false, sessionAddCount: 0, sessionSubCount: 0, isDeleted: false, customTitle: '' }); logAudit(`Karakter Eklendi: ${n}`); triggerCloudSave('players'); renderAll(); document.getElementById('addModal').classList.add('hidden'); document.getElementById('addName').value = ''; const _c=document.getElementById('addIsReinc'); if(_c){_c.checked=false; toggleAddReincSelect();} }); }
         function openEditModal(id) { if(!canEdit()) return; const p = cloudData.players.find(x=>x.id===id); document.getElementById('editId').value=p.id; document.getElementById('editName').value=p.name; document.getElementById('editRole').value=p.role; document.getElementById('editDkp').value=p.dkp; document.getElementById('editTotalDragon').value=p.totalDragon; document.getElementById('editTotalArti').value=p.totalArti; document.getElementById('editCustomTitle').value = p.customTitle || ''; document.getElementById('editNotes').value = p.notes || '';
             const _rc = document.getElementById('editIsReinc'); if (_rc) { _rc.checked = !!p.isReinc; }
-            const _rs = document.getElementById('editReincOf'); if (_rs) { _rs.classList.toggle('hidden', !p.isReinc); if (p.isReinc) fillReincOptions('editReincOf', p.reincOf, p.id); } document.getElementById('editPenaltySection').innerHTML = p.hasPenaltyMark ? `<div class="bg-red-950/30 p-3 rounded-xl flex justify-between items-center text-[10px] text-red-400 font-bold uppercase"><span class="text-base">❌</span> Penalty<button onclick="removePenaltyMark(${p.id})" class="bg-red-600 hover:bg-red-500 text-white px-3 py-1.5 rounded shadow font-black">CANCEL</button></div>` : `<div class="bg-emerald-950/30 p-3 rounded-xl flex items-center gap-1.5 text-[10px] text-emerald-400 font-bold uppercase"><span class="text-base">✅</span> OK</div>`; if(currentUser.role !== 'admin') { document.getElementById('deletePlayerBtn').classList.add('hidden'); } else { document.getElementById('deletePlayerBtn').classList.remove('hidden'); } renderEditStats(id); renderPlayerItems(id); document.getElementById('editModal').classList.remove('hidden'); }
+            const _rs = document.getElementById('editReincOf'); if (_rs) { _rs.classList.toggle('hidden', !p.isReinc); if (p.isReinc) fillReincOptions('editReincOf', p.reincOf, p.id); } document.getElementById('editPenaltySection').innerHTML = p.hasPenaltyMark ? `<div class="bg-red-950/30 p-3 rounded-xl flex justify-between items-center text-[10px] text-red-400 font-bold uppercase"><span class="text-base">❌</span> Penalty<button onclick="removePenaltyMark(${p.id})" class="bg-red-600 hover:bg-red-500 text-white px-3 py-1.5 rounded shadow font-black">CANCEL</button></div>` : `<div class="bg-emerald-950/30 p-3 rounded-xl flex items-center gap-1.5 text-[10px] text-emerald-400 font-bold uppercase"><span class="text-base">✅</span> OK</div>`; if(!isAdmin()) { document.getElementById('deletePlayerBtn').classList.add('hidden'); } else { document.getElementById('deletePlayerBtn').classList.remove('hidden'); } renderEditStats(id); renderPlayerItems(id); document.getElementById('editModal').classList.remove('hidden'); }
         function saveEdit() {
             if(!canEdit()) return;
             const p = cloudData.players.find(x=>x.id===parseInt(document.getElementById('editId').value));
@@ -4872,9 +4897,9 @@
             triggerCloudSave('players'); renderAll();
             document.getElementById('editModal').classList.add('hidden');
         }
-        function softDeletePlayer() { if(currentUser.role !== 'admin') return; const id = parseInt(document.getElementById('editId').value); showCustomConfirm(t("delete"), () => { const p = cloudData.players.find(x => x.id === id); if(p) { p.isDeleted = true; p.deletedAt = Date.now(); logAudit(`Karakter Çöpe Atıldı: ${p.name}`); triggerCloudSave('players'); renderAll(); document.getElementById('editModal').classList.add('hidden'); } }, t("confirm"), "🗑️"); }
-        function restorePlayer(id) { if(currentUser.role !== 'admin') return; const p = cloudData.players.find(x => x.id === id); if(p) { p.isDeleted = false; logAudit(`Karakter Kurtarıldı: ${p.name}`); triggerCloudSave('players'); renderAll(); showCustomAlert(t("restore_success"), t("success"), "✅"); } }
-        function hardDeletePlayer(id) { if(currentUser.role !== 'admin') return; showCustomConfirm(t('hard_delete_confirm'), () => { const pName = cloudData.players.find(x => x.id === id)?.name; cloudData.players = cloudData.players.filter(x => x.id !== id); logAudit(`Karakter KALICI OLARAK Silindi: ${pName}`); triggerCloudSave('players'); renderAll(); showCustomAlert(t("delete_success"), t("success"), "🔥"); }, t("perma_delete"), "🔥"); }
+        function softDeletePlayer() { if(!isAdmin()) return; const id = parseInt(document.getElementById('editId').value); showCustomConfirm(t("delete"), () => { const p = cloudData.players.find(x => x.id === id); if(p) { p.isDeleted = true; p.deletedAt = Date.now(); logAudit(`Karakter Çöpe Atıldı: ${p.name}`); triggerCloudSave('players'); renderAll(); document.getElementById('editModal').classList.add('hidden'); } }, t("confirm"), "🗑️"); }
+        function restorePlayer(id) { if(!isAdmin()) return; const p = cloudData.players.find(x => x.id === id); if(p) { p.isDeleted = false; logAudit(`Karakter Kurtarıldı: ${p.name}`); triggerCloudSave('players'); renderAll(); showCustomAlert(t("restore_success"), t("success"), "✅"); } }
+        function hardDeletePlayer(id) { if(!isAdmin()) return; showCustomConfirm(t('hard_delete_confirm'), () => { const pName = cloudData.players.find(x => x.id === id)?.name; cloudData.players = cloudData.players.filter(x => x.id !== id); logAudit(`Karakter KALICI OLARAK Silindi: ${pName}`); triggerCloudSave('players'); renderAll(); showCustomAlert(t("delete_success"), t("success"), "🔥"); }, t("perma_delete"), "🔥"); }
 
         function modifyDkp(id, isAdd, btnEl) { 
             if(!canEdit()) return; 
@@ -5747,11 +5772,11 @@ function buildSlotContentCanvasDataUri(name, pills, reincText) {
         function openRosterModal() { const active = cloudData.players.filter(p => !p.isDeleted).sort((a,b)=> b.dkp - a.dkp); const maxDkp = Math.max(...active.map(p=>p.dkp), 1); document.getElementById('rosterGrid').innerHTML = active.map((p, i) => { const title = getLegendaryTitle(p.name, p.role, p.customTitle); const roleColors = { "Tank": "text-red-400 border-red-500/50 bg-red-950/20", "Healer": "text-emerald-400 border-emerald-500/50 bg-emerald-950/20", "Support": "text-blue-400 border-blue-500/50 bg-blue-950/20", "DPS": "text-amber-400 border-amber-500/50 bg-amber-950/20" }; const c = roleColors[p.role] || roleColors["DPS"]; const borderC = c.split(' ')[1]; const icon = p.role==='Tank'?'🛡️':p.role==='Healer'?'💖':p.role==='Support'?'🔮':'⚔️'; let tColor = p.customTitle ? '#e879f9' : ''; return `<div class="bg-slate-900/60 border ${borderC} p-4 rounded-3xl relative overflow-hidden group hover:scale-[1.02] transition-all duration-300 backdrop-blur-md neon-theme-box hover:shadow-[0_0_20px_currentColor] min-h-[160px]" style="color: ${c.split(' ')[0].replace('text-','')};"><div class="absolute -right-4 -top-4 text-7xl opacity-[0.05] drop-shadow-[0_0_20px_currentColor] transition-transform duration-500 group-hover:scale-110">${icon}</div><div class="absolute inset-0 bg-gradient-to-br from-transparent to-black/40 z-0"></div><div class="flex justify-between items-start mb-4 relative z-10"><div class="w-full"><div class="text-[8px] font-black uppercase tracking-[0.2em] mb-1 opacity-90 truncate" style="font-family:'Cinzel',serif; ${tColor?`color:${tColor};`:''}">${title}</div><div class="text-xl font-black text-white flex justify-between items-center w-full" style="font-family:Georgia,serif;"><span class="break-words whitespace-normal pr-2 leading-tight">${p.name}</span><span class="text-slate-500 text-[9px] font-mono border border-slate-700 px-1.5 py-0.5 rounded-full bg-slate-950 shrink-0">#${i+1}</span></div></div></div><div class="space-y-3 relative z-10"><div><div class="flex justify-between text-[9px] font-black mb-1 tracking-widest"><span class="text-cyan-400">DKP</span><span class="text-cyan-300 drop-shadow-[0_0_5px_currentColor]">${p.dkp}</span></div><div class="w-full bg-slate-950 rounded-full h-1.5 overflow-hidden border border-slate-700/50 shadow-inner"><div class="bg-gradient-to-r from-cyan-600 to-cyan-400 h-full progress-bar-fill shadow-[0_0_10px_#06b6d4]" style="width:${Math.min((p.dkp/maxDkp)*100, 100)}%"></div></div></div></div></div>`; }).join(''); document.getElementById('rosterModal').classList.remove('-translate-x-full'); setTimeout(() => { document.querySelectorAll('.progress-bar-fill').forEach(bar => { let w = bar.style.width; bar.style.width = '0%'; setTimeout(() => bar.style.width = w, 50); }); }, 10); }
 
         function applyPenalty() { if(currentUser.role!=='admin') return; let value=parseInt(document.getElementById('penaltyValue').value)||10; let penalizedCount=cloudData.players.filter(p=>p.hasPenaltyMark && !p.isDeleted); if(penalizedCount.length===0) return showCustomAlert(t('no_one_to_penalize')); showCustomConfirm(`Apply -${value} penalty?`,()=>{ cloudData.players.forEach(p=>{if(p.hasPenaltyMark && !p.isDeleted){p.dkp-=value; p.hasPenaltyMark=false;}}); cloudData.penaltyHistory.unshift({id:Date.now(),date:new Date().toLocaleString('tr-TR'),penaltyAmount:value,victims:penalizedCount.map(p=>p.name)}); logAudit(`Toplu Ceza Kesti (-${value})`); triggerCloudSave('players'); renderAll(); },t("confirm")); }
-        function applyIndividualPenalty(id) { if(currentUser.role !== 'admin') return; const p = cloudData.players.find(x => x.id === id); const inputVal = document.getElementById(`indPenalty_${id}`).value; const v = parseInt(inputVal) || 10; showCustomConfirm(`Apply -${v} penalty?`, () => { p.dkp -= v; p.hasPenaltyMark = false; cloudData.penaltyHistory.unshift({ id: Date.now(), date: new Date().toLocaleString('tr-TR'), penaltyAmount: v, victims: [p.name] }); logAudit(`Ceza Kesti: ${p.name} (-${v})`); triggerCloudSave('players'); renderAll(); }, t("confirm")); }
+        function applyIndividualPenalty(id) { if(!isAdmin()) return; const p = cloudData.players.find(x => x.id === id); const inputVal = document.getElementById(`indPenalty_${id}`).value; const v = parseInt(inputVal) || 10; showCustomConfirm(`Apply -${v} penalty?`, () => { p.dkp -= v; p.hasPenaltyMark = false; cloudData.penaltyHistory.unshift({ id: Date.now(), date: new Date().toLocaleString('tr-TR'), penaltyAmount: v, victims: [p.name] }); logAudit(`Ceza Kesti: ${p.name} (-${v})`); triggerCloudSave('players'); renderAll(); }, t("confirm")); }
         function renderPenaltyLogs() { const c=document.getElementById('penaltyLogsContainer'); if(!c) return; if(cloudData.penaltyHistory.length===0){c.innerHTML='<div class="text-slate-500 text-sm text-center py-6">Empty.</div>'; return;} c.innerHTML=cloudData.penaltyHistory.map(log=>`<div class="bg-slate-950/60 p-4 border border-slate-700/50 rounded-xl mb-3 shadow-md"><div class="flex justify-between items-center border-b border-slate-800 pb-2 mb-2"><span class="text-orange-400 font-bold text-xs">${log.date}</span><div class="flex gap-2 items-center"><span class="text-red-400 text-xs font-black bg-red-950 px-2 py-0.5 rounded border border-red-900">-${log.penaltyAmount} DKP</span></div></div><div class="text-[11px] text-slate-400"><span class="block mb-1 font-bold text-slate-500 text-[9px] uppercase">Victims:</span> ${log.victims.join(', ')}</div></div>`).join(''); }
         function clearPenaltyHistory() { if(currentUser.role==='admin'){showCustomConfirm(t('clear_history_q'),()=>{cloudData.penaltyHistory=[]; triggerCloudSave(); renderPenaltyLogs();},t("confirm"),"🔥");} }
         function clearAuditLogs() {
-            if(currentUser.role !== 'admin') return;
+            if(!isAdmin()) return;
             showCustomConfirm(t('audit_clear_confirm'), () => {
                 cloudData.auditLogs = [];                                  // eski (blob icindeki) kayitlar
                 try { if (typeof firebase !== 'undefined') firebase.database().ref('AuditLogs').remove(); } catch(e){}
@@ -5807,7 +5832,7 @@ function buildSlotContentCanvasDataUri(name, pills, reincText) {
         }
 
         function grantRole(uid, role) {
-            if (currentUser.role !== 'admin') return;
+            if (!isAdmin()) return;
             const u = (pendingUsersData && pendingUsersData[uid]) || {};
             // Rol degistirirken kullanicinin KENDI sectigi gorunen isim korunur.
             const existingName = (rolesData && rolesData[uid] && rolesData[uid].name) || null;
@@ -5818,7 +5843,7 @@ function buildSlotContentCanvasDataUri(name, pills, reincText) {
         }
 
         function revokeRole(uid) {
-            if (currentUser.role !== 'admin') return;
+            if (!isAdmin()) return;
             showCustomConfirm(t("revoke_confirm"), () => {
                 firebase.database().ref('Roles/' + uid).remove().then(() => {
                     logAudit(`Yetki alındı: ${uid}`);
