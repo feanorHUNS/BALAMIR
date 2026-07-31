@@ -18,6 +18,7 @@ import { onRequestPost as sendPlanDm, sendDmToUser, onRequestPostDecision as sen
 import { onRequestPost as linkPreview, buildLinkPreviewEmbedFromText } from './functions/api/link-preview.js';
 import { onRequestPost as guildWrite } from './functions/api/guild-write.js';
 import { onRequestPost as auditLog } from './functions/api/audit-log.js';
+import { onRequestPost as bankRequest } from './functions/api/bank-request.js';
 
 // ============================================================================
 // ADRES TABLOSU  (Madde 25 + 27)
@@ -49,7 +50,9 @@ const ROUTES = {
     // MADDE 111: Istemci artik Firebase'e DOGRUDAN yazmiyor. Tum guild verisi
     // ve denetim kaydi bu uclardan, sunucu dogrulamasindan gecerek yaziliyor.
     '/api/guild-write':           { handler: guildWrite,          minRole: 'officer', limit: 300, windowMs: 600000 },
-    '/api/audit-log':             { handler: auditLog,            minRole: 'officer', limit: 300, windowMs: 600000 }
+    '/api/audit-log':             { handler: auditLog,            minRole: 'officer', limit: 300, windowMs: 600000 },
+    // Uyeler banka istegi gonderebilir; bu uc YALNIZCA requests listesine ekler.
+    '/api/bank-request':          { handler: bankRequest,         minRole: 'member',  limit: 20,  windowMs: 600000 }
 };
 
 export default {
