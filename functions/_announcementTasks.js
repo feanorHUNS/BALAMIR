@@ -32,11 +32,12 @@ export async function finalizeAnnouncementCore(env, annId, webhookUrl, reason) {
         if (ann.finalized) return { ok: true, alreadyFinalized: true };
 
         // 1) Tesekkur mesaji
+        let thanksMsgId = null;
         try {
             const acceptedIds = Object.keys(ann.accepted || {});
             if (acceptedIds.length > 0 && ann.channelId) {
                 const mentions = acceptedIds.map(id => `<@${id}>`).join(' ');
-                await fetch(`https://discord.com/api/v10/channels/${ann.channelId}/messages`, {
+                const thanksRes = await fetch(`https://discord.com/api/v10/channels/${ann.channelId}/messages`, {
                     method: 'POST',
                     headers: { 'Authorization': `Bot ${env.DISCORD_BOT_TOKEN}`, 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -44,6 +45,9 @@ export async function finalizeAnnouncementCore(env, annId, webhookUrl, reason) {
                         allowed_mentions: { parse: [], users: acceptedIds }
                     })
                 });
+                if (thanksRes.ok) {
+                    try { const m = await thanksRes.json(); thanksMsgId = m && m.id; } catch (e) { /* govde okunamadi */ }
+                }
             }
         } catch (e) { console.error('[finalize] tesekkur mesaji gonderilemedi (yoksayildi):', e); }
 
@@ -82,6 +86,9 @@ export async function finalizeAnnouncementCore(env, annId, webhookUrl, reason) {
         // 4) Isaretle — yukarida ne olursa olsun BU CALISIR.
         const patch = { finalized: true, finalizedAt: Date.now() };
         if (reason) patch.finalizedReason = reason;
+        // Tesekkur mesajinin kimligi kaydediliyor: etkinlikten 2 saat sonra
+        // calisan temizlik gorevi bu mesaji da siliyor.
+        if (thanksMsgId) patch.thanksMsgId = thanksMsgId;
         await fetch(fb(env, `Announcements/${annId}`), {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
