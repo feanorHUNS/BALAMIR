@@ -11,7 +11,7 @@ export async function onRequestPost(context) {
     let payload;
     try { payload = await request.json(); } catch (e) { return new Response('Invalid JSON', { status: 400 }); }
 
-    const { content, channelIds, mentionUsers } = payload;
+    const { content, channelIds, mentionUsers, extraEmbeds } = payload;
     if (!content) return new Response('content zorunludur.', { status: 400 });
     if (!Array.isArray(channelIds) || channelIds.length === 0) {
         return new Response('En az bir kanal seçilmelidir (channelIds).', { status: 400 });
@@ -27,7 +27,8 @@ export async function onRequestPost(context) {
                 // Verilmemisse eski davranis: @everyone.
                 body: JSON.stringify({
                     content,
-                    embeds: [buildPortalEmbed()],
+                    // Link onizlemesi varsa portal kartindan ONCE gosterilir.
+                    embeds: (Array.isArray(extraEmbeds) ? extraEmbeds : []).concat([buildPortalEmbed()]),
                     allowed_mentions: Array.isArray(mentionUsers) && mentionUsers.length
                         ? { parse: [], users: mentionUsers }
                         : { parse: ['everyone'] }
