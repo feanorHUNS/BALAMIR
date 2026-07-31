@@ -13,7 +13,7 @@ import { onRequestPost as deleteAnnouncement } from './functions/api/delete-anno
 import { onRequestPost as syncAnnouncements } from './functions/api/sync-announcements.js';
 import { onRequestPost as sendPlanImage } from './functions/api/send-plan-image.js';
 import { onRequestPost as sendPlanReminder } from './functions/api/send-plan-reminder.js';
-import { onRequestPost as sendPlanDm, sendDmToUser } from './functions/api/send-plan-dm.js';
+import { onRequestPost as sendPlanDm, sendDmToUser, onRequestPostDecision as sendAppDecision } from './functions/api/send-plan-dm.js';
 
 // ============================================================================
 // ADRES TABLOSU  (Madde 25 + 27)
@@ -33,7 +33,9 @@ const ROUTES = {
     '/api/send-plan-reminder':    { handler: sendPlanReminder,     minRole: 'member', limit: 25, windowMs: 600000 },
     // Raid Dominion kisiye ozel DM: her cagri onlarca DM gonderdigi icin
     // limit bilerek dusuk tutuldu.
-    '/api/send-plan-dm':          { handler: sendPlanDm,          minRole: 'officer', limit: 8,  windowMs: 600000 }
+    '/api/send-plan-dm':          { handler: sendPlanDm,          minRole: 'officer', limit: 8,  windowMs: 600000 },
+    // Madde 72: Basvuru onay/red bildirimi
+    '/api/send-app-decision':     { handler: sendAppDecision,     minRole: 'officer', limit: 40, windowMs: 600000 }
 };
 
 export default {
@@ -214,6 +216,24 @@ async function runTimeBasedAutomation(env) {
 
 const RSVP_DEFAULT_HOURS = [24, 6, 1];
 
+// ============================================================================
+// RAID HAFTASI (Persembe -> Persembe)
+// ============================================================================
+// Allods'ta her karakter haftada YALNIZCA BIR KEZ raide girebiliyor ve haftalik
+// sifirlama persembe gunu oluyor. Guild haftada 2-3 raid duyurusu yaptigi icin,
+// bu haftaki bir raide ZATEN yazilmis birine "oy vermedin" hatirlatmasi
+// gondermek anlamsiz ve rahatsiz edici olur.
+//
+// Bu fonksiyon, verilen ana ait raid haftasinin baslangicini dondurur; ayni
+// hafta icindeki iki duyuru ayni degeri uretir.
+function raidWeekStart(utcMs) {
+    const tr = new Date(utcMs + TR_OFFSET_MS);
+    const daysSinceThursday = (tr.getUTCDay() - 4 + 7) % 7; // 4 = Persembe
+    tr.setUTCDate(tr.getUTCDate() - daysSinceThursday);
+    tr.setUTCHours(0, 0, 0, 0);
+    return tr.getTime() - TR_OFFSET_MS;
+}
+
 async function runRsvpReminders(env, announcements, guildData, now) {
     if (!announcements) return;
 
@@ -224,6 +244,18 @@ async function runRsvpReminders(env, announcements, guildData, now) {
     const links = (guildData && guildData.discordLinks) || {};
     const linkedUids = Object.keys(links);
     if (linkedUids.length === 0) return;
+
+    // --- Kadro plani YAYINLANMIS duyurular ------------------------------
+    // Yalnizca bunlar "bu haftaki raidine yazildi" saymak icin kullanilir;
+    // henuz plani olmayan bir duyuruya kabul demek kisiyi baglamaz.
+    const publishedAnnIds = new Set(
+        (guildData && Array.isArray(guildData.raidPlans) ? guildData.raidPlans : [])
+            .filter(p => p && p.published && p.linkedAnnId)
+            .map(p => String(p.linkedAnnId))
+    );
+
+    // --- Hatirlatma almak ISTEMEYENLER (Madde 79) ------------------------
+    const optedOutUids = await collectOptedOutDiscordUids(env, links, cfg);
 
     for (const [annId, ann] of Object.entries(announcements)) {
         if (!ann || ann.finalized || !ann.time) continue;
@@ -255,8 +287,27 @@ async function runRsvpReminders(env, announcements, guildData, now) {
             ...Object.keys(ann.declined || {}),
             ...Object.keys(ann.tentative || {})
         ]);
-        const targets = linkedUids.filter(uid => !voted.has(uid));
-        if (targets.length === 0) continue;
+
+        // --- Bu hafta BASKA bir raide zaten yazilmis olanlar --------------
+        // Ayni raid haftasindaki, kadro plani yayinlanmis diger duyurularda
+        // KABUL demis kisiler bu duyuru icin hatirlatma almaz.
+        const thisWeek = raidWeekStart(annTime);
+        const committed = new Set();
+        for (const [otherId, other] of Object.entries(announcements)) {
+            if (otherId === annId || !other || !other.time) continue;
+            if (!publishedAnnIds.has(String(otherId))) continue;
+            const otherTime = new Date(other.time).getTime();
+            if (isNaN(otherTime) || raidWeekStart(otherTime) !== thisWeek) continue;
+            Object.keys(other.accepted || {}).forEach(uid => committed.add(uid));
+        }
+
+        const targets = linkedUids.filter(uid =>
+            !voted.has(uid) && !committed.has(uid) && !optedOutUids.has(uid));
+
+        if (targets.length === 0) {
+            console.log(`[rsvp] ${annId}: gonderilecek kimse yok (oy veren ${voted.size}, bu hafta baska raidde ${committed.size}, kapali ${optedOutUids.size}).`);
+            continue;
+        }
 
         const unix = Math.floor(annTime / 1000);
         const hLabel = Number(hours[slotIndex]);
@@ -280,8 +331,44 @@ async function runRsvpReminders(env, announcements, guildData, now) {
             if (r.ok) sent++;
             await new Promise(res => setTimeout(res, 350)); // oran limiti
         }
-        console.log(`[rsvp] ${annId}: ${hLabel}s kala ${sent}/${targets.length} kisiye hatirlatma gonderildi.`);
+        console.log(`[rsvp] ${annId}: ${hLabel}s kala ${sent}/${targets.length} kisiye gonderildi (bu hafta baska raidde olan ${committed.size} kisi atlandi).`);
     }
+}
+
+/**
+ * Hatirlatma almak istemeyenlerin Discord kimliklerini toplar (Madde 79).
+ *
+ * Uye tercihini Roles/{uid}/noRsvpDm altina yazar ve kendi karakter(ler)ini
+ * Roles/{uid}/playerIds altinda tutar. Burada bu tercihi Discord kimligine
+ * ceviriyoruz: playerId -> discordLinks tersine cevrilerek.
+ *
+ * Admin bu ozelligi kapattiysa (allowOptOut !== true) tercih YOK SAYILIR.
+ */
+async function collectOptedOutDiscordUids(env, links, cfg) {
+    const out = new Set();
+    if (!cfg || cfg.allowOptOut !== true) return out;
+
+    try {
+        const rolesRes = await fetch(fb(env, `Roles`));
+        const roles = await rolesRes.json();
+        if (!roles) return out;
+
+        // playerId -> discordUid ters haritasi
+        const playerToDiscord = {};
+        Object.entries(links).forEach(([duid, pid]) => { playerToDiscord[String(pid)] = duid; });
+
+        Object.values(roles).forEach(r => {
+            if (!r || r.noRsvpDm !== true) return;
+            const ids = Array.isArray(r.playerIds) ? r.playerIds : (r.playerId ? [r.playerId] : []);
+            ids.forEach(pid => {
+                const duid = playerToDiscord[String(pid)];
+                if (duid) out.add(duid);
+            });
+        });
+    } catch (e) {
+        console.error('collectOptedOutDiscordUids error:', e);
+    }
+    return out;
 }
 
 async function sendReminder(env, channelIds, content) {
