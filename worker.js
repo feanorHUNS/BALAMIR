@@ -15,7 +15,7 @@ import { onRequestPost as syncAnnouncements } from './functions/api/sync-announc
 import { onRequestPost as sendPlanImage } from './functions/api/send-plan-image.js';
 import { onRequestPost as sendPlanReminder } from './functions/api/send-plan-reminder.js';
 import { onRequestPost as sendPlanDm, sendDmToUser, onRequestPostDecision as sendAppDecision } from './functions/api/send-plan-dm.js';
-import { onRequestPost as linkPreview } from './functions/api/link-preview.js';
+import { onRequestPost as linkPreview, buildLinkPreviewEmbedFromText } from './functions/api/link-preview.js';
 
 // ============================================================================
 // ADRES TABLOSU  (Madde 25 + 27)
@@ -350,8 +350,13 @@ async function runRsvpReminders(env, announcements, guildData, now) {
     // --- Hatirlatma almak ISTEMEYENLER (Madde 79) ------------------------
     const optedOutUids = await collectOptedOutDiscordUids(env, links, cfg);
 
+    // Yalnizca SECILI duyurular icin gonderilecekse listeyi daralt.
+    const scopeSelected = cfg.scope === 'selected';
+    const chosenIds = Array.isArray(cfg.annIds) ? cfg.annIds.map(String) : [];
+
     for (const [annId, ann] of Object.entries(announcements)) {
         if (!ann || ann.finalized || !ann.time) continue;
+        if (scopeSelected && !chosenIds.includes(String(annId))) continue;
         const annTime = new Date(ann.time).getTime();
         if (isNaN(annTime) || annTime <= now) continue;
 
@@ -406,15 +411,39 @@ async function runRsvpReminders(env, announcements, guildData, now) {
         const hLabel = Number(hours[slotIndex]);
         const customText = (cfg.message || '').trim();
 
+        // Duyurunun kendi metnini ALINTILA: kisi neyin hatirlatildigini
+        // hatirlamak icin kanala gitmek zorunda kalmasin.
+        const quoted = String(ann.content || '').trim().slice(0, 700);
+        const acc = Object.keys(ann.accepted || {}).length;
+        const dec = Object.keys(ann.declined || {}).length;
+
+        // Duyuru mesajina dogrudan baglanti -- tek tikla butonlara ulasilir.
+        const jumpUrl = (ann.channelId && ann.messageId && env.DISCORD_GUILD_ID)
+            ? `https://discord.com/channels/${env.DISCORD_GUILD_ID}/${ann.channelId}/${ann.messageId}`
+            : null;
+
+        const fields = [
+            { name: 'Kalan / Remaining', value: `~${hLabel} saat / hours`, inline: true },
+            { name: 'Katılım / Attendance', value: `✅ ${acc}   ❌ ${dec}`, inline: true },
+            { name: 'Zaman / Time', value: `<t:${unix}:F>\n<t:${unix}:R>`, inline: false }
+        ];
+        if (quoted) {
+            fields.push({ name: 'Duyuru / Announcement', value: '>>> ' + quoted, inline: false });
+        }
+        fields.push({
+            name: 'Ne yapmalıyım? / What to do?',
+            value: jumpUrl
+                ? `[Duyuruya git ve oy ver / Go to the announcement and vote](${jumpUrl})`
+                : 'Duyuru mesajındaki butonlardan birine basın.\nPress one of the buttons on the announcement message.',
+            inline: false
+        });
+
         const embed = {
             title: `⏰ ${ann.title || 'Etkinlik'}`,
             description: customText || 'Bu etkinlik için henüz oy vermediniz. / You have not voted for this event yet.',
             color: 0x3b82f6,
-            fields: [
-                { name: 'Kalan / Remaining', value: `~${hLabel} saat / hours`, inline: true },
-                { name: 'Zaman / Time', value: `<t:${unix}:F>\n<t:${unix}:R>`, inline: false },
-                { name: 'Ne yapmalıyım? / What to do?', value: 'Duyuru mesajındaki butonlardan birine basın.\nPress one of the buttons on the announcement message.', inline: false }
-            ],
+            url: jumpUrl || undefined,
+            fields,
             footer: { text: 'HUNS Guild Portal' }
         };
 
@@ -471,12 +500,17 @@ async function collectOptedOutDiscordUids(env, links, cfg) {
  */
 async function sendReminder(env, channelIds, content) {
     const sentIds = [];
+    let previewEmbeds = [];
+    try {
+        const p = await buildLinkPreviewEmbedFromText(content);
+        if (p) previewEmbeds = [p];
+    } catch (e) { console.error('[automation] onizleme uretilemedi:', e); }
     for (const channelId of channelIds) {
         try {
             const res = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bot ${env.DISCORD_BOT_TOKEN}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ content, embeds: [buildPortalEmbed()], allowed_mentions: { parse: ['everyone'] } })
+                body: JSON.stringify({ content, embeds: previewEmbeds.concat([buildPortalEmbed()]), allowed_mentions: { parse: ['everyone'] } })
             });
             if (res.ok) {
                 try { const m = await res.json(); if (m && m.id) sentIds.push({ channelId, messageId: m.id }); } catch (e) { /* govde okunamadi */ }
@@ -607,10 +641,21 @@ async function runScheduledPosts(env) {
             let anySuccess = false;
             const channelIds = post.channelIds || [];
 
+            // Onizleme bir kez uretilip tum kanallarda kullanilir.
+            let previewEmbed = null;
+            try { previewEmbed = await buildLinkPreviewEmbedFromText(post.content || ''); }
+            catch (e) { console.error('[scheduled] onizleme uretilemedi:', e); }
+
             for (const channelId of channelIds) {
                 try {
                     const body = { content: post.content || '', allowed_mentions: { parse: ['everyone'] } };
-                    if (post.imageUrl) body.embeds = [{ image: { url: post.imageUrl } }];
+                    const embeds = [];
+                    if (post.imageUrl) embeds.push({ image: { url: post.imageUrl } });
+                    // Metinde baglanti varsa onizlemesini EKLE. Discord bot mesajlarinda
+                    // otomatik onizleme uretmeyebiliyor (ozellikle "Embed Links" izni
+                    // yoksa), bu yuzden onizlemeyi kendimiz olusturuyoruz.
+                    if (previewEmbed) embeds.push(previewEmbed);
+                    if (embeds.length) body.embeds = embeds;
                     const dRes = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
                         method: 'POST',
                         headers: { 'Authorization': `Bot ${env.DISCORD_BOT_TOKEN}`, 'Content-Type': 'application/json' },
