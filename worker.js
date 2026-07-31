@@ -4,7 +4,7 @@
 //
 // ÖNEMLİ: Bu dosya GitHub reponun KÖKÜNDE olmalı (functions/ klasörüyle aynı seviyede).
 
-import { authenticate, hasAtLeast, checkRateLimit, fb } from './functions/_auth.js';
+import { authenticate, hasAtLeast, checkRateLimit, checkIpRateLimit, fb } from './functions/_auth.js';
 import { finalizeAnnouncementCore, syncAnnouncementCore, claimLock } from './functions/_announcementTasks.js';
 import { buildPortalEmbed } from './functions/_embedHelper.js';
 import { onRequestPost as discordInteractions } from './functions/api/discord-interactions.js';
@@ -16,6 +16,8 @@ import { onRequestPost as sendPlanImage } from './functions/api/send-plan-image.
 import { onRequestPost as sendPlanReminder } from './functions/api/send-plan-reminder.js';
 import { onRequestPost as sendPlanDm, sendDmToUser, onRequestPostDecision as sendAppDecision } from './functions/api/send-plan-dm.js';
 import { onRequestPost as linkPreview, buildLinkPreviewEmbedFromText } from './functions/api/link-preview.js';
+import { onRequestPost as guildWrite } from './functions/api/guild-write.js';
+import { onRequestPost as auditLog } from './functions/api/audit-log.js';
 
 // ============================================================================
 // ADRES TABLOSU  (Madde 25 + 27)
@@ -27,19 +29,27 @@ import { onRequestPost as linkPreview, buildLinkPreviewEmbedFromText } from './f
 const ROUTES = {
     '/api/discord-interactions':  { handler: discordInteractions,  public: true },
 
-    '/api/send-announcement':     { handler: sendAnnouncement,     minRole: 'member', limit: 5,  windowMs: 600000 },
-    '/api/finalize-announcement': { handler: finalizeAnnouncement, minRole: 'member', limit: 30, windowMs: 600000 },
-    '/api/delete-announcement':   { handler: deleteAnnouncement,   minRole: 'member', limit: 30, windowMs: 600000 },
-    '/api/sync-announcements':    { handler: syncAnnouncements,    minRole: 'member', limit: 90, windowMs: 600000 },
-    '/api/send-plan-image':       { handler: sendPlanImage,        minRole: 'member', limit: 10, windowMs: 600000 },
-    '/api/send-plan-reminder':    { handler: sendPlanReminder,     minRole: 'member', limit: 25, windowMs: 600000 },
+    // A2 DUZELTMESI: Bu uclarin hepsi 'member' seviyesindeydi. Bir uye tek
+    // istekle bota istedigi kanala, istedigi metni @everyone ile attirabilir
+    // ya da tum duyurulari silebilirdi. Hepsi 'officer' seviyesine cikarildi.
+    '/api/send-announcement':     { handler: sendAnnouncement,     minRole: 'officer', limit: 5,  windowMs: 600000 },
+    '/api/finalize-announcement': { handler: finalizeAnnouncement, minRole: 'officer', limit: 30, windowMs: 600000 },
+    '/api/delete-announcement':   { handler: deleteAnnouncement,   minRole: 'officer', limit: 30, windowMs: 600000 },
+    '/api/sync-announcements':    { handler: syncAnnouncements,    minRole: 'officer', limit: 90, windowMs: 600000 },
+    '/api/send-plan-image':       { handler: sendPlanImage,        minRole: 'officer', limit: 10, windowMs: 600000 },
+    '/api/send-plan-reminder':    { handler: sendPlanReminder,     minRole: 'officer', limit: 25, windowMs: 600000 },
     // Raid Dominion kisiye ozel DM: her cagri onlarca DM gonderdigi icin
     // limit bilerek dusuk tutuldu.
     '/api/send-plan-dm':          { handler: sendPlanDm,          minRole: 'officer', limit: 8,  windowMs: 600000 },
     // Madde 72: Basvuru onay/red bildirimi
     '/api/send-app-decision':     { handler: sendAppDecision,     minRole: 'officer', limit: 40, windowMs: 600000 },
     // Link onizleme: bot mesajlarindaki baglantilar icin OG etiketi okur
-    '/api/link-preview':          { handler: linkPreview,         minRole: 'member',  limit: 60, windowMs: 600000 }
+    '/api/link-preview':          { handler: linkPreview,         minRole: 'member',  limit: 60, windowMs: 600000 },
+
+    // MADDE 111: Istemci artik Firebase'e DOGRUDAN yazmiyor. Tum guild verisi
+    // ve denetim kaydi bu uclardan, sunucu dogrulamasindan gecerek yaziliyor.
+    '/api/guild-write':           { handler: guildWrite,          minRole: 'officer', limit: 300, windowMs: 600000 },
+    '/api/audit-log':             { handler: auditLog,            minRole: 'officer', limit: 300, windowMs: 600000 }
 };
 
 export default {
@@ -65,10 +75,17 @@ export default {
                     return jsonError(403, 'Bu islem icin yetkiniz yok.');
                 }
 
-                // --- 3) Hiz siniri --------------------------------------------
+                // --- 3) Hiz siniri: hem kullanici hem IP -----------------------
+                // A7: Yalnizca kullanici basina sinir, ikinci bir hesap acilarak
+                // atlatilabiliyordu. IP kotasi bunu zorlastiriyor. IP siniri
+                // bilincli olarak daha genis: ayni evden baglanan iki uye
+                // birbirini engellemesin.
                 if (route.limit) {
                     const rl = await checkRateLimit(env, auth.uid, url.pathname, route.limit, route.windowMs);
                     if (!rl.ok) return rl.response;
+
+                    const ipRl = await checkIpRateLimit(request, env, url.pathname, route.limit * 3, route.windowMs);
+                    if (!ipRl.ok) return ipRl.response;
                 }
 
                 // Dogrulanmis kimlik fonksiyona geciriliyor; fonksiyonlar artik
