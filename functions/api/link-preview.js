@@ -54,15 +54,65 @@ export async function buildLinkPreviewEmbedFromText(text) {
     return embed;
 }
 
+// ============================================================================
+// A6 — SSRF KORUMASI
+// ============================================================================
+// Eski filtre yalnizca localhost, 127.*, 10.*, 192.168.* ve .internal engelliyordu.
+// Acik kalan yerler:
+//   - 172.16-31.*        (ozel ag araligi)
+//   - 169.254.169.254    (bulut metadata adresi)
+//   - IPv6 loopback/ozel adresler (::1, fc00::/7, fe80::/10)
+//   - 0.0.0.0, sekizli/onaltilik IP yazimlari
+// Hepsi kapatildi.
+function isBlockedHost(hostname) {
+    const host = String(hostname || '').toLowerCase().replace(/^\[|\]$/g, '');
+
+    if (!host) return true;
+    if (host === 'localhost' || host.endsWith('.localhost')) return true;
+    if (host.endsWith('.internal') || host.endsWith('.local')) return true;
+
+    // ---- IPv6 ----
+    if (host.includes(':')) {
+        if (host === '::1' || host === '::') return true;
+        if (/^f[cd]/.test(host)) return true;          // fc00::/7 benzersiz yerel
+        if (/^fe[89ab]/.test(host)) return true;       // fe80::/10 link-local
+        // IPv4 gomulu IPv6 (::ffff:127.0.0.1)
+        const v4 = host.match(/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/);
+        if (v4) return isBlockedHost(v4[1]);
+        return false;
+    }
+
+    // ---- IPv4 (ondalik, sekizli ve onaltilik yazimlar dahil) ----
+    const parts = host.split('.');
+    if (parts.length === 4 && parts.every(p => /^(0[xX][0-9a-fA-F]+|0[0-7]*|\d+)$/.test(p))) {
+        const n = parts.map(p => {
+            if (/^0[xX]/.test(p)) return parseInt(p, 16);
+            if (/^0[0-7]+$/.test(p)) return parseInt(p, 8);
+            return parseInt(p, 10);
+        });
+        if (n.some(x => isNaN(x) || x < 0 || x > 255)) return true;
+        const [a, b] = n;
+        if (a === 0) return true;                       // 0.0.0.0/8
+        if (a === 10) return true;                      // ozel
+        if (a === 127) return true;                     // loopback
+        if (a === 169 && b === 254) return true;        // link-local + METADATA
+        if (a === 172 && b >= 16 && b <= 31) return true; // ozel
+        if (a === 192 && b === 168) return true;        // ozel
+        if (a === 100 && b >= 64 && b <= 127) return true; // CGNAT
+        if (a >= 224) return true;                      // multicast / ayrilmis
+        return false;
+    }
+
+    return false;
+}
+
 /** Bir adresin Open Graph bilgilerini okur. Basarisizsa null doner. */
 export async function fetchLinkPreview(raw) {
     let url;
     try {
         url = new URL(raw);
         if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
-        const host = url.hostname.toLowerCase();
-        if (host === 'localhost' || host.startsWith('127.') || host.startsWith('10.') ||
-            host.startsWith('192.168.') || host.endsWith('.internal')) return null;
+        if (isBlockedHost(url.hostname)) return null;
     } catch (e) { return null; }
 
     try {

@@ -5,6 +5,8 @@
 
 import { buildPortalEmbed } from '../_embedHelper.js';
 
+import { filterAllowedChannels } from '../_auth.js';
+
 export async function onRequestPost(context) {
     const { request, env } = context;
 
@@ -17,8 +19,14 @@ export async function onRequestPost(context) {
         return new Response('En az bir kanal seçilmelidir (channelIds).', { status: 400 });
     }
 
+    // A2: Yalnizca Yonetim'de TANIMLI kanallara gonderim yapilabilir.
+    const allowedChannels = await filterAllowedChannels(env, channelIds);
+    if (allowedChannels.length === 0) {
+        return new Response('Gecerli bir hedef kanal yok (tanimsiz kanallar engellendi).', { status: 403 });
+    }
+
     const results = {};
-    for (const channelId of channelIds) {
+    for (const channelId of allowedChannels) {
         try {
             const res = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
                 method: 'POST',

@@ -3,7 +3,7 @@
 // Adres: https://SITEN.workers.dev/api/send-plan-image
 // İstek: multipart/form-data { image: <PNG dosyası>, content: <metin>, channelIds: <JSON dizi>, planId: <string> }
 
-import { fb } from '../_auth.js';
+import { fb, filterAllowedChannels } from '../_auth.js';
 
 import { buildPortalEmbed } from '../_embedHelper.js';
 
@@ -24,11 +24,17 @@ export async function onRequestPost(context) {
         return new Response('En az bir kanal seçilmelidir (channelIds).', { status: 400 });
     }
 
+    // A2: Yalnizca Yonetim'de TANIMLI kanallara gonderim yapilabilir.
+    const allowedChannels = await filterAllowedChannels(env, channelIds);
+    if (allowedChannels.length === 0) {
+        return new Response('Gecerli bir hedef kanal yok (tanimsiz kanallar engellendi).', { status: 403 });
+    }
+
     try {
         const imageBuffer = await imageFile.arrayBuffer();
         const results = {};
 
-        for (const channelId of channelIds) {
+        for (const channelId of allowedChannels) {
             try {
                 const discordForm = new FormData();
                 discordForm.append('payload_json', JSON.stringify({ content, embeds: [buildPortalEmbed()], allowed_mentions: { parse: ['everyone'] } }));
