@@ -153,3 +153,34 @@ export async function sendDmToUser(env, discordUid, embed) {
         return { ok: false, reason: 'error' };
     }
 }
+
+// ============================================================================
+// BASVURU SONUC BILDIRIMI  (Madde 72)
+// ============================================================================
+// Yetkili onay/red kararini verirken YAZDIGI mesaji adaya DM ile gonderir.
+// Ayri bir uc yerine bu dosyada duruyor cunku ayni DM altyapisini kullaniyor.
+export async function onRequestPostDecision(context) {
+    const { request, env } = context;
+
+    let payload;
+    try { payload = await request.json(); } catch (e) { return new Response('Invalid JSON', { status: 400 }); }
+
+    const { discordUid, approved, message, guildName } = payload;
+    if (!discordUid) return new Response('discordUid zorunludur.', { status: 400 });
+
+    const embed = {
+        title: approved ? '✅ Application Approved' : '❌ Application Rejected',
+        description: (message && String(message).slice(0, 2000)) ||
+            (approved
+                ? 'Your guild application has been approved. Welcome!'
+                : 'Your guild application was not approved this time.'),
+        color: approved ? 0x10b981 : 0xef4444,
+        footer: { text: guildName || 'HUNS Guild Portal' },
+        timestamp: new Date().toISOString()
+    };
+
+    const r = await sendDmToUser(env, discordUid, embed);
+    return new Response(JSON.stringify({ success: r.ok, reason: r.reason || null }), {
+        status: 200, headers: { 'Content-Type': 'application/json' }
+    });
+}
