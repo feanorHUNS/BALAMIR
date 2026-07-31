@@ -344,6 +344,55 @@ function raidWeekStart(utcMs) {
     return tr.getTime() - TR_OFFSET_MS;
 }
 
+/**
+ * Bir kanalin hangi sunucuya (guild) ait oldugunu bulur.
+ * Sonuc bellekte tutulur; ayni cron turunda tekrar sorulmaz.
+ */
+const channelGuildCache = new Map();
+
+async function guildIdForChannel(env, channelId) {
+    if (!channelId) return null;
+    if (channelGuildCache.has(channelId)) return channelGuildCache.get(channelId);
+    try {
+        const res = await fetch(`https://discord.com/api/v10/channels/${channelId}`, {
+            headers: { 'Authorization': `Bot ${env.DISCORD_BOT_TOKEN}` }
+        });
+        if (!res.ok) { channelGuildCache.set(channelId, null); return null; }
+        const ch = await res.json();
+        const gid = ch && ch.guild_id ? String(ch.guild_id) : null;
+        channelGuildCache.set(channelId, gid);
+        return gid;
+    } catch (e) {
+        console.error('guildIdForChannel error:', e);
+        return null;
+    }
+}
+
+/**
+ * Kullanici BU sunucunun uyesi mi?
+ *
+ * NEDEN GEREKLI: Bot birden fazla Discord sunucusunda olabiliyor. Duyuru
+ * A sunucusunda paylasildiysa, B sunucusundaki bir uyeye "oy vermedin"
+ * hatirlatmasi gitmemeli -- o duyuruyu hic gormemis olabilir.
+ *
+ * Tek uye sorgusu (GET /guilds/{id}/members/{uid}) AYRICALIKLI IZIN
+ * GEREKTIRMEZ; tum uye listesini cekmek gerektirirdi, onu kullanmiyoruz.
+ */
+async function isGuildMember(env, guildId, userId) {
+    if (!guildId) return true;   // sunucu belirlenemediyse eski davranis
+    try {
+        const res = await fetch(`https://discord.com/api/v10/guilds/${guildId}/members/${userId}`, {
+            headers: { 'Authorization': `Bot ${env.DISCORD_BOT_TOKEN}` }
+        });
+        if (res.status === 404) return false;   // bu sunucuda degil
+        if (res.status === 429) return true;    // oran limiti: engelleme
+        return res.ok;
+    } catch (e) {
+        console.error('isGuildMember error:', e);
+        return true;   // suphede kalirsak gondermeyi engellemiyoruz
+    }
+}
+
 async function runRsvpReminders(env, announcements, guildData, now) {
     if (!announcements) return;
 
@@ -416,8 +465,24 @@ async function runRsvpReminders(env, announcements, guildData, now) {
             Object.keys(other.accepted || {}).forEach(uid => committed.add(uid));
         }
 
-        const targets = linkedUids.filter(uid =>
+        let targets = linkedUids.filter(uid =>
             !voted.has(uid) && !committed.has(uid) && !optedOutUids.has(uid));
+
+        // --- Sunucu ayrimi -------------------------------------------------
+        // Duyuru hangi sunucuda paylasildiysa YALNIZCA o sunucunun uyelerine
+        // hatirlatma gider. Bot birden fazla sunucudaysa, baska sunucudaki
+        // birine gormedigi bir duyuru icin mesaj atilmaz.
+        const annGuildId = await guildIdForChannel(env, ann.channelId);
+        if (annGuildId && targets.length) {
+            const inGuild = [];
+            for (const uid of targets) {
+                if (await isGuildMember(env, annGuildId, uid)) inGuild.push(uid);
+                await new Promise(r => setTimeout(r, 120));   // oran limiti
+            }
+            const skipped = targets.length - inGuild.length;
+            if (skipped > 0) console.log(`[rsvp] ${annId}: ${skipped} kisi bu sunucuda olmadigi icin atlandi.`);
+            targets = inGuild;
+        }
 
         if (targets.length === 0) {
             console.log(`[rsvp] ${annId}: gonderilecek kimse yok (oy veren ${voted.size}, bu hafta baska raidde ${committed.size}, kapali ${optedOutUids.size}).`);
