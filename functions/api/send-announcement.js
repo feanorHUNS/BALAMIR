@@ -2,6 +2,7 @@
 // Adres: https://SITEN.pages.dev/api/send-announcement
 
 import { buildAnnouncementEmbed, buildRsvpComponents } from '../_embedHelper.js';
+import { buildLinkPreviewEmbedFromText } from './link-preview.js';
 import { fb } from '../_auth.js';
 
 export async function onRequestPost(context) {
@@ -30,6 +31,11 @@ export async function onRequestPost(context) {
     const annId = 'ann_' + Date.now();
     const ann = { title, content, time: time || null, authorName: authorName || 'Guild Portal', accepted: {}, declined: {}, tentative: {}, finalized: false };
 
+    // Metindeki ilk baglantinin onizlemesi (varsa).
+    let linkPreview = null;
+    try { linkPreview = await buildLinkPreviewEmbedFromText(content); }
+    catch (e) { console.error('onizleme uretilemedi:', e); }
+
     const embed = buildAnnouncementEmbed(ann);
     const components = buildRsvpComponents(annId, false);
 
@@ -39,7 +45,8 @@ export async function onRequestPost(context) {
             headers: { 'Authorization': `Bot ${env.DISCORD_BOT_TOKEN}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 content: '@everyone',
-                embeds: [embed],
+                // Duyuru metninde baglanti varsa onizlemesi de eklenir.
+                embeds: [embed].concat(linkPreview ? [linkPreview] : []),
                 components,
                 allowed_mentions: { parse: ['everyone'] }
             })
