@@ -112,7 +112,41 @@ export function hasAtLeast(role, minRole) {
  * token'ının oran limitine takılmasını ve Cloudflare kotasının yanmasını önlemek.
  */
 export async function checkRateLimit(env, uid, bucket, limit, windowMs) {
-    const key = `${uid}_${bucket}`;
+    return checkLimitKey(env, `${uid}_${bucket}`, limit, windowMs);
+}
+
+/**
+ * A7 / Madde 114 — IP BAZLI HIZ SINIRI
+ * ============================================================================
+ * Kullanici basina sinir, ikinci bir Google hesabi acan kisi tarafindan
+ * kolayca atlatilabiliyordu. Artik AYNI ISTEK hem kullanici hem de IP
+ * kotasindan dusuluyor; ikisinden biri dolduysa istek reddediliyor.
+ *
+ * Cloudflare'in `cf-connecting-ip` basligi kenar sunucuda ayarlanir ve
+ * istemci tarafindan sahtelenemez.
+ *
+ * IP sinirinin kullanici sinirindan daha genis olmasi bilincli: ayni evden
+ * baglanan iki guild uyesi birbirini engellemesin.
+ */
+export async function checkIpRateLimit(request, env, bucket, limit, windowMs) {
+    const ip = request.headers.get('cf-connecting-ip') ||
+               request.headers.get('x-real-ip') || 'unknown';
+    if (ip === 'unknown') return { ok: true }; // IP okunamadiysa engelleme
+    // Anahtarda ham IP tutmuyoruz; kisa bir ozet yeterli (gizlilik).
+    const key = 'ip_' + (await shortHash(ip)) + '_' + bucket;
+    return checkLimitKey(env, key, limit, windowMs);
+}
+
+/** Kisa, geri donusturulemez ozet — IP'yi duz metin saklamamak icin. */
+async function shortHash(value) {
+    const data = new TextEncoder().encode(value);
+    const buf = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(buf)).slice(0, 8)
+        .map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+/** Ortak sayac mantigi: hem kullanici hem IP sinirlari bunu kullanir. */
+async function checkLimitKey(env, key, limit, windowMs) {
     const now = Date.now();
     try {
         const res = await fetch(fb(env, `RateLimits/${key}`));
@@ -157,4 +191,40 @@ function jsonError(status, message) {
         status,
         headers: { 'Content-Type': 'application/json' }
     });
+}
+
+/**
+ * A2 DUZELTMESI — KANAL DOGRULAMA
+ * ============================================================================
+ * Uclar istemciden gelen `channelIds` degerini oldugu gibi kullaniyordu.
+ * Yetkili bile olsa, botun sunucudaki HERHANGI bir kanala yazmasi saglanabilirdi
+ * (orn. yonetim kanali, baska bir ekibin kanali).
+ *
+ * Artik yalnizca Yonetim sayfasinda TANIMLI kanallara gonderim yapilabiliyor.
+ * Tanimsiz kanal kimlikleri sessizce ELENIR.
+ *
+ * @returns {Promise<string[]>} izin verilen kanal kimlikleri
+ */
+export async function filterAllowedChannels(env, requested) {
+    if (!Array.isArray(requested) || requested.length === 0) return [];
+    try {
+        const res = await fetch(fb(env, `GuildData/discordChannels`));
+        const channels = await res.json();
+        const allowed = new Set(
+            (Array.isArray(channels) ? channels : Object.values(channels || {}))
+                .filter(Boolean).map(ch => String(ch.id))
+        );
+        // Varsayilan kanal her zaman gecerli sayilir.
+        if (env.DISCORD_CHANNEL_ID) allowed.add(String(env.DISCORD_CHANNEL_ID));
+
+        const ok = requested.map(String).filter(id => allowed.has(id));
+        const rejected = requested.map(String).filter(id => !allowed.has(id));
+        if (rejected.length) {
+            console.error('[guvenlik] tanimsiz kanala gonderim engellendi:', rejected.join(', '));
+        }
+        return ok;
+    } catch (e) {
+        console.error('filterAllowedChannels error:', e);
+        return []; // Supheye dusersek HICBIR SEY gondermiyoruz.
+    }
 }
