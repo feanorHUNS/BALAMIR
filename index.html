@@ -3203,15 +3203,43 @@
 
         const BANK_SLOT_COUNT = 48;   // 8 sutun x 6 satir
 
+        /**
+         * Firebase, cogu elemani null olan SEYREK dizileri NESNEYE cevirir:
+         *   [null, null, {..}]  ->  { "2": {..} }
+         * Geri okundugunda Array.isArray() false doner. Bu normalize edilmezse
+         * depo bos gorunur -- eklenen esyalar kaybolmus gibi olur.
+         * Bu fonksiyon her iki bicimi de diziye cevirir.
+         */
+        function normalizeSlots(raw, size) {
+            const out = new Array(size).fill(null);
+            if (!raw) return out;
+            if (Array.isArray(raw)) {
+                raw.forEach((v, i) => { if (i < size) out[i] = v || null; });
+                return out;
+            }
+            if (typeof raw === 'object') {
+                Object.entries(raw).forEach(([k, v]) => {
+                    const i = parseInt(k, 10);
+                    if (!isNaN(i) && i >= 0 && i < size) out[i] = v || null;
+                });
+            }
+            return out;
+        }
+
+        /** Firebase nesneye cevirmis olabilecek listeleri diziye dondurur. */
+        function normalizeList(raw) {
+            if (Array.isArray(raw)) return raw.filter(Boolean);
+            if (raw && typeof raw === 'object') return Object.values(raw).filter(Boolean);
+            return [];
+        }
+
         function getBank() {
             if (!cloudData.guildBank || typeof cloudData.guildBank !== 'object') cloudData.guildBank = {};
             const b = cloudData.guildBank;
-            if (typeof b.gold !== 'number') b.gold = 0;
-            if (!Array.isArray(b.slots)) b.slots = [];
-            while (b.slots.length < BANK_SLOT_COUNT) b.slots.push(null);
-            if (b.slots.length > BANK_SLOT_COUNT) b.slots.length = BANK_SLOT_COUNT;
-            if (!Array.isArray(b.requests)) b.requests = [];
-            if (!Array.isArray(b.log)) b.log = [];
+            if (typeof b.gold !== 'number') b.gold = Number(b.gold) || 0;
+            b.slots = normalizeSlots(b.slots, BANK_SLOT_COUNT);
+            b.requests = normalizeList(b.requests);
+            b.log = normalizeList(b.log);
             return b;
         }
 
