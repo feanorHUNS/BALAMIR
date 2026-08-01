@@ -20,13 +20,16 @@ export async function onRequestPost(context) {
     try { payload = await request.json(); } catch (e) { return json({ error: 'Invalid JSON' }, 400); }
 
     const itemName = String((payload && payload.itemName) || '').trim().slice(0, 80);
-    const nick     = String((payload && payload.nick) || '').trim().slice(0, 40);
+    // Oyun ici karakter adi -- ZORUNLU. Site adi istemciden ALINMAZ,
+    // asagida dogrulanmis kimlikten yazilir (degistirilemez).
+    const gameNick = String((payload && payload.gameNick) || '').trim().slice(0, 40);
     const reason   = String((payload && payload.reason) || '').trim().slice(0, 500);
     const qty      = parseInt(payload && payload.qty, 10);
     const slotId   = parseInt(payload && payload.slotId, 10);
 
     if (!itemName) return json({ error: 'itemName zorunludur.' }, 400);
-    if (!nick)     return json({ error: 'nick zorunludur.' }, 400);
+    if (!gameNick) return json({ error: 'gameNick zorunludur.' }, 400);
+    if (gameNick.length < 2) return json({ error: 'gameNick cok kisa.' }, 400);
     if (!qty || qty < 1 || qty > 100000) return json({ error: 'qty gecersiz.' }, 400);
 
     try {
@@ -43,8 +46,11 @@ export async function onRequestPost(context) {
         const entry = {
             id: 'req_' + Date.now(),
             slotId: isNaN(slotId) ? null : slotId,
-            itemName, qty, nick, reason,
-            // KRITIK: istegi kimin actigi istemciden DEGIL, dogrulanmis kimlikten.
+            itemName, qty, gameNick, reason,
+            // KRITIK: SITE ADI istemciden DEGIL, dogrulanmis kimlikten yaziliyor.
+            // Boylece kimse baskasinin adina istek acamaz ve kullanici bu alani
+            // degistiremez.
+            siteName: auth.name || auth.uid,
             by: auth.name || auth.uid,
             byRole: auth.role,
             at: Date.now(),
