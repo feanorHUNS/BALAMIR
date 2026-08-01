@@ -1768,20 +1768,18 @@
             } else {
                 try {
                     db.ref('GuildData').on('value', (snapshot) => {
-                        const data = snapshot.val();
+                        let data = snapshot.val();
 
-                        // DUZENLEME MODU KORUMASI
-                        // Duzenleme modundayken sunucudan gelen veri yerel degisiklikleri
-                        // EZIYORDU -- yazdiklarin siliniyormus gibi gorunuyordu.
-                        // Bu modda yalnizca BASKALARININ degistirdigi bolumler aliniyor,
-                        // duzenledigin metin alanlarina dokunulmuyor.
+                        // DUZENLEME MODU
+                        // Duzenledigin metin alanlari (baslıklar, duyuru icerigi)
+                        // sunucudan gelen veriyle EZILMEZ; ama diger her sey
+                        // normal sekilde guncellenir. Onceden burada tamamen
+                        // cikiliyordu ve duzenleme modu acikken sayfa hic
+                        // yenilenmiyordu -- baskalarinin islemleri gorunmuyordu.
                         if (isEditMode && data) {
-                            const keep = { siteTitles: cloudData.siteTitles, announcementHtml: cloudData.announcementHtml };
-                            cloudData = { ...cloudData, ...data, ...keep };
-                            if (!cloudData.raidPlans) cloudData.raidPlans = [];
-                            if (!cloudData.players) cloudData.players = [];
-                            safeRender('guildBank', renderGuildBank);
-                            return;
+                            data = { ...data,
+                                siteTitles: cloudData.siteTitles,
+                                announcementHtml: cloudData.announcementHtml };
                         }
 
                         if (isAnimating) { 
@@ -1867,6 +1865,17 @@
                         }
                         window.attachApplicationsListener = attachApplicationsListener;
                         attachApplicationsListener();
+                        // BANKA CANLI GUNCELLEME
+                        // Ana GuildData dinleyicisi animasyon gibi durumlarda
+                        // cizimi atlayabiliyor. Banka islemleri (istek, esya,
+                        // altin) HERKESTE ANINDA gorunsun diye ayri dinleyici.
+                        db.ref('GuildData/guildBank').on('value', (snap) => {
+                            const gb = snap.val();
+                            if (gb) cloudData.guildBank = gb;
+                            safeRender('guildBank', renderGuildBank);
+                            safeRender('notifications', renderNotifications);
+                        }, (err) => console.error('guildBank dinleyicisi:', err));
+
                         db.ref('DiscordUsers').on('value', (snapshot) => {
                             discordUsersData = snapshot.val() || {};
                             if (activeTab === 'discordlink') renderDiscordLinkTable();
