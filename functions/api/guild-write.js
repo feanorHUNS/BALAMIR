@@ -113,9 +113,13 @@ function checkSection(name, value) {
             return 'guildBank: altin sayi olmali';
         }
         // Canta slotlari: sabit sayida, bos slotlar null.
-        if (value.slots !== undefined) {
-            if (!Array.isArray(value.slots) || value.slots.length > 100) return 'guildBank: slot listesi gecersiz';
-            for (const it of value.slots) {
+        // Firebase seyrek dizileri NESNEYE cevirebildigi icin her iki bicim de kabul edilir.
+        if (value.slots !== undefined && value.slots !== null) {
+            const slotArr = Array.isArray(value.slots)
+                ? value.slots
+                : (typeof value.slots === 'object' ? Object.values(value.slots) : null);
+            if (!slotArr || slotArr.length > 100) return 'guildBank: slot listesi gecersiz';
+            for (const it of slotArr) {
                 if (it === null || it === undefined) continue;
                 if (typeof it !== 'object') return 'guildBank: slot gecersiz';
                 if (typeof it.name !== 'string' || !it.name.length || it.name.length > 80) return 'guildBank: esya adi gecersiz';
@@ -128,9 +132,12 @@ function checkSection(name, value) {
             }
         }
         // Istekler
-        if (value.requests !== undefined) {
-            if (!Array.isArray(value.requests) || value.requests.length > 300) return 'guildBank: istek listesi gecersiz';
-            for (const r of value.requests) {
+        if (value.requests !== undefined && value.requests !== null) {
+            const reqArr = Array.isArray(value.requests)
+                ? value.requests
+                : (typeof value.requests === 'object' ? Object.values(value.requests) : null);
+            if (!reqArr || reqArr.length > 300) return 'guildBank: istek listesi gecersiz';
+            for (const r of reqArr) {
                 if (!r || typeof r !== 'object') return 'guildBank: istek gecersiz';
                 if (typeof r.qty !== 'number' || r.qty < 1) return 'guildBank: istek adedi gecersiz';
                 if (r.status && ['pending','approved','rejected'].indexOf(r.status) === -1) {
@@ -139,8 +146,11 @@ function checkSection(name, value) {
                 if (r.reason && String(r.reason).length > 500) return 'guildBank: istek gerekcesi cok uzun';
             }
         }
-        if (value.log !== undefined && (!Array.isArray(value.log) || value.log.length > 200)) {
-            return 'guildBank: kayit listesi gecersiz';
+        if (value.log !== undefined && value.log !== null) {
+            const logArr = Array.isArray(value.log)
+                ? value.log
+                : (typeof value.log === 'object' ? Object.values(value.log) : null);
+            if (!logArr || logArr.length > 200) return 'guildBank: kayit listesi gecersiz';
         }
     }
     return null;
