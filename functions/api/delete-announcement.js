@@ -26,18 +26,9 @@ export async function onRequestPost(context) {
             });
         } catch (e) { console.error('Mesaj silinemedi (yoksayıldı):', e); }
 
-        // 2) Varsa hatırlatma mesajlarını da sil.
-        try {
-            if (ann.reminderMsgIds) {
-                const webhookUrl = payload.webhookUrl || null;
-                if (webhookUrl) {
-                    const deletePromises = Object.values(ann.reminderMsgIds).map(msgId =>
-                        fetch(`${webhookUrl}/messages/${msgId}`, { method: 'DELETE' }).catch(() => null)
-                    );
-                    await Promise.all(deletePromises);
-                }
-            }
-        } catch (e) { console.error('Hatırlatma mesajları silinemedi (yoksayıldı):', e); }
+        // NOT: Eski webhook tabanli hatirlatma silme blogu kaldirildi.
+        // Hatirlatma mesajlari artik bot uzerinden gonderiliyor ve etkinlikten
+        // 2 saat sonra cron gorevi (runPostEventCleanup) tarafindan siliniyor.
 
         // 3) Siteden TAMAMEN kaldır (sadece finalized işaretlemek değil, tam silme).
         await fetch(fb(env, `Announcements/${annId}`), { method: 'DELETE' });

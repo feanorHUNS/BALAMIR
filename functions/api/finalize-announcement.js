@@ -12,10 +12,10 @@ export async function onRequestPost(context) {
     let payload;
     try { payload = await request.json(); } catch (e) { return new Response('Invalid JSON', { status: 400 }); }
 
-    const { annId, webhookUrl } = payload;
+    const { annId } = payload;
     if (!annId) return new Response('annId zorunludur.', { status: 400 });
 
-    const result = await finalizeAnnouncementCore(env, annId, webhookUrl || null, 'manual');
+    const result = await finalizeAnnouncementCore(env, annId, 'manual');
 
     if (result.notFound) return new Response('Duyuru bulunamadi.', { status: 404 });
     if (!result.ok) return new Response('Sunucu hatasi: ' + (result.error || 'bilinmeyen'), { status: 500 });

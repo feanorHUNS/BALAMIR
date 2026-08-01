@@ -24,7 +24,7 @@ const SECTIONS = {
     penaltyHistory:         { type: 'array',  max: 500 },
     rolls:                  { type: 'array',  max: 500 },
     auditLogs:              { type: 'array',  max: 200 },
-    discordChannels:        { type: 'array',  max: 50 },
+    discordChannels:        { type: 'array',  max: 50,   validate: validateChannels },
     discordLinks:           { type: 'object', max: 2000 },
     siteTitles:             { type: 'object', max: 200 },
     discordNotify:          { type: 'object', max: 50 },
@@ -33,7 +33,6 @@ const SECTIONS = {
     announcementHtml:       { type: 'string', max: 200000 },
     planQuote:              { type: 'string', max: 500 },
     discordMotivationalMsg: { type: 'string', max: 500 },
-    discordWebhookUrl:      { type: 'string', max: 500 },
     exportBgUrl:            { type: 'string', max: 1000 },
     exportBgOpacity:        { type: 'number', min: 0, max: 100 },
     activeTheme:            { type: 'number', min: 0, max: 200 },
@@ -46,6 +45,17 @@ const MAX_SECTIONS_PER_REQUEST = 25;
 
 function validateBank(_unused, value) {
     // Bu bolum nesne oldugu icin dogrulama checkSection tarafindan ayrica cagriliyor.
+    return null;
+}
+
+function validateChannels(arr) {
+    for (const ch of arr) {
+        if (!ch || typeof ch !== 'object') return 'discordChannels: gecersiz kayit';
+        if (typeof ch.id !== 'string' || !/^\d{5,25}$/.test(ch.id)) return 'discordChannels: kanal kimligi gecersiz';
+        if (typeof ch.name !== 'string' || ch.name.length > 100) return 'discordChannels: kanal adi gecersiz';
+        if (ch.guildId && !/^\d{5,25}$/.test(String(ch.guildId))) return 'discordChannels: sunucu kimligi gecersiz';
+        if (ch.guildName && String(ch.guildName).length > 120) return 'discordChannels: sunucu adi cok uzun';
+    }
     return null;
 }
 
