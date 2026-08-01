@@ -19,6 +19,7 @@ import { onRequestPost as linkPreview, buildLinkPreviewEmbedFromText } from './f
 import { onRequestPost as guildWrite } from './functions/api/guild-write.js';
 import { onRequestPost as auditLog } from './functions/api/audit-log.js';
 import { onRequestPost as bankRequest } from './functions/api/bank-request.js';
+import { onRequestPost as detectChannels } from './functions/api/detect-channels.js';
 
 // ============================================================================
 // ADRES TABLOSU  (Madde 25 + 27)
@@ -52,7 +53,9 @@ const ROUTES = {
     '/api/guild-write':           { handler: guildWrite,          minRole: 'officer', limit: 300, windowMs: 600000 },
     '/api/audit-log':             { handler: auditLog,            minRole: 'officer', limit: 300, windowMs: 600000 },
     // Uyeler banka istegi gonderebilir; bu uc YALNIZCA requests listesine ekler.
-    '/api/bank-request':          { handler: bankRequest,         minRole: 'member',  limit: 20,  windowMs: 600000 }
+    '/api/bank-request':          { handler: bankRequest,         minRole: 'member',  limit: 20,  windowMs: 600000 },
+    // Kanallarin hangi Discord sunucusuna ait oldugunu tespit eder.
+    '/api/detect-channels':       { handler: detectChannels,      minRole: 'officer', limit: 10,  windowMs: 600000 }
 };
 
 export default {
@@ -145,7 +148,7 @@ async function runTimeBasedAutomation(env) {
                     if (!isNaN(annTime) && now >= annTime) {
                         if (await claimLock(env, `${annId}_finalize`)) {
                             console.log(`[automation] ${annId} suresi doldu, sonlandiriliyor.`);
-                            await finalizeAnnouncementCore(env, annId, null, 'auto_expired');
+                            await finalizeAnnouncementCore(env, annId, 'auto_expired');
                         }
                         continue; // sonlandirildi, senkron kontrolune gerek yok
                     }
@@ -353,9 +356,22 @@ function raidWeekStart(utcMs) {
  */
 const channelGuildCache = new Map();
 
-async function guildIdForChannel(env, channelId) {
+async function guildIdForChannel(env, channelId, guildData) {
     if (!channelId) return null;
     if (channelGuildCache.has(channelId)) return channelGuildCache.get(channelId);
+
+    // ONCE SITEDE KAYITLI BILGIYE BAK.
+    // Yonetim ekranindaki "Sunuculari tespit et" ile kanallara guildId
+    // yazildiysa Discord'a hic sormaya gerek kalmaz -- hem daha hizli hem
+    // de oran limiti riski yok.
+    try {
+        const saved = (guildData && Array.isArray(guildData.discordChannels) ? guildData.discordChannels : [])
+            .find(c => c && String(c.id) === String(channelId));
+        if (saved && saved.guildId) {
+            channelGuildCache.set(channelId, String(saved.guildId));
+            return String(saved.guildId);
+        }
+    } catch (e) { /* kayit yoksa Discord'a soracagiz */ }
     try {
         const res = await fetch(`https://discord.com/api/v10/channels/${channelId}`, {
             headers: { 'Authorization': `Bot ${env.DISCORD_BOT_TOKEN}` }
@@ -475,7 +491,7 @@ async function runRsvpReminders(env, announcements, guildData, now) {
         // Duyuru hangi sunucuda paylasildiysa YALNIZCA o sunucunun uyelerine
         // hatirlatma gider. Bot birden fazla sunucudaysa, baska sunucudaki
         // birine gormedigi bir duyuru icin mesaj atilmaz.
-        const annGuildId = await guildIdForChannel(env, ann.channelId);
+        const annGuildId = await guildIdForChannel(env, ann.channelId, guildData);
         if (annGuildId && targets.length) {
             const inGuild = [];
             for (const uid of targets) {
