@@ -24,7 +24,8 @@ import { buildAnnouncementEmbed, buildRsvpComponents } from './_embedHelper.js';
  *
  * @returns {{ok: boolean, alreadyFinalized?: boolean, notFound?: boolean, error?: string}}
  */
-export async function finalizeAnnouncementCore(env, annId, webhookUrl, reason) {
+// NOT: Eski webhook sistemi tamamen kaldirildi; her sey bot uzerinden gidiyor.
+export async function finalizeAnnouncementCore(env, annId, reason) {
     try {
         const annRes = await fetch(fb(env, `Announcements/${annId}`));
         const ann = await annRes.json();
