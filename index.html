@@ -25,18 +25,37 @@
     <meta name="twitter:image" content="https://balamir.huns.workers.dev/og-image.png">
 
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚔️</text></svg>">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    
+<!-- ================= PERFORMANS =================
+         1) Tailwind artık cdn.tailwindcss.com'dan GELMİYOR. O script her
+            açılışta 650KB'lık HTML'i tarayıp CSS'i tarayıcıda üretiyordu —
+            sitenin yavaş açılmasının ana sebebi buydu. CSS bir kere derlenip
+            /tailwind.css olarak sunuluyor (repo kökünde, tailwind.config.js
+            ile yeniden üretilebilir).
+         2) html2canvas yalnızca PNG dışa aktarırken lazım — artık o anda
+            yükleniyor (ensureHtml2Canvas), açılışı bloklamıyor.
+         3) preconnect: Firebase ve font sunucularına TLS el sıkışması sayfa
+            daha yüklenirken başlasın diye. -->
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://hunsguild-default-rtdb.firebaseio.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="/tailwind.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Inter:wght@400;700;900&display=swap">
+
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Inter:wght@400;700;900&display=swap');
         
         :root { --neon-color: #06b6d4; --neon-bg: #020617; --neon-shadow: rgba(6, 182, 212, 0.5); }
-        body { background-color: var(--neon-bg); color: #f1f5f9; font-family: 'Inter', sans-serif; transition: background-color 0.8s ease; scroll-behavior: smooth; }
+        body { background-color: var(--neon-bg); color: #f1f5f9; font-family: 'Inter', sans-serif; transition: background-color 0.8s ease; scroll-behavior: smooth; overflow-x: hidden; }
+        /* MOBİL SEKME ÇUBUĞU: Sekmeler mobilde alt alta sarılmak yerine tek
+           satırda yatay kaydırılıyor. Sayfanın kendisi yatay kaymasın diye
+           body'de overflow-x: hidden var; kaydırma yalnızca bu şeritte. */
+        .mobile-tab-scroll { -webkit-overflow-scrolling: touch; scrollbar-width: none; -ms-overflow-style: none; touch-action: pan-x pan-y; }
+        .mobile-tab-scroll::-webkit-scrollbar { display: none; }
+        .mobile-tab-scroll .tab-btn { flex: 0 0 auto; white-space: nowrap; }
         .crystal-pattern { position: fixed; inset: 0; z-index: -10; background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M50 0 L100 50 L50 100 L0 50 Z' fill='none' stroke='%23ffffff' stroke-width='0.5' stroke-opacity='0.03'/%3E%3C/svg%3E"); background-size: 150px 150px; pointer-events: none; mix-blend-mode: overlay; }
         h1, h2, h3, .guild-font { font-family: 'Cinzel', serif; }
         
@@ -347,7 +366,7 @@
                     <span id="dyn-brand" class="editable-text inline-block text-3xl guild-font font-black drop-shadow-[0_0_10px_currentColor] transition-colors" onclick="handleTitleClick(event, 'brand')">HUNS</span>
                 </div>
                 
-                <div id="mainNav" role="navigation" aria-label="Ana menü" class="flex flex-wrap justify-center gap-1 md:gap-4">
+                <div id="mainNav" role="navigation" aria-label="Ana menü" class="mobile-tab-scroll flex flex-nowrap md:flex-wrap justify-start md:justify-center gap-1 md:gap-4 w-full md:w-auto overflow-x-auto md:overflow-visible">
                     <button onclick="if(!isEditMode) switchTab('announcements')" id="tab-announcements" class="tab-btn active px-3 md:px-4 py-2 text-xs font-black uppercase tracking-widest border-b-2 border-transparent relative z-20">
                         <span id="dyn-tab1" data-i18n="tab_announcements">Announcements</span>
                     </button>
@@ -1851,17 +1870,19 @@
                     db.ref('GuildData').on('value', (snapshot) => {
                         let data = snapshot.val();
 
-                        // BEKLEYEN KAYIT KORUMASI
-                        // Kaydedilmeyi bekleyen bolumler sunucu verisiyle EZILMESIN.
-                        // Aksi halde 400ms'lik gecikme penceresinde yaptigin degisiklik
-                        // kaybolur ve "sifirlandi" gibi gorunur.
-                        if (data && (isSaving || pendingSaveFull || pendingSaveSections.size)) {
-                            const keepSecs = pendingSaveFull
-                                ? WRITABLE_SECTIONS
-                                : Array.from(pendingSaveSections);
-                            const preserved = {};
-                            keepSecs.forEach(k => { if (cloudData[k] !== undefined) preserved[k] = cloudData[k]; });
-                            data = { ...data, ...preserved };
+                        // BEKLEYEN / UÇUŞTAKİ KAYIT KORUMASI
+                        // Bekleyen, şu an gönderilmekte olan ve az önce kaydedilip
+                        // echo'su beklenen bölümler sunucu verisiyle EZİLMESİN.
+                        // ESKİ HATA: yalnızca "bekleyen" liste kontrol ediliyordu ama
+                        // kayıt gönderilirken o liste temizleniyordu — tam o pencerede
+                        // gelen snapshot değişikliği sıfırlıyordu.
+                        if (data) {
+                            const keepSecs = protectedSections();
+                            if (keepSecs.length) {
+                                const preserved = {};
+                                keepSecs.forEach(k => { if (cloudData[k] !== undefined) preserved[k] = cloudData[k]; });
+                                data = { ...data, ...preserved };
+                            }
                         }
 
                         // DUZENLEME MODU
@@ -1935,7 +1956,10 @@
                         // Bir cizim hatasi yukleme ekraninin ekranda kalmasina yol
                         // acmasin: hideLoader() finally icinde, HER ZAMAN calisir.
                         try {
-                            applyTheme(cloudData.activeTheme); renderTitles(); updateStaticTranslations(); renderAll();
+                            applyTheme(cloudData.activeTheme); renderTitles(); updateStaticTranslations();
+                            // Kullanıcı o an bir alana yazıyor/seçim yapıyorsa, yeniden
+                            // çizim yazdığını silmesin: değer + imleç korunarak çizilir.
+                            withActiveFieldPreserved(renderAll);
                         } catch (e) {
                             console.error('ilk cizim hatasi:', e);
                         } finally {
@@ -1980,17 +2004,17 @@
                         // altin) HERKESTE ANINDA gorunsun diye ayri dinleyici.
                         db.ref('GuildData/guildBank').on('value', (snap) => {
                             const gb = snap.val();
-                            // KAYIT YARISI KORUMASI
-                            // Kaydetme 400ms geciktirmeli calisiyor. Bu arada sunucudan
-                            // gelen (henuz senin degisikligini icermeyen) veri yerel
-                            // duzenlemeni EZIYORDU -- esya adedini degistirince
-                            // aciklama/notun sifirlanmasinin sebebi buydu.
-                            // Bekleyen bir kayit varsa sunucu verisini ALMIYORUZ.
-                            const bankSavePending = isSaving ||
-                                pendingSaveFull || pendingSaveSections.has('guildBank');
+                            // KAYIT YARISI KORUMASI (yeni uc katmanli sistem):
+                            // bekleyen + ucustaki + echo koruma suresindeki 'guildBank'
+                            // bolumu sunucu verisiyle EZILMEZ. Eskiden yalnizca bekleyen
+                            // liste kontrol ediliyordu ve kayit gonderilirken o liste
+                            // temizlendigi icin tam o pencerede yerel duzenleme siliniyordu.
+                            const bankSavePending = protectedSections().includes('guildBank');
                             if (gb && !bankSavePending) cloudData.guildBank = gb;
-                            safeRender('guildBank', renderGuildBank);
-                            safeRender('notifications', renderNotifications);
+                            withActiveFieldPreserved(() => {
+                                safeRender('guildBank', renderGuildBank);
+                                safeRender('notifications', renderNotifications);
+                            });
                         }, (err) => console.error('guildBank dinleyicisi:', err));
 
                         db.ref('DiscordUsers').on('value', (snapshot) => {
@@ -2049,7 +2073,7 @@
                                 refreshAccessScreens();
                             }, (err) => console.error('PendingUsers dinleyicisi:', err));
 
-                            db.ref('AuditLogs').orderByKey().limitToLast(400).on('value', (snapshot) => {
+                            db.ref('AuditLogs').orderByKey().limitToLast(150).on('value', (snapshot) => {
                                 auditLogsData = snapshot.val() || {};
                                 const alm = document.getElementById('auditLogModal');
                                 if (alm && !alm.classList.contains('hidden')) openAuditLogModal();
@@ -3515,6 +3539,35 @@
         }
 
         /**
+         * Banka hareket geçmişini SİLME — yalnızca ADMİN.
+         * Officer bankaya yazabilir ama geçmişi silemez; bu kural sunucu
+         * tarafında da (guild-write.js) ayrıca zorlanıyor — istemciyi
+         * kandırmak yetmiyor.
+         */
+        function clearBankLog() {
+            if (!isAdmin()) return;
+            const b = getBank();
+            if (!b.log.length) return;
+            showCustomConfirm(
+                t('bank_clear_history_confirm').replace('{n}', String(b.log.length)),
+                () => {
+                    b.log = [];
+                    logAudit('Banka hareket geçmişi temizlendi.');
+                    saveBank();
+                }, t('confirm'), '🗑️');
+        }
+
+        function deleteBankLogEntry(idx) {
+            if (!isAdmin()) return;
+            const b = getBank();
+            if (!b.log[idx]) return;
+            showCustomConfirm(t('delete_history_q'), () => {
+                b.log.splice(idx, 1);
+                saveBank();
+            }, t('confirm'), '🗑️');
+        }
+
+        /**
          * Bankayi kaydeder.
          *
          * ONEMLI: Slotlar bellekte 48 elemanli DIZI olarak tutuluyor (cizim kolay
@@ -3581,13 +3634,17 @@
 
                 <!-- HAREKET KAYDI -->
                 <div class="mt-6">
-                    <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">${t('bank_log')}</div>
+                    <div class="flex items-center justify-between gap-2 mb-2">
+                        <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest">${t('bank_log')}</div>
+                        ${isAdmin() && b.log.length ? `<button onclick="clearBankLog()" title="${escAttr(t('bank_clear_history'))}" aria-label="${escAttr(t('bank_clear_history'))}" class="flex items-center gap-1 bg-slate-900 border border-slate-700 text-red-500 hover:bg-red-900 hover:text-white px-2 py-1 rounded text-[9px] font-black uppercase tracking-widest transition">&#128465; ${t('bank_clear_history')}</button>` : ''}
+                    </div>
                     <div class="space-y-1 max-h-56 overflow-y-auto custom-scrollbar pr-1">
-                        ${b.log.length ? b.log.slice(0, 60).map(l => `
-                            <div class="text-[10px] bg-slate-950 border border-slate-800 rounded px-2 py-1.5 flex gap-2">
+                        ${b.log.length ? b.log.slice(0, 60).map((l, i) => `
+                            <div class="text-[10px] bg-slate-950 border border-slate-800 rounded px-2 py-1.5 flex gap-2 items-start group/blog">
                                 <span class="text-slate-600 font-mono shrink-0">${new Date(l.at).toLocaleString('tr-TR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</span>
                                 <span class="text-cyan-400 font-bold shrink-0">${esc(l.user)}</span>
                                 <span class="text-slate-300 flex-1 break-words">${esc(bankLogAction(l))} ${esc(l.detail)}</span>
+                                ${isAdmin() ? `<button onclick="deleteBankLogEntry(${i})" title="${escAttr(t('delete'))}" aria-label="${escAttr(t('delete'))}" class="shrink-0 w-5 h-5 rounded text-red-600 hover:bg-red-900 hover:text-white text-[10px] font-black opacity-0 group-hover/blog:opacity-100 transition">✕</button>` : ''}
                             </div>`).join('') : `<p class="text-[11px] text-slate-600 italic">${t('bank_no_log')}</p>`}
                     </div>
                 </div>`;
@@ -4267,6 +4324,74 @@
         let pendingSaveFull = false;
 
         // ============================================================================
+        // ÇAKIŞMA KORUMASI — kaydetme sırasında yapılan değişiklikler kaybolmasın
+        // ============================================================================
+        // ESKİ HATA: Kayıt gönderilirken pendingSaveSections TEMİZLENİYORDU. O anda
+        // Firebase'den bir anlık görüntü (snapshot) gelirse korunacak bölüm listesi
+        // BOŞ kalıyor, sunucudaki eski veri yerel değişikliğin üzerine yazılıyor ve
+        // "Kaydediliyor" yazısı ekrandayken yapılan değişiklik sıfırlanmış görünüyordu.
+        //
+        // ÇÖZÜM: Üç katmanlı koruma —
+        //   1) pendingSaveSections : henüz gönderilmemiş değişiklikler
+        //   2) inFlightSections    : şu an sunucuya gitmekte olan bölümler
+        //   3) sectionProtectUntil : kayıt BİTTİKTEN sonra kısa bir süre daha koruma.
+        //      Çünkü HTTP cevabı geldiğinde Firebase'in kendi yayını (echo) henüz
+        //      bu istemciye ulaşmamış olabilir; aradaki boşlukta gelen ESKİ snapshot
+        //      yerel veriyi ezmesin.
+        let inFlightSections = new Set();
+        let inFlightFull = false;
+        const sectionProtectUntil = {};   // { bolumAdi: zamanDamgasi }
+
+        /**
+         * Yeniden çizim sırasında ODAKTAKİ form alanını korur.
+         *
+         * SORUN: Firebase'den her snapshot geldiğinde renderAll() sayfayı yeniden
+         * kuruyor. Kullanıcı o sırada bir input'a yazıyorsa ya da bir <select>
+         * içinde seçim yapıyorsa, alan cloudData'daki ESKİ değerle yeniden
+         * oluşturuluyor ve yazılan şey "sıfırlanmış" görünüyordu.
+         *
+         * ÇÖZÜM: Çizimden önce odaktaki alanın kimliği + değeri + imleç konumu
+         * alınır, çizimden sonra aynı kimlikli alana geri yazılır ve odak iade
+         * edilir. Kimliği olmayan alanlar için yapılabilecek bir şey yok — bu
+         * yüzden düzenlenebilir alanlara id vermek önemli.
+         */
+        function withActiveFieldPreserved(fn) {
+            const el = document.activeElement;
+            const isField = el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT');
+            const snap = (isField && el.id) ? {
+                id: el.id,
+                value: el.value,
+                selStart: (el.selectionStart !== undefined ? el.selectionStart : null),
+                selEnd: (el.selectionEnd !== undefined ? el.selectionEnd : null)
+            } : null;
+
+            fn();
+
+            if (!snap) return;
+            const again = document.getElementById(snap.id);
+            if (!again) return;
+            try {
+                again.value = snap.value;
+                again.focus({ preventScroll: true });
+                if (snap.selStart !== null && again.setSelectionRange && /^(text|search|url|tel|password)$/.test(again.type || 'text')) {
+                    again.setSelectionRange(snap.selStart, snap.selEnd);
+                }
+            } catch (e) { /* odak iade edilemedi — kritik değil */ }
+        }
+
+        /** Snapshot birleştirilirken yerel hali korunacak bölümlerin listesi. */
+        function protectedSections() {
+            if (pendingSaveFull || inFlightFull) return WRITABLE_SECTIONS.slice();
+            const now = Date.now();
+            const set = new Set([...pendingSaveSections, ...inFlightSections]);
+            for (const k in sectionProtectUntil) {
+                if (sectionProtectUntil[k] > now) set.add(k);
+                else delete sectionProtectUntil[k];
+            }
+            return Array.from(set);
+        }
+
+        // ============================================================================
         // MANUEL YEDEK AL / YUKLE (Madde 5)
         // ============================================================================
         // Sunucudaki gunluk otomatik yedegin (Madde 4) elle kullanilabilir tamamlayicisi.
@@ -4368,72 +4493,113 @@
             if (sections.length === 0) pendingSaveFull = true;
             else sections.forEach(sec => pendingSaveSections.add(sec));
 
+            // ANLIK KAYIT: Eski 400ms bekleme kaldırıldı. setTimeout(0) yalnızca
+            // aynı olay döngüsünde art arda yapılan çağrıları tek isteğe topluyor;
+            // kullanıcı hiçbir gecikme hissetmiyor. Bir kayıt zaten sunucudaysa
+            // yenisi hemen ARKASINA sıraya girer (aşağıda, cevap gelince gönderilir)
+            // — hiçbir değişiklik düşmez.
             clearTimeout(saveTimeout);
-            saveTimeout = setTimeout(() => {
-                if (isSaving) {
-                    // Önceki kayıt hâlâ sürüyorsa isteği düşürme, biraz sonra tekrar dene.
-                    triggerCloudSave(...(pendingSaveFull ? [] : Array.from(pendingSaveSections)));
+            saveTimeout = setTimeout(dispatchCloudSave, 0);
+        }
+
+        function dispatchCloudSave() {
+            if (isSaving) return;   // cevap gelince kalan bekleyenler otomatik gönderilir
+            if (!pendingSaveFull && pendingSaveSections.size === 0) return;
+            if (typeof firebase === 'undefined') return;
+
+            const doFull = pendingSaveFull;
+            const secs = Array.from(pendingSaveSections);
+
+            // Bekleyenler "uçuşta" durumuna geçiyor: snapshot koruması
+            // (protectedSections) bunları görmeye devam ediyor.
+            inFlightFull = doFull;
+            inFlightSections = new Set(secs);
+            pendingSaveFull = false;
+            pendingSaveSections = new Set();
+
+            isSaving = true;
+            setSaveStatus('saving');
+
+            // MADDE 111: Istemci Firebase'e DOGRUDAN yazmiyor.
+            // Yazma /api/guild-write uzerinden, sunucu dogrulamasindan gecerek
+            // yapiliyor. Boylece bozuk veri ve yetkisiz yazma kaynakta engelleniyor.
+            const payload = {};
+            if (doFull || secs.length === 0) {
+                // ============================================================
+                // VERI KAYBI KORUMASI
+                // ============================================================
+                // Tam kayit TUM bolumleri gonderir. Eger cloudData henuz
+                // sunucudan YUKLENMEDIYSE (baglanti hatasi, izin sorunu,
+                // gecici null), varsayilan BOS veri gercek verinin uzerine
+                // yazilir ve her sey silinir. Onceden RSVP kanallari ve
+                // benzeri ayarlarin kaybolmasinin sebebi buydu.
+                if (!initialDataLoaded) {
+                    console.warn('Tam kayit ENGELLENDI: veri henuz yuklenmedi.');
+                    finishSave(false);
                     return;
                 }
-
-                const doFull = pendingSaveFull;
-                const secs = Array.from(pendingSaveSections);
-                pendingSaveFull = false;
-                pendingSaveSections = new Set();
-
-                if (typeof firebase === 'undefined') return;
-
-                isSaving = true;
-                setSaveStatus('saving');
-
-                // MADDE 111: Istemci Firebase'e DOGRUDAN yazmiyor.
-                // Yazma /api/guild-write uzerinden, sunucu dogrulamasindan gecerek
-                // yapiliyor. Boylece bozuk veri ve yetkisiz yazma kaynakta engelleniyor.
-                const payload = {};
-                if (doFull || secs.length === 0) {
-                    // ============================================================
-                    // VERI KAYBI KORUMASI
-                    // ============================================================
-                    // Tam kayit TUM bolumleri gonderir. Eger cloudData henuz
-                    // sunucudan YUKLENMEDIYSE (baglanti hatasi, izin sorunu,
-                    // gecici null), varsayilan BOS veri gercek verinin uzerine
-                    // yazilir ve her sey silinir. Onceden RSVP kanallari ve
-                    // benzeri ayarlarin kaybolmasinin sebebi buydu.
-                    if (!initialDataLoaded) {
-                        console.warn('Tam kayit ENGELLENDI: veri henuz yuklenmedi.');
-                        isSaving = false; setSaveStatus('error');
-                        return;
-                    }
-                    WRITABLE_SECTIONS.forEach(k => {
-                        if (cloudData[k] !== undefined) payload[k] = cloudData[k];
-                    });
-                } else {
-                    secs.forEach(sec => {
-                        if (WRITABLE_SECTIONS.includes(sec)) {
-                            payload[sec] = cloudData[sec] === undefined ? null : cloudData[sec];
-                        }
-                    });
-                }
-
-                if (Object.keys(payload).length === 0) { isSaving = false; return; }
-
-                apiFetch('/api/guild-write', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ sections: payload })
-                }).then(async res => {
-                    if (!res.ok) {
-                        const msg = await apiErrorText(res);
-                        console.error('Buluta kaydetme reddedildi:', msg);
-                        isSaving = false; setSaveStatus('error');
-                        return;
-                    }
-                    isSaving = false; setSaveStatus('saved');
-                }).catch(err => {
-                    console.error('Buluta kaydetme hatasi:', err);
-                    isSaving = false; setSaveStatus('error');
+                WRITABLE_SECTIONS.forEach(k => {
+                    if (cloudData[k] !== undefined) payload[k] = cloudData[k];
                 });
-            }, 400);
+            } else {
+                secs.forEach(sec => {
+                    if (WRITABLE_SECTIONS.includes(sec)) {
+                        payload[sec] = cloudData[sec] === undefined ? null : cloudData[sec];
+                    }
+                });
+            }
+
+            if (Object.keys(payload).length === 0) { finishSave(true, true); return; }
+
+            apiFetch('/api/guild-write', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sections: payload })
+            }).then(async res => {
+                if (!res.ok) {
+                    const msg = await apiErrorText(res);
+                    console.error('Buluta kaydetme reddedildi:', msg);
+                    finishSave(false);
+                    return;
+                }
+                finishSave(true);
+            }).catch(err => {
+                console.error('Buluta kaydetme hatasi:', err);
+                finishSave(false);
+            });
+        }
+
+        /**
+         * Kayıt bitişinin ortak noktası.
+         * Başarılıysa: yazılan bölümler kısa süre daha (echo gecikmesi) korunur.
+         * Başarısızsa: bölümler bekleyenlere GERİ konur ve 1.5sn sonra yeniden
+         * denenir — internet kesintisinde değişiklik kaybolmaz.
+         * Her iki durumda da, kayıt sırasında birikmiş yeni değişiklik varsa
+         * hemen sıradaki kayıt gönderilir.
+         */
+        function finishSave(ok, silent) {
+            const wasFull = inFlightFull;
+            const flown = Array.from(inFlightSections);
+            inFlightFull = false;
+            inFlightSections = new Set();
+            isSaving = false;
+
+            if (ok) {
+                const until = Date.now() + 2500;   // Firebase echo'sunun gelmesini bekle
+                (wasFull ? WRITABLE_SECTIONS : flown).forEach(s => { sectionProtectUntil[s] = until; });
+                if (!silent) setSaveStatus('saved');
+            } else {
+                // Değişikliği DÜŞÜRME: bekleyenlere geri koy, kısa süre sonra tekrar dene.
+                if (wasFull) pendingSaveFull = true;
+                flown.forEach(s => pendingSaveSections.add(s));
+                setSaveStatus('error');
+                clearTimeout(saveTimeout);
+                saveTimeout = setTimeout(dispatchCloudSave, 1500);
+                return;
+            }
+
+            // Kayıt sürerken yeni değişiklik yapıldıysa hemen gönder.
+            if (pendingSaveFull || pendingSaveSections.size) dispatchCloudSave();
         }
 
         // Kaydetme durumunu ekranda gösterir (Madde 17'nin küçük bir ön parçası):
@@ -6281,7 +6447,7 @@
             }).join(''); 
             
             // Dış linkten arka plan resmi kullanıldığı için useCORS:true eklendi
-            html2canvas(exportCont,{backgroundColor:'#020617',scale:2, useCORS:true}).then(canvas=>{
+            ensureHtml2Canvas().then(() => html2canvas(exportCont,{backgroundColor:'#020617',scale:2, useCORS:true})).then(canvas=>{
                 let a=document.createElement('a'); a.download=`HUNS_Raid_DKP.png`; a.href=canvas.toDataURL("image/png"); a.click();
                 // İndirdikten hemen sonra, isterse aynı görseli bot üzerinden Discord'a da paylaşabilsin diye soruyoruz.
                 canvas.toBlob(blob => {
@@ -6643,7 +6809,7 @@ function buildSlotContentCanvasDataUri(name, pills, reincText) {
             if(q) available = available.filter(p => p.name.toLowerCase().includes(q)); 
             if(available.length === 0) { list.innerHTML = `<div class="p-3 text-[10px] text-slate-500 italic text-center">Empty.</div>`; return; } 
             available.sort((a,b) => (ROLE_ORDER[a.role]||99) - (ROLE_ORDER[b.role]||99)); 
-            list.innerHTML = available.map(p => `<div ${canEdit() ? `draggable="true" ondragstart="startPlayerDrag(event, '${p.id}')" ondragend="endPlayerDrag()"` : ''} class="flex justify-between items-center bg-slate-900 border border-slate-800 p-2 rounded-lg hover:border-blue-500 transition group gap-2"><div class="flex items-center gap-2 flex-1 min-w-0"><span class="text-[8px] font-black uppercase text-${(p.role||'dps').toLowerCase()} bg-slate-950 border border-slate-700 px-1.5 py-0.5 rounded w-10 text-center shrink-0 hidden md:inline-block">${(p.role||'dps').substring(0,3)}</span><span class="text-[11px] font-bold text-white group-hover:text-blue-400 transition flex-1 break-words whitespace-normal" style="font-family:Georgia,serif;">${esc(p.name)}${p.notes ? `<span title="${escAttr(p.notes)}" class="ml-1 text-amber-400 cursor-help">&#128221;</span>` : ''}</span></div><div class="flex gap-1 items-center shrink-0"><select id="roleSelect_${p.id}" class="neon-theme-select text-[9px] py-1 px-1 rounded outline-none w-14"><option value="">—</option><option value="Tank" ${p.role==='Tank'?'selected':''}>Tank</option><option value="Healer" ${p.role==='Healer'?'selected':''}>Heal</option><option value="Support" ${p.role==='Support'?'selected':''}>Sup</option><option value="DPS" ${p.role==='DPS'?'selected':''}>DPS</option></select><select id="classSelect_${p.id}" class="neon-theme-select text-[9px] py-1 px-1 rounded outline-none w-20"><option value="">—</option>${Object.keys(DOM_CLASSES).map(c=>`<option value="${c}">${c}</option>`).join('')}</select>${canEdit() ? `<button onclick="event.stopPropagation(); openEditModal(${p.id})" title="${t('edit')}" class="bg-slate-800 hover:bg-indigo-600 text-slate-300 hover:text-white w-6 h-6 inline-flex items-center justify-center rounded text-[10px] font-black transition border border-slate-700 shrink-0" aria-label="${t('edit')}">&#9998;</button>` : ''}<button onclick="addToPlan('${p.id}', '${esc(p.name)}', document.getElementById('roleSelect_${p.id}').value, document.getElementById('classSelect_${p.id}').value)" class="bg-blue-900/30 hover:bg-blue-600 text-blue-400 hover:text-white px-3 py-1 rounded text-[10px] font-black transition border border-blue-800/50 shrink-0">+</button></div></div>`).join(''); 
+            list.innerHTML = available.map(p => `<div ${canEdit() ? `draggable="true" ondragstart="startPlayerDrag(event, '${p.id}')" ondragend="endPlayerDrag()"` : ''} class="flex justify-between items-center bg-slate-900 border border-slate-800 p-2 rounded-lg hover:border-blue-500 transition group gap-2"><div class="flex items-center gap-2 flex-1 min-w-0"><span class="text-[8px] font-black uppercase text-${(p.role||'dps').toLowerCase()} bg-slate-950 border border-slate-700 px-1.5 py-0.5 rounded w-10 text-center shrink-0 hidden md:inline-block">${(p.role||'dps').substring(0,3)}</span><span class="text-[11px] font-bold text-white group-hover:text-blue-400 transition flex-1 break-words whitespace-normal" style="font-family:Georgia,serif;">${esc(p.name)}${p.notes ? `<span title="${escAttr(p.notes)}" class="ml-1 text-amber-400 cursor-help">&#128221;</span>` : ''}</span></div><div class="flex gap-1 items-center shrink-0"><select id="roleSelect_${p.id}" ${canEdit() ? `onchange="setPlayerRoleClass(${p.id}, 'role', this.value)"` : ''} class="neon-theme-select text-[9px] py-1 px-1 rounded outline-none w-14"><option value="">—</option><option value="Tank" ${p.role==='Tank'?'selected':''}>Tank</option><option value="Healer" ${p.role==='Healer'?'selected':''}>Heal</option><option value="Support" ${p.role==='Support'?'selected':''}>Sup</option><option value="DPS" ${p.role==='DPS'?'selected':''}>DPS</option></select><select id="classSelect_${p.id}" ${canEdit() ? `onchange="setPlayerRoleClass(${p.id}, 'className', this.value)"` : ''} class="neon-theme-select text-[9px] py-1 px-1 rounded outline-none w-20"><option value="">—</option>${Object.keys(DOM_CLASSES).map(c=>`<option value="${c}" ${p.className===c?'selected':''}>${c}</option>`).join('')}</select>${canEdit() ? `<button onclick="event.stopPropagation(); openEditModal(${p.id})" title="${t('edit')}" class="bg-slate-800 hover:bg-indigo-600 text-slate-300 hover:text-white w-6 h-6 inline-flex items-center justify-center rounded text-[10px] font-black transition border border-slate-700 shrink-0" aria-label="${t('edit')}">&#9998;</button>` : ''}<button onclick="addToPlan('${p.id}', '${esc(p.name)}', document.getElementById('roleSelect_${p.id}').value, document.getElementById('classSelect_${p.id}').value)" class="bg-blue-900/30 hover:bg-blue-600 text-blue-400 hover:text-white px-3 py-1 rounded text-[10px] font-black transition border border-blue-800/50 shrink-0">+</button></div></div>`).join(''); 
         }
 
         function renderPlanUI() {
@@ -6738,6 +6904,31 @@ function buildSlotContentCanvasDataUri(name, pills, reincText) {
         
         // Madde 1: Kadroya artık KİMLİKLE ekleniyor. `name` yalnızca yedek olarak
         // saklanıyor; ekranda her zaman players listesindeki güncel ad gösteriliyor.
+        /**
+         * Kadro listesindeki rol / sınıf seçimini ANINDA kalıcı yapar.
+         *
+         * ESKİ HATA: Bu seçimler hiçbir yere kaydedilmiyor, yalnızca "+" basılınca
+         * okunuyordu. Firebase'den herhangi bir snapshot gelip liste yeniden
+         * çizildiğinde (örn. "Kaydediliyor" yazısı ekrandayken) seçim sıfırlanıyordu.
+         * Artık seçim yapıldığı an oyuncu kaydına yazılıp buluta gönderiliyor;
+         * yeniden çizimde de `selected` ile geri geliyor.
+         */
+        function setPlayerRoleClass(id, field, value) {
+            if (!canEdit()) return;
+            const p = cloudData.players.find(x => x.id === id);
+            if (!p) return;
+            p[field] = value || null;
+
+            // Aktif planlardaki aynı oyuncunun kadro kartını da güncel tut —
+            // kadro ile oyuncu listesi birbirinden kopmasın.
+            (cloudData.raidPlans || []).forEach(pl => (pl.characters || []).forEach(c => {
+                if (c && !c.empty && String(c.playerId) === String(id)) c[field] = value || null;
+            }));
+
+            triggerCloudSave('players', 'raidPlans');
+            renderPlanUI();
+        }
+
         function addToPlan(playerId, name, role, className) { 
             const plan = cloudData.raidPlans.find(p => p.id === activePlanId); if(!plan) return; 
             const maxCap = plan.type === 'party_dom' ? (plan.groupCount || 1) * 6 : 12; 
@@ -6791,6 +6982,22 @@ function buildSlotContentCanvasDataUri(name, pills, reincText) {
         // planExportContainer içindeki TÜM <img> etiketlerinin (SVG data-URI'ler dahil) tam
         // yüklenmesini garanti eder. Önceki denemede html2canvas görseller yüklenmeden yakalama
         // yaptığı için kutucuklar boş çıkmıştı — bu fonksiyon o kesin garantiyi sağlıyor.
+        // html2canvas (~200KB) yalnızca PNG dışa aktarmada gerekiyor.
+        // Sayfa açılışını yavaşlatmasın diye ilk ihtiyaç anında yükleniyor.
+        let _h2cPromise = null;
+        function ensureHtml2Canvas() {
+            if (typeof html2canvas !== 'undefined') return Promise.resolve();
+            if (_h2cPromise) return _h2cPromise;
+            _h2cPromise = new Promise((resolve, reject) => {
+                const s = document.createElement('script');
+                s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+                s.onload = resolve;
+                s.onerror = () => { _h2cPromise = null; reject(new Error('html2canvas yüklenemedi')); };
+                document.head.appendChild(s);
+            });
+            return _h2cPromise;
+        }
+
         function waitForImagesToLoad(container) {
             const imgs = Array.from(container.querySelectorAll('img'));
             if (imgs.length === 0) return Promise.resolve();
@@ -6824,7 +7031,7 @@ function buildSlotContentCanvasDataUri(name, pills, reincText) {
 
             // ÖNEMLİ: html2canvas'ı çağırmadan ÖNCE, SVG görsellerin (karakter isim/etiket kutucukları)
             // tam yüklenmesini bekliyoruz — yoksa kutucuklar boş çıkar (daha önce yaşandığı gibi).
-            waitForImagesToLoad(planContainer).then(() => {
+            Promise.all([waitForImagesToLoad(planContainer), ensureHtml2Canvas()]).then(() => {
                 // html2canvas'ın kendisi SENKRON olarak hata fırlatırsa (promise reddi değil, doğrudan throw),
                 // bu try/catch olmadan .then()/.catch() zincirine hiç ulaşılamaz ve ekran asılı kalırdı.
                 try {
