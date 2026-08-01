@@ -192,6 +192,35 @@ export async function onRequestPost(context) {
         }
     }
 
+    // --- Banka gecmisi silme: YALNIZCA ADMIN ------------------------------
+    // Officer bankaya yazabilir (esya ekler, istek onaylar => log BUYUR) ama
+    // gecmis kaydi SILEMEZ. Istemcideki buton zaten sadece admine gorunuyor;
+    // burada API seviyesinde de zorlaniyor ki istemciyi kandirmak yetmesin.
+    // Kural: yeni log, mevcut logdan KISAYSA ve rol admin degilse -> ret.
+    // (Log 200 kayitta kirpildigi icin normal ekleme hic kisaltmaz.)
+    if (sections.guildBank !== undefined && auth.role !== 'admin') {
+        try {
+            const curRes = await fetch(fb(env, 'GuildData/guildBank/log'));
+            const curLog = curRes.ok ? await curRes.json() : null;
+            const curLen = Array.isArray(curLog) ? curLog.length
+                         : (curLog && typeof curLog === 'object' ? Object.keys(curLog).length : 0);
+
+            const nb = sections.guildBank;
+            const newLogRaw = nb && nb.log !== undefined && nb.log !== null ? nb.log : [];
+            const newLen = Array.isArray(newLogRaw) ? newLogRaw.length
+                         : (typeof newLogRaw === 'object' ? Object.keys(newLogRaw).length : 0);
+
+            if (newLen < curLen && curLen <= 200) {
+                console.error(`[guild-write] ${auth.uid} (${auth.role}) banka gecmisi silme denemesi reddedildi (${curLen} -> ${newLen}).`);
+                return json({ error: 'Banka hareket geçmişini yalnızca admin silebilir.' }, 403);
+            }
+        } catch (e) {
+            // Mevcut log okunamadiysa yazmayi engellemiyoruz — bu koruma
+            // ek bir guvenlik katmani, ana islevi kilitleyen bir kapi degil.
+            console.error('[guild-write] banka log karsilastirmasi yapilamadi:', e);
+        }
+    }
+
     // --- Yazma: coklu-yol guncelleme (atomik) -----------------------------
     try {
         const res = await fetch(fb(env, `GuildData`), {
