@@ -2063,6 +2063,9 @@
                 if(typeof firebase !== 'undefined' && firebaseConfig.apiKey !== "") {
                     firebase.initializeApp(firebaseConfig);
                     db = firebase.database();
+                    // Taktik sayfasi gibi bu kapsamin DISINDAKI kodlar da
+                    // veritabanina erisebilsin diye kuresel referans.
+                    window.fbDb = db;
                     // Oturum tarayicida KALICI olarak saklansin. Varsayilan davranista
                     // oturum sekme kapaninca dusuyor ve kullanici surekli tekrar
                     // giris yapmak zorunda kaliyordu.
@@ -6266,9 +6269,10 @@
 
             const id = tctEditingId || ('map_' + Date.now());
             const rec = { name, desc, mode, img, createdAt: existing ? (existing.createdAt || Date.now()) : Date.now() };
+            if (!window.fbDb) return showCustomAlert(t('tct_save_fail'), t('error'), '❌');
             // Dogrudan yaz: kurallar geregi yalnizca admin yazabilir. set()
             // dugumu TAMAMEN degistirir — eski gorselden geriye hicbir sey kalmaz.
-            db.ref('TacticsMaps/' + id).set(rec)
+            window.fbDb.ref('TacticsMaps/' + id).set(rec)
                 .then(() => {
                     logAudit(`Taktik haritası ${existing ? 'düzenlendi' : 'eklendi'}: ${name}`);
                     tctCancelEdit();
@@ -6307,8 +6311,9 @@
             const m = tacticsMapsData[id];
             if (!m) return;
             showCustomConfirm(t('tct_delete_confirm').replace('{name}', m.name), () => {
+                if (!window.fbDb) return showCustomAlert(t('tct_save_fail'), t('error'), '❌');
                 // remove() gorsel dahil TUM kaydi veritabanindan siler.
-                db.ref('TacticsMaps/' + id).remove()
+                window.fbDb.ref('TacticsMaps/' + id).remove()
                     .then(() => { delete tctSessions[id]; logAudit(`Taktik haritası silindi: ${m.name}`); })
                     .catch(e => { console.error('tctDeleteMap:', e); showCustomAlert(t('tct_save_fail'), t('error'), '❌'); });
             }, t('confirm'), '🗑️');
