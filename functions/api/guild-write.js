@@ -37,22 +37,11 @@ const SECTIONS = {
     exportBgOpacity:        { type: 'number', min: 0, max: 100 },
     activeTheme:            { type: 'number', min: 0, max: 200 },
     adminMessages:          { type: 'array',  max: 200 },
-    guildBank:              { type: 'object', max: 10, validate: validateBank },
-    // Dominion Taktik haritalari: admin yukler, uyeler uzerinde cizim yapar
-    // (cizimler kisisel, sunucuya YAZILMAZ — yalnizca harita tanimlari yazilir).
-    tacticsMaps:            { type: 'array',  max: 60, validate: validateTacticsMaps }
+    guildBank:              { type: 'object', max: 10, validate: validateBank }
+    // NOT: Taktik haritalari GuildData'da DEGIL — gomulu gorselleriyle birlikte
+    // ayri 'TacticsMaps' Firebase yolunda tutulur; yazma yetkisi kurallarla
+    // yalnizca admin'e verilmistir.
 };
-
-function validateTacticsMaps(arr) {
-    for (const m of arr) {
-        if (!m || typeof m !== 'object') return 'tacticsMaps: gecersiz kayit';
-        if (typeof m.name !== 'string' || !m.name.length || m.name.length > 60) return 'tacticsMaps: isim 1-60 karakter olmali';
-        if (typeof m.img !== 'string' || !/^https?:\/\//i.test(m.img) || m.img.length > 600) return 'tacticsMaps: gorsel adresi gecersiz';
-        if (m.desc && String(m.desc).length > 500) return 'tacticsMaps: aciklama cok uzun';
-        if (m.mode !== 6 && m.mode !== 12) return 'tacticsMaps: takim boyutu 6 ya da 12 olmali';
-    }
-    return null;
-}
 
 // Tek bir istekte yazilabilecek en fazla bolum sayisi.
 const MAX_SECTIONS_PER_REQUEST = 25;
