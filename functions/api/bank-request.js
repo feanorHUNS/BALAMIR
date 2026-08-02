@@ -43,6 +43,23 @@ export async function onRequestPost(context) {
             r.itemName === itemName && String(r.by) === String(auth.name || auth.uid));
         if (dup) return json({ error: 'already_pending' }, 409);
 
+        // HAFTALIK ONAYLI ISTEK LIMITI (admin ayarlar, 0 = sinirsiz).
+        // Son 7 gunde bu kisinin ONAYLANMIS istek sayisi limite ulastiysa
+        // yeni istek ACILMASINA da izin verilmez — kuyruk bosuna sismesin.
+        try {
+            const limRes = await fetch(fb(env, `GuildData/guildBank/requestLimit`));
+            const limit = parseInt(await limRes.json(), 10) || 0;
+            if (limit > 0) {
+                const weekAgo = Date.now() - 7 * 24 * 3600 * 1000;
+                const me = String(auth.name || auth.uid);
+                const approvedThisWeek = list.filter(r => r && r.status === 'approved' &&
+                    String(r.by) === me && (r.decidedAt || r.at || 0) >= weekAgo).length;
+                if (approvedThisWeek >= limit) {
+                    return json({ error: 'weekly_limit', limit }, 429);
+                }
+            }
+        } catch (e) { console.error('[bank-request] limit kontrolu yapilamadi:', e); }
+
         const entry = {
             id: 'req_' + Date.now(),
             slotId: isNaN(slotId) ? null : slotId,
