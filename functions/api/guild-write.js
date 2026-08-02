@@ -192,6 +192,24 @@ export async function onRequestPost(context) {
         }
     }
 
+    // --- RSVP ac/kapat: YALNIZCA ADMIN ------------------------------------
+    // Yetkililer RSVP ayarlarini duzenleyebilir ama sistemi acip KAPATAMAZ.
+    // Admin olmayan biri "enabled" degerini degistiren bir yazma gonderirse
+    // mevcut deger korunur (istek reddedilmez, yalnizca o alan sabitlenir).
+    if (sections.rsvpReminder && typeof sections.rsvpReminder === 'object' && auth.role !== 'admin') {
+        try {
+            const curRes = await fetch(fb(env, 'GuildData/rsvpReminder/enabled'));
+            const curEnabled = curRes.ok ? await curRes.json() : null;
+            const effective = curEnabled === null || curEnabled === undefined ? true : curEnabled;
+            if (sections.rsvpReminder.enabled !== effective) {
+                console.log(`[guild-write] ${auth.uid} (${auth.role}) RSVP enabled degisikligi yoksayildi.`);
+                sections.rsvpReminder.enabled = effective;
+            }
+        } catch (e) {
+            console.error('[guild-write] rsvp enabled kontrolu yapilamadi:', e);
+        }
+    }
+
     // --- Banka gecmisi silme: YALNIZCA ADMIN ------------------------------
     // Officer bankaya yazabilir (esya ekler, istek onaylar => log BUYUR) ama
     // gecmis kaydi SILEMEZ. Istemcideki buton zaten sadece admine gorunuyor;
