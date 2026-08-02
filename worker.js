@@ -442,10 +442,18 @@ async function runRsvpReminders(env, announcements, guildData, now) {
     // iken tekil hariç tutma).
     const excludeIds = Array.isArray(cfg.excludeIds) ? cfg.excludeIds.map(String) : [];
 
+    // Duyuruya ozel hatirlatma sayisi: {annId: n}. n, ETKINLIGE EN YAKIN
+    // zamanlardan geriye sayilir (1 = yalnizca en yakin hatirlatma).
+    const annCounts = (cfg.annCounts && typeof cfg.annCounts === 'object') ? cfg.annCounts : {};
+
     for (const [annId, ann] of Object.entries(announcements)) {
         if (!ann || ann.finalized || !ann.time) continue;
         if (scopeSelected && !chosenIds.includes(String(annId))) continue;
         if (excludeIds.includes(String(annId))) continue;
+
+        // Bu duyuru icin gecerli esik listesi.
+        const nWant = parseInt(annCounts[String(annId)]);
+        const effHours = (nWant >= 1 && nWant < hours.length) ? hours.slice(-nWant) : hours;
         const annTime = new Date(ann.time).getTime();
         if (isNaN(annTime) || annTime <= now) continue;
 
@@ -459,15 +467,17 @@ async function runRsvpReminders(env, announcements, guildData, now) {
         // 24 ve 6 saatlik esikler geriye donuk tetiklenip spam yapardi.
         const SLOT_WINDOW_HOURS = 0.25;
         let slotIndex = -1;
-        for (let i = 0; i < hours.length; i++) {
-            const h = Number(hours[i]);
+        for (let i = 0; i < effHours.length; i++) {
+            const h = Number(effHours[i]);
             if (!h || h <= 0) continue;
             if (hoursLeft <= h && hoursLeft > h - SLOT_WINDOW_HOURS) { slotIndex = i; break; }
         }
         if (slotIndex === -1) continue;
 
         // Bu esik icin daha once gonderildi mi?
-        if (!(await claimLock(env, `${annId}_rsvp_${slotIndex}`))) continue;
+        // Kilit anahtari SAAT degerini icerir: duyurunun hatirlatma sayisi
+        // sonradan degistirilirse indeks kaymasi eski kilidi gecersiz kilmasin.
+        if (!(await claimLock(env, `${annId}_rsvp_h${Number(effHours[slotIndex])}`))) continue;
 
         const voted = new Set([
             ...Object.keys(ann.accepted || {}),
