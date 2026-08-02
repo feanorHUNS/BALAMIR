@@ -72,8 +72,22 @@
         @media (max-width: 767px) {
             #mainNav .tab-btn { padding: 6px 7px !important; font-size: 9px !important; }
         }
-        /* MOBIL TAM SAYFA EDITOR: tarayici tam ekran API'sinden bagimsiz,
-           her cihazda calisan sabit katman. */
+        /* MOBIL EDITOR ORTUSU — KOK SEBEP:
+           #tctEditorView position:fixed olsa da, <main> ogesinin `relative
+           z-30` sinifi kendi YIGILMA BAGLAMINI (stacking context) olusturuyor.
+           CSS kuraliyla, bir fixed ogenin z-index'i boyle bir ata icindeyse
+           kok (root) seviyesinde DEGIL, o atanin yerlesimine gore
+           karsilastirilir. Yani editorun z-90'i, atasi olan <main>'in z-30
+           degeriyle sinirli kaliyor ve site basligi (z-60, <main>'in
+           DISINDA) editorun UZERINDE gorunuyordu — mobilde harita/editor
+           "kayboluyor" gibi duran sorunun asil sebebi buydu.
+           COZUM: Mobil editor acikken site basligini ve alt sekme cubugunu
+           TAMAMEN GIZLE — cakisma imkansiz hale gelir, ayrica arka planin
+           kaymasi da body kilidiyle engellenir. */
+        body.tct-editor-open { overflow: hidden !important; }
+        body.tct-editor-open #siteHeader,
+        body.tct-editor-open #raidSidebar { display: none !important; }
+
         .tct-mobile-full {
             position: fixed !important;
             inset: 0 !important;
@@ -90,7 +104,7 @@
             .tct-mobile-full .tct-rotate-hint { display: block; text-align: center; color: #94a3b8; font-size: 10px; font-weight: 700; padding: 2px 0; }
         }
 
-        /* TAKTIK KADRO CEKMECELERI: Genis ekranda kanvasin iki yaninda sabit
+        /* MOBIL EDITOR ORTUSU: Genis ekranda kanvasin iki yaninda sabit
            sutun; mobilde GIZLI, yandaki 🔴/🔵 dugmeleriyle ustune kayarak acilir
            — harita alani mobilde tamamen kanvasa kalir. */
         @media (max-width: 1023px) {
@@ -404,7 +418,7 @@
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
     </div>
 
-    <div class="sticky top-0 z-[60] bg-slate-950/70 backdrop-blur-xl border-b border-slate-800 shadow-2xl">
+    <div id="siteHeader" class="sticky top-0 z-[60] bg-slate-950/70 backdrop-blur-xl border-b border-slate-800 shadow-2xl">>
         <div class="max-w-7xl mx-auto px-4">
             <div class="flex flex-col md:flex-row justify-between items-center py-3 gap-4">
                 <div class="flex items-center">
@@ -6429,6 +6443,7 @@
             if (tctIsMobile()) {
                 const ev = document.getElementById('tctEditorView');
                 ev.classList.add('tct-mobile-full');
+                document.body.classList.add('tct-editor-open');
                 const req = ev.requestFullscreen || ev.webkitRequestFullscreen;
                 if (req) {
                     Promise.resolve(req.call(ev)).then(() => {
@@ -6460,6 +6475,7 @@
             }
             try { screen.orientation && screen.orientation.unlock && screen.orientation.unlock(); } catch (e) {}
             tctSetRosterOpen('red', false); tctSetRosterOpen('blue', false);
+            document.body.classList.remove('tct-editor-open');
             document.getElementById('tctEditorView').classList.remove('tct-mobile-full');
             document.getElementById('tctEditorView').classList.add('hidden');
             document.getElementById('tctListView').classList.remove('hidden');
@@ -6672,6 +6688,11 @@
                         txt = String(txt || '').trim().slice(0, 60);
                         if (!txt) return;
                         tctS.strokes.push({ tool: 'text', color: tctColor, size: tctTextSize(), x: mp.x, y: mp.y, text: txt });
+                        // Yazi eklendikten sonra otomatik olarak TASI/KAYDIR
+                        // aracina donulur — art arda yanlislikla yeni metin
+                        // kutusu acilmasin.
+                        tctTool = 'hand';
+                        tctRenderToolbar();
                         tctDraw();
                     }, 'tct_text_prompt');
                     return;
