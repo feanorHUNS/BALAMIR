@@ -523,7 +523,7 @@ async function runRsvpReminders(env, announcements, guildData, now) {
         }
 
         const unix = Math.floor(annTime / 1000);
-        const hLabel = Number(hours[slotIndex]);
+        const hLabel = Number(effHours[slotIndex]);   // duyuruya ozel liste kullaniliyor
         const customText = (cfg.message || '').trim();
 
         // Duyurunun kendi metnini ALINTILA: kisi neyin hatirlatildigini
@@ -566,12 +566,34 @@ async function runRsvpReminders(env, announcements, guildData, now) {
         };
 
         let sent = 0;
+        const failures = {};   // discordUid -> sebep kodu (dm_closed, forbidden, ...)
         for (const uid of targets) {
             const r = await sendDmToUser(env, uid, embed);
             if (r.ok) sent++;
+            else failures[String(uid)] = r.reason || 'error';
             await new Promise(res => setTimeout(res, 350)); // oran limiti
         }
         console.log(`[rsvp] ${annId}: ${hLabel}s kala ${sent}/${targets.length} kisiye gonderildi (bu hafta baska raidde olan ${committed.size} kisi atlandi).`);
+
+        // ULASMAYAN DM RAPORU: Kimlere neden ulasilamadigi siteye yazilir;
+        // yetkililer Discord Duyuru sayfasindaki "RSVP DM Durumu" kutusunda gorur.
+        try {
+            await fetch(fb(env, `RsvpDmLog/${annId}`), {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title: String(ann.title || '').slice(0, 120),
+                    time: ann.time || null,
+                    updatedAt: Date.now(),
+                    [`runs/h${hLabel}`]: {
+                        at: Date.now(),
+                        sent,
+                        total: targets.length,
+                        failures
+                    }
+                })
+            });
+        } catch (e) { console.error('[rsvp] DM raporu yazilamadi:', e); }
     }
 }
 
