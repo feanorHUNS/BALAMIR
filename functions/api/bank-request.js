@@ -33,25 +33,29 @@ export async function onRequestPost(context) {
     if (!qty || qty < 1 || qty > 100000) return json({ error: 'qty gecersiz.' }, 400);
 
     try {
-        // Mevcut istekleri oku (yalnizca bu alt yol).
-        const res = await fetch(fb(env, `GuildData/guildBank/requests`));
-        const current = (await res.json()) || [];
-        const list = Array.isArray(current) ? current : Object.values(current);
+        // Banka verisini TEK istekle oku: istekler + limitler birlikte.
+        const res = await fetch(fb(env, `GuildData/guildBank`));
+        const bank = (await res.json()) || {};
+        const rawReq = bank.requests || [];
+        const list = Array.isArray(rawReq) ? rawReq : Object.values(rawReq);
 
         // Ayni kisi ayni esya icin BEKLEYEN bir istek birakmissa tekrar acmasin.
         const dup = list.find(r => r && r.status === 'pending' &&
             r.itemName === itemName && String(r.by) === String(auth.name || auth.uid));
         if (dup) return json({ error: 'already_pending' }, 409);
 
-        // HAFTALIK ONAYLI ISTEK LIMITI (admin ayarlar, 0 = sinirsiz).
-        // Son 7 gunde bu kisinin ONAYLANMIS istek sayisi limite ulastiysa
-        // yeni istek ACILMASINA da izin verilmez — kuyruk bosuna sismesin.
+        // HAFTALIK ONAYLI ISTEK LIMITI (yetkililer ayarlar, 0 = sinirsiz).
+        // Kisiye OZEL limit varsa o gecerli, yoksa genel limit. Limit dolan uye,
+        // limit yukseltilene dek yeni istek ACAMAZ.
         try {
-            const limRes = await fetch(fb(env, `GuildData/guildBank/requestLimit`));
-            const limit = parseInt(await limRes.json(), 10) || 0;
+            const me = String(auth.name || auth.uid);
+            const globalLimit = parseInt(bank.requestLimit, 10) || 0;
+            const rawLims = bank.requestLimits || [];
+            const limList = Array.isArray(rawLims) ? rawLims : Object.values(rawLims);
+            const ov = limList.find(x => x && String(x.name) === me);
+            const limit = ov ? (Math.max(0, parseInt(ov.limit, 10) || 0)) : globalLimit;
             if (limit > 0) {
                 const weekAgo = Date.now() - 7 * 24 * 3600 * 1000;
-                const me = String(auth.name || auth.uid);
                 const approvedThisWeek = list.filter(r => r && r.status === 'approved' &&
                     String(r.by) === me && (r.decidedAt || r.at || 0) >= weekAgo).length;
                 if (approvedThisWeek >= limit) {
