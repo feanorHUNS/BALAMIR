@@ -438,10 +438,14 @@ async function runRsvpReminders(env, announcements, guildData, now) {
     // Yalnizca SECILI duyurular icin gonderilecekse listeyi daralt.
     const scopeSelected = cfg.scope === 'selected';
     const chosenIds = Array.isArray(cfg.annIds) ? cfg.annIds.map(String) : [];
+    // Duyuru olusturulurken "hatirlatma gonderme" secilenler (kapsam "tumu"
+    // iken tekil hariç tutma).
+    const excludeIds = Array.isArray(cfg.excludeIds) ? cfg.excludeIds.map(String) : [];
 
     for (const [annId, ann] of Object.entries(announcements)) {
         if (!ann || ann.finalized || !ann.time) continue;
         if (scopeSelected && !chosenIds.includes(String(annId))) continue;
+        if (excludeIds.includes(String(annId))) continue;
         const annTime = new Date(ann.time).getTime();
         if (isNaN(annTime) || annTime <= now) continue;
 
