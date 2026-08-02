@@ -56,6 +56,9 @@
         .mobile-tab-scroll { -webkit-overflow-scrolling: touch; scrollbar-width: none; -ms-overflow-style: none; touch-action: pan-x pan-y; }
         .mobile-tab-scroll::-webkit-scrollbar { display: none; }
         .mobile-tab-scroll .tab-btn { flex: 0 0 auto; white-space: nowrap; }
+        .tct-btn { background:#0f172a; border:1px solid #334155; color:#cbd5e1; padding:6px 10px; border-radius:8px; font-size:13px; transition:all .15s; }
+        .tct-btn:hover { background:#1e293b; color:#fff; }
+        .tct-btn.active { border-color: var(--neon-color); color: var(--neon-color); box-shadow: 0 0 8px var(--neon-shadow); }
         .crystal-pattern { position: fixed; inset: 0; z-index: -10; background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M50 0 L100 50 L50 100 L0 50 Z' fill='none' stroke='%23ffffff' stroke-width='0.5' stroke-opacity='0.03'/%3E%3C/svg%3E"); background-size: 150px 150px; pointer-events: none; mix-blend-mode: overlay; }
         h1, h2, h3, .guild-font { font-family: 'Cinzel', serif; }
         
@@ -373,6 +376,9 @@
                     <button onclick="if(!isEditMode) switchTab('raid')" id="tab-raid" class="tab-btn member-only px-3 md:px-4 py-2 text-xs font-black uppercase tracking-widest border-b-2 border-transparent relative z-20">
                         <span id="dyn-tab2" data-i18n="tab_raid">Raid Zone</span>
                     </button>
+                    <button onclick="if(!isEditMode) switchTab('tactics')" id="tab-tactics" class="tab-btn member-only px-3 md:px-4 py-2 text-xs font-black uppercase tracking-widest border-b-2 border-transparent relative z-20">
+                        <span data-i18n="tab_tactics">🗺️ Tactics</span>
+                    </button>
                     <button onclick="if(!isEditMode) switchTab('plan')" id="tab-plan" class="tab-btn auth-only px-3 md:px-4 py-2 text-xs font-black uppercase tracking-widest border-b-2 border-transparent relative z-20">
                         <span id="dyn-tab4" data-i18n="tab_plan">Event Plan</span>
                     </button>
@@ -609,7 +615,8 @@
                                 </div>
                                 <div class="w-full md:w-64">
                                     <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block" data-i18n="date_time">Date & Time</label>
-                                    <input type="datetime-local" id="planTimeInput" class="w-full neon-theme-input px-3 py-2.5 rounded-lg text-sm text-blue-400 font-bold outline-none cursor-pointer" style="color-scheme: dark;" onchange="updatePlanBasicInfo()" onclick="this.showPicker && this.showPicker()" onfocus="this.showPicker && this.showPicker()">
+                                    <input type="datetime-local" id="planTimeInput" class="w-full neon-theme-input px-3 py-2.5 rounded-lg text-sm text-blue-400 font-bold outline-none cursor-pointer" style="color-scheme: dark;" onchange="updatePlanBasicInfo()" oninput="updateEuTimeHint(this, 'planTimeInputEu')" onclick="this.showPicker && this.showPicker()" onfocus="this.showPicker && this.showPicker()">
+                                    <p id="planTimeInputEu" class="text-[10px] text-cyan-400 mt-1 min-h-[14px]"></p>
                                 </div>
                             </div>
                             <div id="planDisplayContainer" class="hidden flex-col items-start gap-2">
@@ -849,7 +856,8 @@
                     <select id="discordAnnChannelSelect" class="w-full neon-theme-input px-3 py-2 rounded-lg text-sm outline-none mb-4"></select>
 
                     <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1" data-i18n="discordann_field_time">Event Date & Time</label>
-                    <input type="datetime-local" id="discordAnnTime" class="w-full neon-theme-input px-3 py-2 rounded-lg text-sm outline-none mb-4 cursor-pointer" style="color-scheme: dark;" onclick="this.showPicker && this.showPicker()" onfocus="this.showPicker && this.showPicker()">
+                    <input type="datetime-local" id="discordAnnTime" class="w-full neon-theme-input px-3 py-2 rounded-lg text-sm outline-none mb-1 cursor-pointer" style="color-scheme: dark;" onclick="this.showPicker && this.showPicker()" onfocus="this.showPicker && this.showPicker()" oninput="updateEuTimeHint(this, 'discordAnnTimeEu')">
+                    <p id="discordAnnTimeEu" class="text-[10px] text-cyan-400 mb-4 min-h-[14px]"></p>
 
                     <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1" data-i18n="discordann_field_content">Content</label>
                     <textarea id="discordAnnContent" rows="4" placeholder="Geared reincs allowed." class="w-full neon-theme-input px-3 py-2 rounded-lg text-sm outline-none mb-4 resize-none"></textarea>
@@ -961,6 +969,69 @@
 
         <!-- BASVURULAR: guild basvurulari + site kayit istekleri YAN YANA.
              Yetkililer gorur; sorulari yalnizca admin duzenleyebilir. -->
+        <!-- DOMINION TAKTIK: Uyeler harita uzerinde KISISEL cizim yapar.
+             Haritalari admin tanimlar (isim, aciklama, gorsel, 6v6/12v12).
+             Cizimler sunucuya YAZILMAZ; oturum boyunca yerel kalir, PNG indirilebilir. -->
+        <div id="page-tactics" class="tab-content">
+            <div id="tctListView">
+                <header class="mb-6 border-b border-slate-800 pb-4">
+                    <h1 class="text-3xl md:text-4xl font-black text-slate-200 tracking-tighter guild-font">
+                        🗺️ <span data-i18n="tct_page_title">DOMINION TACTICS</span>
+                    </h1>
+                    <p class="text-[11px] text-slate-400 mt-2 max-w-3xl leading-relaxed" data-i18n="tct_page_desc">Pick a map and sketch your strategy. Drawings are personal: only you see them, and you can download the result as an image.</p>
+                </header>
+
+                <div class="admin-only-block neon-theme-box p-5 rounded-2xl shadow-lg mb-6">
+                    <h3 class="text-xs font-black text-amber-400 mb-4 tracking-widest border-b border-slate-800 pb-2 uppercase" data-i18n="tct_admin_title">Map Management</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                        <input type="text" id="tctMapName" maxlength="60" data-i18n-placeholder="tct_map_name" placeholder="Map name" class="neon-theme-input px-3 py-2 rounded-lg text-sm outline-none">
+                        <select id="tctMapMode" class="neon-theme-select px-3 py-2 rounded-lg text-sm outline-none">
+                            <option value="6">6 vs 6</option>
+                            <option value="12">12 vs 12</option>
+                        </select>
+                    </div>
+                    <input type="text" id="tctMapImg" data-i18n-placeholder="tct_map_img" placeholder="Image URL (https://...)" class="w-full neon-theme-input px-3 py-2 rounded-lg text-sm outline-none mb-3">
+                    <textarea id="tctMapDesc" rows="2" maxlength="500" data-i18n-placeholder="tct_map_desc" placeholder="Description" class="w-full neon-theme-input px-3 py-2 rounded-lg text-sm outline-none resize-none mb-3"></textarea>
+                    <div class="flex gap-2">
+                        <button onclick="tctSaveMap()" id="tctSaveMapBtn" class="bg-emerald-700 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition" data-i18n="tct_map_save">Add Map</button>
+                        <button onclick="tctCancelEdit()" id="tctCancelEditBtn" class="hidden bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition border border-slate-700" data-i18n="tct_map_cancel">Cancel</button>
+                    </div>
+                    <p class="text-[9px] text-slate-500 mt-2" data-i18n="tct_img_hint">Use a direct image link (e.g. uploaded to Discord). The image must allow cross-site use, otherwise PNG export will not work.</p>
+                </div>
+
+                <div id="tctMapList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+            </div>
+
+            <div id="tctEditorView" class="hidden">
+                <div class="flex flex-wrap items-center gap-2 mb-3">
+                    <button onclick="tctCloseEditor()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg text-xs font-black uppercase transition border border-slate-700">← <span data-i18n="tct_back">Maps</span></button>
+                    <h2 id="tctEditorTitle" class="text-lg font-black text-slate-200 guild-font flex-1 min-w-0 truncate"></h2>
+                    <button onclick="tctExportPng()" class="bg-indigo-700 hover:bg-indigo-600 text-white px-3 py-2 rounded-lg text-xs font-black uppercase transition">📷 <span data-i18n="tct_export">Download PNG</span></button>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2 mb-3 neon-theme-box rounded-xl p-2">
+                    <div id="tctTools" class="flex gap-1"></div>
+                    <div class="w-px h-7 bg-slate-700 mx-1"></div>
+                    <div id="tctColors" class="flex gap-1 items-center"></div>
+                    <div class="w-px h-7 bg-slate-700 mx-1"></div>
+                    <button onclick="tctUndo()" title="Undo" class="tct-btn">↩️</button>
+                    <button onclick="tctClearAll()" data-i18n-title="tct_clear" title="Clear" class="tct-btn">🗑️</button>
+                    <div class="w-px h-7 bg-slate-700 mx-1"></div>
+                    <button onclick="tctZoom(1.25)" class="tct-btn">➕</button>
+                    <button onclick="tctZoom(0.8)" class="tct-btn">➖</button>
+                    <button onclick="tctFitView()" title="Fit" class="tct-btn">⛶</button>
+                    <div class="w-px h-7 bg-slate-700 mx-1"></div>
+                    <button onclick="tctAddPlayer('red')" class="bg-red-900/40 hover:bg-red-700 border border-red-700 text-red-300 hover:text-white px-2.5 py-1.5 rounded-lg text-[10px] font-black uppercase transition">+ <span data-i18n="tct_red">Red</span> <span id="tctRedCount">0/6</span></button>
+                    <button onclick="tctAddPlayer('blue')" class="bg-blue-900/40 hover:bg-blue-700 border border-blue-700 text-blue-300 hover:text-white px-2.5 py-1.5 rounded-lg text-[10px] font-black uppercase transition">+ <span data-i18n="tct_blue">Blue</span> <span id="tctBlueCount">0/6</span></button>
+                </div>
+                <p class="text-[9px] text-slate-500 mb-2" data-i18n="tct_help">✋ tool: drag empty area to pan, drag a player token to move it. Double-click a token to rename. Eraser removes strokes and tokens. Mouse wheel / pinch to zoom.</p>
+
+                <div id="tctCanvasWrap" class="relative w-full rounded-2xl overflow-hidden border-2 border-slate-800 bg-slate-950" style="height:70vh; touch-action:none;">
+                    <canvas id="tctCanvas" class="absolute inset-0 w-full h-full" style="touch-action:none;"></canvas>
+                </div>
+            </div>
+        </div>
+
         <!-- MADDE 119: Guild Bankasi -- kendi sekmesi, HERKES gorebilir. -->
         <div id="page-bank" class="tab-content">
             <header class="mb-6 border-b border-slate-800 pb-4">
@@ -1531,7 +1602,7 @@
                 finalize_success: "Announcement finalized (message removed from Discord, event closed on the site).", finalize_fail: "Failed to finalize.",
                 png_capture_fail: "Failed to generate PNG. Please try again.",
                 msg_cooldown: "Please wait {s} more second(s) before sending another message.", audit_log_title: "📜 Audit Log", no_audit_logs: "No actions logged yet.", delete_room_confirm: "Delete this room and all its messages? This cannot be undone.", player_search_placeholder: "🔍 Search player...", accepted: "Accepted", declined: "Declined", tentative: "Tentative", plan_channels_title: "📡 Discord Channels for this Event", plan_channels_none: "No channels configured yet — add some in Management first.",
-                edit: "Edit", link_none: "not linked", link_character: "Linked character", link_already_used: "This character is already linked to another account.", link_no_character: "not linked", link_discord_ok: "Discord linked", link_discord_missing: "No Discord link for this character", link_admin_only: "Only admins can change account links.", link_saved: "Account linked to {name}.", link_removed: "Account link removed.", link_fail: "Could not save the link.", channel_server_unknown: "Server unknown", channel_detect_servers: "Detect servers", channel_detecting: "Detecting servers…", channel_detect_done: "{n} channels matched to a server.", channel_detect_failed: "{n} channels could not be read.", channel_detect_fail: "Server detection failed.", bank_added_at: "Added on", bank_out_of_stock: "out of stock", bank_tooltip_hint_staff: "Click to edit · drag to move", bank_tooltip_hint_member: "Click to request this item", audit_bank_item: "Bank item: {1} {2} → {3}", audit_bank_gold: "Bank gold: {1} → {2}", audit_bank_slot: "Bank slot updated: {1}", audit_bank_deleted: "Removed from bank: {1}", audit_bank_req_deleted: "Bank request deleted: {1}", audit_bank_req_cleared: "Bank request history cleared: {1}", audit_bank_req_approved: "Bank request approved: {1}", audit_bank_req_rejected: "Bank request rejected: {1}", audit_item_edited: "Item record edited: {1}", audit_item_deleted: "Item record deleted: {1}", audit_item_added: "Item record added: {1}", audit_roster_removed: "Removed from roster: {1}", audit_waitlist_promoted: "Moved from waitlist: {1}", audit_name_changed: "Display name changed: {1}", audit_char_trashed: "Character trashed: {1}", audit_char_restored: "Character restored: {1}", audit_role_granted: "Role granted: {1}", audit_role_revoked: "Role revoked: {1}", audit_roll_win: "Roll win: {1}", audit_loot: "Loot: {1}", audit_ann_sent: "Announcement sent: {1}", audit_ann_finalized: "Announcement finalized: {1}", audit_added: "{1} added.", bank_site_name: "Site account", bank_game_nick: "In-game character name", bank_game_nick_hint: "Required — the character that will receive the item.", bank_clear_history: "Clear history", bank_clear_history_confirm: "Delete all {n} records in this column?", bank_delete_request_confirm: "Delete the request for \"{item}\" from {nick}?", bank_moved: "moved", bank_icon_hint: "Only an emoji — letters and numbers are removed.", bank_already_requested: "You already have a pending request for this item.", bank_request_fail: "Could not send the request.", bank_page_title: "GUILD BANK", bank_page_desc: "Items collected from raids and shared resources. Click a slot to request an item; officers review every request. All movements are logged and visible to everyone.", bank_slots: "Storage", bank_qty: "Quantity", bank_desc: "Description", bank_staff_note: "Officer note", bank_added_by: "Added by", bank_icon: "Emoji", bank_img_url: "Image URL (optional)", bank_img_hint: "Paste a direct image link. If empty, the emoji below is used.", bank_img_invalid: "Image link must start with http:// or https://", bank_add_item: "Add Item", bank_edit_item: "Edit Item", bank_name_required: "Item name is required.", bank_edited: "edited", bank_request: "Request", bank_request_title: "Request Item", bank_your_nick: "Your character name", bank_reason: "Why do you need it?", bank_send_request: "Send", bank_nick_required: "Character name is required.", bank_request_sent: "Your request has been sent.", bank_request_login: "Sign in to request items.", bank_requested: "requested", bank_req_pending: "Pending", bank_req_approved: "Approved", bank_req_rejected: "Rejected", bank_no_request: "No requests.", bank_decided_by: "Decided by", bank_note_required: "A note is required for this action.", bank_note_optional: "Note (optional)", bank_given_to: "Given to (optional)", notif_title: "Notifications", notif_empty: "Nothing new.", notif_new_application: "New guild application", notif_new_access_request: "New site access request", notif_upcoming_event: "Upcoming event", bank_title: "Guild Bank", bank_gold: "Gold", bank_deposit: "Deposit", bank_withdraw: "Withdraw", bank_items: "Items", bank_item_name: "Item name", bank_empty: "The bank is empty.", bank_log: "Activity", bank_no_log: "No activity yet.", bank_remove_confirm: "Remove \"{item}\" from the bank?", display_name_permission: "Permission denied — the Firebase rules for Roles/name may not be published yet.", rsvp_scope_label: "Which announcements?", rsvp_scope_all: "All active announcements", rsvp_scope_selected: "Only the ones I choose", rsvp_count_label: "How many reminders", rsvp_no_active: "No upcoming announcements.", display_name_need_role: "You need an approved role to change your display name.", active_ann_title: "Active Events", app_login_first: "Please sign in with Google first, then the application form will open.", tab_applications: "Applications", app_page_title: "APPLICATIONS", app_page_desc: "Guild applications come from players who want to join. Site access requests come from people who signed in with Google and are waiting for a role. Approve, reject or delete each one.", app_guild_col: "Guild Applications", app_site_col: "Site Access Requests", app_site_hint: "These users signed in with Google and are waiting for a role.", app_delete: "Delete", app_delete_admin_only: "Only admins can delete applications.", app_delete_confirm2: "Permanently delete the application from {name}?", app_delete_pending_confirm: "Delete the access request from {name}?", app_moved_note: "Applications and access requests moved to their own tab.", app_go_to_tab: "Open Applications tab", rsvp_allow_optout: "Let members opt out", rsvp_allow_optout_hint: "When off, members cannot see or change this preference.", pref_my_character: "My character", pref_select_character: "select", pref_no_rsvp_dm: "Do not send me RSVP reminder DMs", app_decision_desc: "This message is sent to the applicant by DM. Edit it as you like.", app_decision_send: "Save & Notify", app_decision_saved: "Decision saved.", app_default_approve_msg: "Your guild application has been approved. Welcome to HUNS!", app_default_reject_msg: "Thank you for applying. Unfortunately we cannot accept your application at this time.", app_no_discord_uid: "No Discord account on this application — the decision will be saved but no DM can be sent.", dup_link_title: "Discord link conflicts", dup_link_multi_main: "One Discord user is linked to multiple main characters: {names}", dup_link_multi_discord: "{name} is linked to {n} different Discord users", dup_link_hint: "Reinc characters inherit the parent link automatically — they should not be linked separately.", app_already_member: "You are already a guild member.", app_login_required: "Please sign in with Google before applying.", app_readonly_note: "Answers are read-only. Officers can only approve or reject.", rsvp_title: "RSVP Reminders", rsvp_enabled: "Enabled", rsvp_desc: "Players who have not voted on an announcement receive an automatic DM. Set up to three different times before the event.", rsvp_hours_label: "Hours before event", rsvp_hours_hint: "0 disables that slot. Example: 24 / 6 / 1", rsvp_msg_label: "Message (leave empty for default)", app_title: "Membership Applications", app_questions_label: "Form questions", app_list_label: "Applications", app_new_question: "New question…", app_required: "required", app_no_questions: "No questions defined.", app_label_required: "Question text is required.", app_delete_confirm: "Delete question \"{q}\"?", app_move_up: "Move up", app_move_down: "Move down", app_none: "No applications yet.", app_pending: "Pending", app_approved: "Approved", app_rejected: "Rejected", app_approve: "Approve", app_reject: "Reject", app_apply_btn: "GUILD APPLY", app_form_title: "Membership Application", app_form_desc: "Fill in the form below. An officer will review your application.", app_submit: "Submit", app_submitted: "Your application has been submitted.", app_submit_fail: "Could not submit application.", app_fill_required: "Please fill in: {q}", raiddom_share_btn: "Send Assignments", raiddom_modal_title: "Raid Dominion — Share", raiddom_modal_desc: "Each player receives only their own assignment by DM. The full roster is never posted to a channel.", raiddom_note_label: "Raid leader note (sent to everyone)", raiddom_btn_dm: "Send by DM", raiddom_btn_png: "Download PNG", raiddom_btn_channel: "Post to channel", raiddom_will_receive: "Will receive a DM", raiddom_not_linked: "Not linked to Discord", raiddom_not_linked_hint: "Link them on the Discord Linking tab so they can receive assignments.", raiddom_no_recipients: "No one in the roster is linked to Discord yet.", raiddom_sending: "Sending to {n} players…", raiddom_sent: "{sent} of {total} assignments delivered.", raiddom_dm_status: "DM Status", raiddom_people: "players", raiddom_delivered: "Delivered", raiddom_failed: "Not delivered", dm_reason_dm_closed: "DMs are closed", dm_reason_forbidden: "no shared server with the bot", dm_reason_unknown_user: "Discord user not found", dm_reason_rate_limited: "rate limited, try again", dm_reason_not_linked: "not linked to Discord", dm_reason_error: "unknown error", item_edit_title: "Edit Item Record", item_edit_dkp_hint: "Only the record is changed; the player's DKP is not recalculated.", is_reinc: "This is a reincarnation", reinc_select_parent: "select main character", reinc_parent_required: "Select which character this is a reincarnation of.", reinc_self: "A character cannot be its own reincarnation.", reinc_same_roster: "{name} cannot be added: {other} is the same player and is already in the roster.", linked_characters: "Linked characters", change_display_name: "Click to change your display name", display_name_title: "Display Name", display_name_desc: "This is how you appear on the site and in the \"Created by\" line of Discord announcements.", display_name_hint: "2-24 characters.", display_name_invalid: "Name must be 2-24 characters.", display_name_saved: "Display name updated.", display_name_fail: "Could not update display name.", grant_member: "Member", tab_access_denied: "You do not have access to this page.", channel_purpose: "Channel purpose", roll_setup_title: "Loot Roll", roll_setup_contenders: "players in the draw", roll_item_label: "Item name", roll_dkp_label: "DKP cost", roll_dkp_hint: "Deducted from the winner. May go negative.", roll_setup_go: "Roll", roll_item_required: "Item name is required.", roll_channel_ok: "Result will be posted to: {name}", roll_channel_missing: "No loot channel set — mark one in Management.", item_search_label: "Item history search", item_search_placeholder: "🎁 Type an item name…", item_search_none: "No matching item records.", item_search_records: "records", items_title: "Items received", items_none: "No items yet.", item_edit_name: "Item name", item_edit_dkp: "DKP cost", item_delete_confirm: "Delete \"{item}\" from {name}?", skip_to_content: "Skip to content", prompt_url: "Enter URL:", prompt_image_url: "Enter image URL:", invalid_link: "Invalid link!", prompt_youtube: "YouTube video link (watch?v=... or youtu.be/...):", hard_delete_confirm: "Permanently delete this character? This cannot be undone.", raid_full: "Raid is full!", min_one_player: "At least 1 player required!", delete_history_q: "Delete history?", clear_history_q: "Clear history?", no_one_to_penalize: "No one to penalize.", select_one_roll: "Select at least one ROLL!", error: "Error", empty: "Empty.", stale_title: "Roster changed after sharing", stale_desc: "The image shared to Discord on {when} no longer matches the current roster.", stale_reshare: "Share again", stale_dismiss: "Dismiss", tab_linked_to: "Linked to", tab_link_missing: "Linked announcement not found", dup_name_warn: "A character named \"{existing}\" already exists. Add \"{name}\" anyway?", plan_conflict_warn: "{name} is already in another active event: {plans}. Add anyway?", dup_ann_warn: "An announcement titled \"{title}\" was already sent in the last 2 minutes. Send again?", fill_none: "No accepted players linked to site characters yet.", fill_already: "Everyone who accepted is already in the roster.", fill_confirm: "Add {n} players who accepted to the roster?", fill_done: "{placed} added to roster, {wait} moved to waitlist.", fill_button: "Fill Roster From Accepted", waitlist_title: "Waitlist", waitlist_promote: "Move to roster", rolestats_total: "active characters", rolestats_title: "Roster Composition", notes_placeholder: "📝 Short note (e.g. joins late on Thursdays)", stats_attendance: "Attendance", stats_history: "Change History", stats_no_discord_link: "No Discord link — link this character on the Discord Linking tab to see attendance.", stats_no_events: "No completed events yet.", stats_no_history: "No records yet.", stats_no_reply: "no reply", stats_of_total: "of {n} events", roll_item_placeholder: "🎁 Item name (optional)", audit_clear_confirm: "Clear all audit logs?", purge_button: "Purge Old Deleted Characters", purge_hint: "Permanently removes characters deleted more than 180 days ago. A backup is downloaded first.", purge_none: "No characters deleted more than {days} days ago.", purge_unknown_age: "({n} deleted characters have no deletion date and were skipped.)", purge_confirm: "Permanently delete {n} characters deleted over {days} days ago? ({names}) This cannot be undone. A backup will be downloaded first.", purge_done: "{n} characters permanently removed.", backup_title: "Backup & Restore", backup_desc: "Download a full copy of all guild data, or restore from a previously downloaded file. The server also keeps automatic daily backups for 30 days.", backup_download: "Download Backup", backup_restore: "Restore From File", backup_done: "Downloaded.", backup_fail: "Backup operation failed.", backup_admin_only: "Only admins can restore a backup.", backup_bad_file: "This file is not a valid backup.", backup_restored: "Backup restored.", backup_confirm: "Restore backup from {date}? It contains {players} players and {plans} raid plans. ALL current data will be replaced. A copy of the current data will be downloaded first.", save_saving: "Saving", save_saved: "Saved", save_error: "Save failed", plan_max_reached: "Maximum {n} players!", api_auth_required: "You must be signed in to do this. Refresh the page and sign in again.", discord_bot_settings: "🤖 Discord Bot Settings", discord_bot_settings_note: "These notifications are sent by the bot to every channel added on the right.", share_to_discord: "📤 Share to Discord", select_channels_for_share: "Select which channel(s) to post this to:", share_now: "Share", share_success: "Shared to Discord!", share_fail: "Failed to share.", who_online_title: "🟢 Who's Online", no_one_online: "No one else is online right now.", currently_viewing: "viewing", dkp_loot_log_title: "💰 DKP / Loot Changes", bot_shares_log_title: "📡 Bot Shares", other_actions_log_title: "📋 Other Actions", share_to_discord_prompt: "PNG downloaded! Would you also like to share it to Discord?", dkp_report_caption: "Raid DKP / Loot Report", discordann_rsvp_label: "Send RSVP reminder DMs to members for this announcement", rsvp_enabled_admin_hint: "Only admins can turn the system on or off.", rsvp_ann_count_hint: "The small selector sets how many reminders that announcement gets (counted from the times closest to the event).", rsvp_dm_status_title: "RSVP DM Status", rsvp_dm_status_desc: "Who the bot could not reach for each reminder, and why.", rsvp_dm_none: "No reminder runs yet.", rsvp_dm_sent: "{sent}/{total} delivered", rsvp_dm_all_ok: "Everyone was reached",
+                edit: "Edit", link_none: "not linked", link_character: "Linked character", link_already_used: "This character is already linked to another account.", link_no_character: "not linked", link_discord_ok: "Discord linked", link_discord_missing: "No Discord link for this character", link_admin_only: "Only admins can change account links.", link_saved: "Account linked to {name}.", link_removed: "Account link removed.", link_fail: "Could not save the link.", channel_server_unknown: "Server unknown", channel_detect_servers: "Detect servers", channel_detecting: "Detecting servers…", channel_detect_done: "{n} channels matched to a server.", channel_detect_failed: "{n} channels could not be read.", channel_detect_fail: "Server detection failed.", bank_added_at: "Added on", bank_out_of_stock: "out of stock", bank_tooltip_hint_staff: "Click to edit · drag to move", bank_tooltip_hint_member: "Click to request this item", audit_bank_item: "Bank item: {1} {2} → {3}", audit_bank_gold: "Bank gold: {1} → {2}", audit_bank_slot: "Bank slot updated: {1}", audit_bank_deleted: "Removed from bank: {1}", audit_bank_req_deleted: "Bank request deleted: {1}", audit_bank_req_cleared: "Bank request history cleared: {1}", audit_bank_req_approved: "Bank request approved: {1}", audit_bank_req_rejected: "Bank request rejected: {1}", audit_item_edited: "Item record edited: {1}", audit_item_deleted: "Item record deleted: {1}", audit_item_added: "Item record added: {1}", audit_roster_removed: "Removed from roster: {1}", audit_waitlist_promoted: "Moved from waitlist: {1}", audit_name_changed: "Display name changed: {1}", audit_char_trashed: "Character trashed: {1}", audit_char_restored: "Character restored: {1}", audit_role_granted: "Role granted: {1}", audit_role_revoked: "Role revoked: {1}", audit_roll_win: "Roll win: {1}", audit_loot: "Loot: {1}", audit_ann_sent: "Announcement sent: {1}", audit_ann_finalized: "Announcement finalized: {1}", audit_added: "{1} added.", bank_site_name: "Site account", bank_game_nick: "In-game character name", bank_game_nick_hint: "Required — the character that will receive the item.", bank_clear_history: "Clear history", bank_clear_history_confirm: "Delete all {n} records in this column?", bank_delete_request_confirm: "Delete the request for \"{item}\" from {nick}?", bank_moved: "moved", bank_icon_hint: "Only an emoji — letters and numbers are removed.", bank_already_requested: "You already have a pending request for this item.", bank_request_fail: "Could not send the request.", bank_page_title: "GUILD BANK", bank_page_desc: "Items collected from raids and shared resources. Click a slot to request an item; officers review every request. All movements are logged and visible to everyone.", bank_slots: "Storage", bank_qty: "Quantity", bank_desc: "Description", bank_staff_note: "Officer note", bank_added_by: "Added by", bank_icon: "Emoji", bank_img_url: "Image URL (optional)", bank_img_hint: "Paste a direct image link. If empty, the emoji below is used.", bank_img_invalid: "Image link must start with http:// or https://", bank_add_item: "Add Item", bank_edit_item: "Edit Item", bank_name_required: "Item name is required.", bank_edited: "edited", bank_request: "Request", bank_request_title: "Request Item", bank_your_nick: "Your character name", bank_reason: "Why do you need it?", bank_send_request: "Send", bank_nick_required: "Character name is required.", bank_request_sent: "Your request has been sent.", bank_request_login: "Sign in to request items.", bank_requested: "requested", bank_req_pending: "Pending", bank_req_approved: "Approved", bank_req_rejected: "Rejected", bank_no_request: "No requests.", bank_decided_by: "Decided by", bank_note_required: "A note is required for this action.", bank_note_optional: "Note (optional)", bank_given_to: "Given to (optional)", notif_title: "Notifications", notif_empty: "Nothing new.", notif_new_application: "New guild application", notif_new_access_request: "New site access request", notif_upcoming_event: "Upcoming event", bank_title: "Guild Bank", bank_gold: "Gold", bank_deposit: "Deposit", bank_withdraw: "Withdraw", bank_items: "Items", bank_item_name: "Item name", bank_empty: "The bank is empty.", bank_log: "Activity", bank_no_log: "No activity yet.", bank_remove_confirm: "Remove \"{item}\" from the bank?", display_name_permission: "Permission denied — the Firebase rules for Roles/name may not be published yet.", rsvp_scope_label: "Which announcements?", rsvp_scope_all: "All active announcements", rsvp_scope_selected: "Only the ones I choose", rsvp_count_label: "How many reminders", rsvp_no_active: "No upcoming announcements.", display_name_need_role: "You need an approved role to change your display name.", active_ann_title: "Active Events", app_login_first: "Please sign in with Google first, then the application form will open.", tab_applications: "Applications", app_page_title: "APPLICATIONS", app_page_desc: "Guild applications come from players who want to join. Site access requests come from people who signed in with Google and are waiting for a role. Approve, reject or delete each one.", app_guild_col: "Guild Applications", app_site_col: "Site Access Requests", app_site_hint: "These users signed in with Google and are waiting for a role.", app_delete: "Delete", app_delete_admin_only: "Only admins can delete applications.", app_delete_confirm2: "Permanently delete the application from {name}?", app_delete_pending_confirm: "Delete the access request from {name}?", app_moved_note: "Applications and access requests moved to their own tab.", app_go_to_tab: "Open Applications tab", rsvp_allow_optout: "Let members opt out", rsvp_allow_optout_hint: "When off, members cannot see or change this preference.", pref_my_character: "My character", pref_select_character: "select", pref_no_rsvp_dm: "Do not send me RSVP reminder DMs", app_decision_desc: "This message is sent to the applicant by DM. Edit it as you like.", app_decision_send: "Save & Notify", app_decision_saved: "Decision saved.", app_default_approve_msg: "Your guild application has been approved. Welcome to HUNS!", app_default_reject_msg: "Thank you for applying. Unfortunately we cannot accept your application at this time.", app_no_discord_uid: "No Discord account on this application — the decision will be saved but no DM can be sent.", dup_link_title: "Discord link conflicts", dup_link_multi_main: "One Discord user is linked to multiple main characters: {names}", dup_link_multi_discord: "{name} is linked to {n} different Discord users", dup_link_hint: "Reinc characters inherit the parent link automatically — they should not be linked separately.", app_already_member: "You are already a guild member.", app_login_required: "Please sign in with Google before applying.", app_readonly_note: "Answers are read-only. Officers can only approve or reject.", rsvp_title: "RSVP Reminders", rsvp_enabled: "Enabled", rsvp_desc: "Players who have not voted on an announcement receive an automatic DM. Set up to three different times before the event.", rsvp_hours_label: "Hours before event", rsvp_hours_hint: "0 disables that slot. Example: 24 / 6 / 1", rsvp_msg_label: "Message (leave empty for default)", app_title: "Membership Applications", app_questions_label: "Form questions", app_list_label: "Applications", app_new_question: "New question…", app_required: "required", app_no_questions: "No questions defined.", app_label_required: "Question text is required.", app_delete_confirm: "Delete question \"{q}\"?", app_move_up: "Move up", app_move_down: "Move down", app_none: "No applications yet.", app_pending: "Pending", app_approved: "Approved", app_rejected: "Rejected", app_approve: "Approve", app_reject: "Reject", app_apply_btn: "GUILD APPLY", app_form_title: "Membership Application", app_form_desc: "Fill in the form below. An officer will review your application.", app_submit: "Submit", app_submitted: "Your application has been submitted.", app_submit_fail: "Could not submit application.", app_fill_required: "Please fill in: {q}", raiddom_share_btn: "Send Assignments", raiddom_modal_title: "Raid Dominion — Share", raiddom_modal_desc: "Each player receives only their own assignment by DM. The full roster is never posted to a channel.", raiddom_note_label: "Raid leader note (sent to everyone)", raiddom_btn_dm: "Send by DM", raiddom_btn_png: "Download PNG", raiddom_btn_channel: "Post to channel", raiddom_will_receive: "Will receive a DM", raiddom_not_linked: "Not linked to Discord", raiddom_not_linked_hint: "Link them on the Discord Linking tab so they can receive assignments.", raiddom_no_recipients: "No one in the roster is linked to Discord yet.", raiddom_sending: "Sending to {n} players…", raiddom_sent: "{sent} of {total} assignments delivered.", raiddom_dm_status: "DM Status", raiddom_people: "players", raiddom_delivered: "Delivered", raiddom_failed: "Not delivered", dm_reason_dm_closed: "DMs are closed", dm_reason_forbidden: "no shared server with the bot", dm_reason_unknown_user: "Discord user not found", dm_reason_rate_limited: "rate limited, try again", dm_reason_not_linked: "not linked to Discord", dm_reason_error: "unknown error", item_edit_title: "Edit Item Record", item_edit_dkp_hint: "Only the record is changed; the player's DKP is not recalculated.", is_reinc: "This is a reincarnation", reinc_select_parent: "select main character", reinc_parent_required: "Select which character this is a reincarnation of.", reinc_self: "A character cannot be its own reincarnation.", reinc_same_roster: "{name} cannot be added: {other} is the same player and is already in the roster.", linked_characters: "Linked characters", change_display_name: "Click to change your display name", display_name_title: "Display Name", display_name_desc: "This is how you appear on the site and in the \"Created by\" line of Discord announcements.", display_name_hint: "2-24 characters.", display_name_invalid: "Name must be 2-24 characters.", display_name_saved: "Display name updated.", display_name_fail: "Could not update display name.", grant_member: "Member", tab_access_denied: "You do not have access to this page.", channel_purpose: "Channel purpose", roll_setup_title: "Loot Roll", roll_setup_contenders: "players in the draw", roll_item_label: "Item name", roll_dkp_label: "DKP cost", roll_dkp_hint: "Deducted from the winner. May go negative.", roll_setup_go: "Roll", roll_item_required: "Item name is required.", roll_channel_ok: "Result will be posted to: {name}", roll_channel_missing: "No loot channel set — mark one in Management.", item_search_label: "Item history search", item_search_placeholder: "🎁 Type an item name…", item_search_none: "No matching item records.", item_search_records: "records", items_title: "Items received", items_none: "No items yet.", item_edit_name: "Item name", item_edit_dkp: "DKP cost", item_delete_confirm: "Delete \"{item}\" from {name}?", skip_to_content: "Skip to content", prompt_url: "Enter URL:", prompt_image_url: "Enter image URL:", invalid_link: "Invalid link!", prompt_youtube: "YouTube video link (watch?v=... or youtu.be/...):", hard_delete_confirm: "Permanently delete this character? This cannot be undone.", raid_full: "Raid is full!", min_one_player: "At least 1 player required!", delete_history_q: "Delete history?", clear_history_q: "Clear history?", no_one_to_penalize: "No one to penalize.", select_one_roll: "Select at least one ROLL!", error: "Error", empty: "Empty.", stale_title: "Roster changed after sharing", stale_desc: "The image shared to Discord on {when} no longer matches the current roster.", stale_reshare: "Share again", stale_dismiss: "Dismiss", tab_linked_to: "Linked to", tab_link_missing: "Linked announcement not found", dup_name_warn: "A character named \"{existing}\" already exists. Add \"{name}\" anyway?", plan_conflict_warn: "{name} is already in another active event: {plans}. Add anyway?", dup_ann_warn: "An announcement titled \"{title}\" was already sent in the last 2 minutes. Send again?", fill_none: "No accepted players linked to site characters yet.", fill_already: "Everyone who accepted is already in the roster.", fill_confirm: "Add {n} players who accepted to the roster?", fill_done: "{placed} added to roster, {wait} moved to waitlist.", fill_button: "Fill Roster From Accepted", waitlist_title: "Waitlist", waitlist_promote: "Move to roster", rolestats_total: "active characters", rolestats_title: "Roster Composition", notes_placeholder: "📝 Short note (e.g. joins late on Thursdays)", stats_attendance: "Attendance", stats_history: "Change History", stats_no_discord_link: "No Discord link — link this character on the Discord Linking tab to see attendance.", stats_no_events: "No completed events yet.", stats_no_history: "No records yet.", stats_no_reply: "no reply", stats_of_total: "of {n} events", roll_item_placeholder: "🎁 Item name (optional)", audit_clear_confirm: "Clear all audit logs?", purge_button: "Purge Old Deleted Characters", purge_hint: "Permanently removes characters deleted more than 180 days ago. A backup is downloaded first.", purge_none: "No characters deleted more than {days} days ago.", purge_unknown_age: "({n} deleted characters have no deletion date and were skipped.)", purge_confirm: "Permanently delete {n} characters deleted over {days} days ago? ({names}) This cannot be undone. A backup will be downloaded first.", purge_done: "{n} characters permanently removed.", backup_title: "Backup & Restore", backup_desc: "Download a full copy of all guild data, or restore from a previously downloaded file. The server also keeps automatic daily backups for 30 days.", backup_download: "Download Backup", backup_restore: "Restore From File", backup_done: "Downloaded.", backup_fail: "Backup operation failed.", backup_admin_only: "Only admins can restore a backup.", backup_bad_file: "This file is not a valid backup.", backup_restored: "Backup restored.", backup_confirm: "Restore backup from {date}? It contains {players} players and {plans} raid plans. ALL current data will be replaced. A copy of the current data will be downloaded first.", save_saving: "Saving", save_saved: "Saved", save_error: "Save failed", plan_max_reached: "Maximum {n} players!", api_auth_required: "You must be signed in to do this. Refresh the page and sign in again.", discord_bot_settings: "🤖 Discord Bot Settings", discord_bot_settings_note: "These notifications are sent by the bot to every channel added on the right.", share_to_discord: "📤 Share to Discord", select_channels_for_share: "Select which channel(s) to post this to:", share_now: "Share", share_success: "Shared to Discord!", share_fail: "Failed to share.", who_online_title: "🟢 Who's Online", no_one_online: "No one else is online right now.", currently_viewing: "viewing", dkp_loot_log_title: "💰 DKP / Loot Changes", bot_shares_log_title: "📡 Bot Shares", other_actions_log_title: "📋 Other Actions", share_to_discord_prompt: "PNG downloaded! Would you also like to share it to Discord?", dkp_report_caption: "Raid DKP / Loot Report", discordann_rsvp_label: "Send RSVP reminder DMs to members for this announcement", rsvp_enabled_admin_hint: "Only admins can turn the system on or off.", rsvp_ann_count_hint: "The small selector sets how many reminders that announcement gets (counted from the times closest to the event).", rsvp_dm_status_title: "RSVP DM Status", rsvp_dm_status_desc: "Who the bot could not reach for each reminder, and why.", rsvp_dm_none: "No reminder runs yet.", rsvp_dm_sent: "{sent}/{total} delivered", rsvp_dm_all_ok: "Everyone was reached", eu_time_label: "EU server", bank_req_limit_label: "Weekly request limit", bank_req_limit_hint: "Max approved requests per person per week. 0 = unlimited.", bank_req_limit_reached: "You have reached your weekly approved request limit ({n}). Try again next week.", bank_req_limit_block: "{name} already has {n} approved requests this week — the weekly limit is reached.", tab_tactics: "🗺️ Tactics", tct_page_title: "DOMINION TACTICS", tct_page_desc: "Pick a map and sketch your strategy. Drawings are personal: only you see them, and you can download the result as an image.", tct_admin_title: "Map Management", tct_map_name: "Map name", tct_map_img: "Image URL (https://...)", tct_map_desc: "Description", tct_map_save: "Add Map", tct_map_update: "Save Changes", tct_map_cancel: "Cancel", tct_img_hint: "Use a direct image link (e.g. uploaded to Discord). The image must allow cross-site use, otherwise PNG export will not work.", tct_no_maps: "No maps yet. An admin can add maps above.", tct_name_required: "Map name is required.", tct_delete_confirm: "Delete map \"{name}\"? Everyone loses access to it.", tct_back: "Maps", tct_export: "Download PNG", tct_red: "Red", tct_blue: "Blue", tct_help: "✋ tool: drag empty area to pan, drag a player token to move it. Double-click a token to rename. Eraser removes strokes and tokens. Mouse wheel / pinch to zoom.", tct_tool_hand: "Move / Pan", tct_tool_pen: "Pen", tct_tool_line: "Line", tct_tool_arrow: "Arrow", tct_tool_erase: "Eraser", tct_clear: "Clear all", tct_clear_confirm: "Clear all drawings and players on this map?", tct_team_full: "This team is full ({n} players).", tct_player_name: "Player name:", tct_img_load_fail: "Map image could not be loaded.", tct_export_cors: "PNG could not be created: the image host does not allow cross-site use (CORS). Upload the map image to Discord and use that link.",
                 you: "you", also_editing: "Also viewing this plan",
                 tab_scheduledposts: "⏰ Scheduled Posts", scheduled_posts_title: "⏰ Scheduled Posts", scheduled_posts_desc: "These run on the server, even if no one has the site open. Note: the image must be a fixed link (e.g. an already-uploaded picture) — a live screenshot of the site cannot be generated automatically here.", create_scheduled_post: "+ Create New Scheduled Post", label_for_yourself: "Label (for yourself)", image_url_optional: "Image URL (optional)", message_text: "Message Text", target_channels: "Target Channels", schedule_type: "Schedule Type", sched_type_once: "Once", sched_type_interval_count: "Repeat N times (every X hours)", sched_type_interval_forever: "Repeat forever (every X hours)", sched_type_weekly: "Weekly (specific day + time, TR time)", date_time_tr: "Date & Time (TR time)", every_x_hours: "Every X hours", repeat_count: "How many times", day_of_week: "Day of Week", day_monday: "Monday", day_tuesday: "Tuesday", day_wednesday: "Wednesday", day_thursday: "Thursday", day_friday: "Friday", day_saturday: "Saturday", day_sunday: "Sunday", time_tr: "Time (TR time)", create_scheduled_post_btn: "Create", scheduled_post_created: "Scheduled post created.", no_scheduled_posts: "No scheduled posts yet.", active: "Active", paused_or_done: "Paused / Done", next_fire: "Next", fired_count: "Sent", pause: "Pause", resume: "Resume", delete_scheduled_post_confirm: "Delete this scheduled post? This cannot be undone.", every: "every", hours_short: "h",
                 online_now_title: "🟢 Online Now", category_dkp_loot: "💰 DKP / Loot Changes", category_discord_bot: "📢 Discord Bot Shares", category_general: "⚙️ General", no_one_online: "No one online right now.",
@@ -1578,7 +1649,7 @@
                 png_capture_fail: "PNG oluşturulamadı. Lütfen tekrar deneyin.",
                 delete_ann_confirm: "Bu duyuru tamamen silinsin mi? Bu işlem mesajı Discord'dan kaldırır ve siteden de tamamen siler — geri alınamaz.", delete_ann_success: "Duyuru hem Discord'dan hem siteden silindi.", delete_ann_fail: "Silme başarısız oldu.",
                 msg_cooldown: "Başka bir mesaj göndermeden önce {s} saniye daha bekle.", audit_log_title: "📜 İşlem Kaydı", no_audit_logs: "Henüz kayıtlı bir işlem yok.", delete_room_confirm: "Bu oda ve içindeki tüm mesajlar silinsin mi? Bu işlem geri alınamaz.", player_search_placeholder: "🔍 Oyuncu ara...", accepted: "Katılıyor", declined: "Katılmıyor", tentative: "Belki", plan_channels_title: "📡 Bu Etkinlik İçin Discord Kanalları", plan_channels_none: "Henüz kanal eklenmemiş — önce Yönetim'den ekle.",
-                edit: "Düzenle", link_none: "bağlı değil", link_character: "Bağlı karakter", link_already_used: "Bu karakter başka bir hesaba bağlı.", link_no_character: "bağlı değil", link_discord_ok: "Discord bağlı", link_discord_missing: "Bu karakterin Discord eşleştirmesi yok", link_admin_only: "Hesap bağlantısını yalnızca admin değiştirebilir.", link_saved: "Hesap {name} karakterine bağlandı.", link_removed: "Hesap bağlantısı kaldırıldı.", link_fail: "Bağlantı kaydedilemedi.", channel_server_unknown: "Sunucu bilinmiyor", channel_detect_servers: "Sunucuları tespit et", channel_detecting: "Sunucular tespit ediliyor…", channel_detect_done: "{n} kanal bir sunucuya eşleştirildi.", channel_detect_failed: "{n} kanal okunamadı.", channel_detect_fail: "Sunucu tespiti başarısız oldu.", bank_added_at: "Eklenme", bank_out_of_stock: "stokta yok", bank_tooltip_hint_staff: "Düzenlemek için tıkla · taşımak için sürükle", bank_tooltip_hint_member: "İstek göndermek için tıkla", audit_bank_item: "Banka eşya: {1} {2} → {3}", audit_bank_gold: "Banka altın: {1} → {2}", audit_bank_slot: "Banka slotu güncellendi: {1}", audit_bank_deleted: "Bankadan silindi: {1}", audit_bank_req_deleted: "Banka isteği silindi: {1}", audit_bank_req_cleared: "Banka istek geçmişi temizlendi: {1}", audit_bank_req_approved: "Banka isteği onaylandı: {1}", audit_bank_req_rejected: "Banka isteği reddedildi: {1}", audit_item_edited: "Eşya kaydı düzenlendi: {1}", audit_item_deleted: "Eşya kaydı silindi: {1}", audit_item_added: "Eşya kaydı eklendi: {1}", audit_roster_removed: "Kadrodan çıkarıldı: {1}", audit_waitlist_promoted: "Yedekten kadroya alındı: {1}", audit_name_changed: "Görünen isim değiştirildi: {1}", audit_char_trashed: "Karakter çöpe atıldı: {1}", audit_char_restored: "Karakter kurtarıldı: {1}", audit_role_granted: "Yetki verildi: {1}", audit_role_revoked: "Yetki alındı: {1}", audit_roll_win: "Zar kazananı: {1}", audit_loot: "Loot: {1}", audit_ann_sent: "Duyuru gönderildi: {1}", audit_ann_finalized: "Duyuru sonlandırıldı: {1}", audit_added: "{1} eklendi.", bank_site_name: "Site hesabı", bank_game_nick: "Oyun içi karakter adı", bank_game_nick_hint: "Zorunlu — eşyayı alacak karakter.", bank_clear_history: "Geçmişi temizle", bank_clear_history_confirm: "Bu sütundaki {n} kaydın hepsi silinsin mi?", bank_delete_request_confirm: "{nick} kişisinin \"{item}\" isteği silinsin mi?", bank_moved: "taşıdı", bank_icon_hint: "Sadece emoji — harf ve rakamlar temizlenir.", bank_already_requested: "Bu eşya için zaten bekleyen bir isteğin var.", bank_request_fail: "İstek gönderilemedi.", bank_page_title: "GUILD BANKASI", bank_page_desc: "Raidlerden toplanan mamüller ve ortak kaynaklar. Bir slota tıklayıp istek gönderebilirsin; yetkililer her isteği inceler. Tüm hareketler kayda geçer ve herkes görebilir.", bank_slots: "Depo", bank_qty: "Adet", bank_desc: "Açıklama", bank_staff_note: "Yetkili notu", bank_added_by: "Ekleyen", bank_icon: "Simge", bank_img_url: "Görsel adresi (isteğe bağlı)", bank_img_hint: "Doğrudan görsel linki yapıştır. Boş bırakırsan aşağıdaki simge kullanılır.", bank_img_invalid: "Görsel linki http:// veya https:// ile başlamalı.", bank_add_item: "Eşya Ekle", bank_edit_item: "Eşyayı Düzenle", bank_name_required: "Eşya adı zorunlu.", bank_edited: "düzenledi", bank_request: "İstek At", bank_request_title: "Eşya İsteği", bank_your_nick: "Karakter adın", bank_reason: "Neden ihtiyacın var?", bank_send_request: "Gönder", bank_nick_required: "Karakter adı zorunlu.", bank_request_sent: "İsteğin gönderildi.", bank_request_login: "İstek göndermek için giriş yap.", bank_requested: "istek attı", bank_req_pending: "Bekleyen", bank_req_approved: "Onaylanan", bank_req_rejected: "Reddedilen", bank_no_request: "İstek yok.", bank_decided_by: "Karar veren", bank_note_required: "Bu işlem için not yazmak zorunlu.", bank_note_optional: "Not (isteğe bağlı)", bank_given_to: "Kime verildi (isteğe bağlı)", notif_title: "Bildirimler", notif_empty: "Yeni bir şey yok.", notif_new_application: "Yeni guild başvurusu", notif_new_access_request: "Yeni site kayıt isteği", notif_upcoming_event: "Yaklaşan etkinlik", bank_title: "Guild Bankası", bank_gold: "Altın", bank_deposit: "Yatır", bank_withdraw: "Çek", bank_items: "Eşyalar", bank_item_name: "Eşya adı", bank_empty: "Banka boş.", bank_log: "Hareketler", bank_no_log: "Henüz hareket yok.", bank_remove_confirm: "\"{item}\" bankadan çıkarılsın mı?", display_name_permission: "İzin reddedildi — Firebase kurallarındaki Roles/name izni henüz yayınlanmamış olabilir.", rsvp_scope_label: "Hangi duyurular?", rsvp_scope_all: "Tüm aktif duyurular", rsvp_scope_selected: "Sadece seçtiklerim", rsvp_count_label: "Kaç hatırlatma", rsvp_no_active: "Yaklaşan duyuru yok.", display_name_need_role: "Görünen ismi değiştirmek için onaylanmış bir role sahip olmalısın.", active_ann_title: "Aktif Etkinlikler", app_login_first: "Önce Google ile giriş yap, ardından başvuru formu açılacak.", tab_applications: "Başvurular", app_page_title: "BAŞVURULAR", app_page_desc: "Guild başvuruları katılmak isteyen oyunculardan gelir. Site kayıt istekleri ise Google ile giriş yapıp yetki bekleyen kişilerdir. Her birini onaylayabilir, reddedebilir ya da silebilirsin.", app_guild_col: "Guild Başvuruları", app_site_col: "Site Kayıt İstekleri", app_site_hint: "Bu kişiler Google ile giriş yaptı ve yetki bekliyor.", app_delete: "Sil", app_delete_admin_only: "Başvuruyu yalnızca admin silebilir.", app_delete_confirm2: "{name} kişisinin başvurusu kalıcı olarak silinsin mi?", app_delete_pending_confirm: "{name} kişisinin kayıt isteği silinsin mi?", app_moved_note: "Başvurular ve kayıt istekleri kendi sekmesine taşındı.", app_go_to_tab: "Başvurular sekmesini aç", rsvp_allow_optout: "Üyeler kapatabilsin", rsvp_allow_optout_hint: "Kapalıyken üyeler bu tercihi göremez ve değiştiremez.", pref_my_character: "Karakterim", pref_select_character: "seç", pref_no_rsvp_dm: "RSVP hatırlatma mesajı gönderilmesin", app_decision_desc: "Bu mesaj adaya DM ile gönderilir. İstediğin gibi düzenleyebilirsin.", app_decision_send: "Kaydet ve Bildir", app_decision_saved: "Karar kaydedildi.", app_default_approve_msg: "Guild başvurun onaylandı. HUNS'a hoş geldin!", app_default_reject_msg: "Başvurun için teşekkürler. Maalesef şu an için başvurunu kabul edemiyoruz.", app_no_discord_uid: "Bu başvuruda Discord hesabı yok — karar kaydedilir ama DM gönderilemez.", dup_link_title: "Discord eşleştirme çakışması", dup_link_multi_main: "Bir Discord kullanıcısı birden fazla ana karaktere bağlı: {names}", dup_link_multi_discord: "{name} karakteri {n} farklı Discord kullanıcısına bağlı", dup_link_hint: "Reinc karakterler ata karakterin bağlantısını otomatik alır — ayrıca eşleştirilmemeli.", app_already_member: "Zaten guild üyesisin.", app_login_required: "Başvurmadan önce Google ile giriş yap.", app_readonly_note: "Cevaplar salt okunurdur. Yetkililer yalnızca onaylayabilir veya reddedebilir.", rsvp_title: "RSVP Hatırlatmaları", rsvp_enabled: "Etkin", rsvp_desc: "Duyuruya oy vermemiş kişilere otomatik DM gönderilir. Etkinlikten önce üç farklı zaman belirleyebilirsin.", rsvp_hours_label: "Etkinlikten kaç saat önce", rsvp_hours_hint: "0 o slotu kapatır. Örnek: 24 / 6 / 1", rsvp_msg_label: "Mesaj (boş bırakırsan varsayılan kullanılır)", app_title: "Üyelik Başvuruları", app_questions_label: "Form soruları", app_list_label: "Başvurular", app_new_question: "Yeni soru…", app_required: "zorunlu", app_no_questions: "Tanımlı soru yok.", app_label_required: "Soru metni zorunlu.", app_delete_confirm: "\"{q}\" sorusu silinsin mi?", app_move_up: "Yukarı taşı", app_move_down: "Aşağı taşı", app_none: "Henüz başvuru yok.", app_pending: "Bekliyor", app_approved: "Onaylandı", app_rejected: "Reddedildi", app_approve: "Onayla", app_reject: "Reddet", app_apply_btn: "GUILD BAŞVURU", app_form_title: "Üyelik Başvurusu", app_form_desc: "Aşağıdaki formu doldur. Bir yetkili başvurunu inceleyecek.", app_submit: "Gönder", app_submitted: "Başvurun gönderildi.", app_submit_fail: "Başvuru gönderilemedi.", app_fill_required: "Lütfen doldur: {q}", raiddom_share_btn: "Görevleri Gönder", raiddom_modal_title: "Raid Dominion — Paylaşım", raiddom_modal_desc: "Her oyuncu yalnızca kendi görevini DM ile alır. Kadro hiçbir kanala gönderilmez.", raiddom_note_label: "Yönetici notu (herkese gider)", raiddom_btn_dm: "DM ile gönder", raiddom_btn_png: "PNG indir", raiddom_btn_channel: "Kanalda paylaş", raiddom_will_receive: "DM alacaklar", raiddom_not_linked: "Discord eşleştirmesi yok", raiddom_not_linked_hint: "Görev alabilmeleri için Discord Eşleştirme sekmesinden bağla.", raiddom_no_recipients: "Kadroda Discord ile eşleştirilmiş kimse yok.", raiddom_sending: "{n} kişiye gönderiliyor…", raiddom_sent: "{total} kişiden {sent} tanesine ulaştı.", raiddom_dm_status: "DM Durumu", raiddom_people: "kişi", raiddom_delivered: "Ulaştı", raiddom_failed: "Ulaşmadı", dm_reason_dm_closed: "DM'leri kapalı", dm_reason_forbidden: "bot ile ortak sunucu yok", dm_reason_unknown_user: "Discord kullanıcısı bulunamadı", dm_reason_rate_limited: "oran limiti, tekrar dene", dm_reason_not_linked: "Discord eşleştirmesi yok", dm_reason_error: "bilinmeyen hata", item_edit_title: "Eşya Kaydını Düzenle", item_edit_dkp_hint: "Sadece kayıt değişir; oyuncunun DKP'si yeniden hesaplanmaz.", is_reinc: "Bu bir reincarnation", reinc_select_parent: "ana karakteri seç", reinc_parent_required: "Kimin reinci olduğunu seç.", reinc_self: "Bir karakter kendi reinci olamaz.", reinc_same_roster: "{name} eklenemez: {other} aynı oyuncu ve zaten kadroda.", linked_characters: "Bağlı karakterler", change_display_name: "Görünen ismini değiştirmek için tıkla", display_name_title: "Görünen İsim", display_name_desc: "Sitede ve Discord duyurularındaki \"Created by\" satırında bu isimle görünürsün.", display_name_hint: "2-24 karakter.", display_name_invalid: "İsim 2-24 karakter olmalı.", display_name_saved: "Görünen isim güncellendi.", display_name_fail: "Görünen isim güncellenemedi.", grant_member: "Üye", tab_access_denied: "Bu sayfaya erişim yetkiniz yok.", channel_purpose: "Kanal amacı", roll_setup_title: "Loot Çekilişi", roll_setup_contenders: "kişi çekilişte", roll_item_label: "Eşya adı", roll_dkp_label: "DKP değeri", roll_dkp_hint: "Kazanandan düşülür. Eksiye düşebilir.", roll_setup_go: "Zar At", roll_item_required: "Eşya adı zorunlu.", roll_channel_ok: "Sonuç şu kanala gönderilecek: {name}", roll_channel_missing: "Loot kanalı seçilmemiş — Yönetim'den işaretle.", item_search_label: "Eşya geçmişi arama", item_search_placeholder: "🎁 Eşya adı yaz…", item_search_none: "Eşleşen eşya kaydı yok.", item_search_records: "kayıt", items_title: "Alınan eşyalar", items_none: "Henüz eşya yok.", item_edit_name: "Eşya adı", item_edit_dkp: "DKP değeri", item_delete_confirm: "\"{item}\" kaydı {name} karakterinden silinsin mi?", skip_to_content: "İçeriğe atla", prompt_url: "Bağlantı adresi:", prompt_image_url: "Görsel adresi:", invalid_link: "Geçersiz link!", prompt_youtube: "YouTube video linki (watch?v=... veya youtu.be/...):", hard_delete_confirm: "Karakteri kalıcı olarak silmek istediğinize emin misiniz? Bu işlem geri alınamaz.", raid_full: "Kadro dolu!", min_one_player: "En az 1 oyuncu gerekli!", delete_history_q: "Geçmiş silinsin mi?", clear_history_q: "Geçmiş temizlensin mi?", no_one_to_penalize: "Ceza verilecek kimse yok.", select_one_roll: "En az bir ROLL seçin!", error: "Hata", empty: "Boş.", stale_title: "Paylaşımdan sonra kadro değişti", stale_desc: "{when} tarihinde Discord'a gönderilen görsel artık güncel kadroyu göstermiyor.", stale_reshare: "Tekrar paylaş", stale_dismiss: "Kapat", tab_linked_to: "Bağlı duyuru", tab_link_missing: "Bağlı duyuru bulunamadı", dup_name_warn: "\"{existing}\" adında bir karakter zaten var. \"{name}\" yine de eklensin mi?", plan_conflict_warn: "{name} başka bir aktif etkinlikte zaten var: {plans}. Yine de eklensin mi?", dup_ann_warn: "\"{title}\" başlıklı bir duyuru son 2 dakika içinde zaten gönderildi. Tekrar gönderilsin mi?", fill_none: "Kabul edenler arasında siteyle eşleştirilmiş karakter yok.", fill_already: "Kabul eden herkes zaten kadroda.", fill_confirm: "Kabul eden {n} kişi kadroya eklensin mi?", fill_done: "{placed} kişi kadroya eklendi, {wait} kişi yedeğe alındı.", fill_button: "Kabul Edenleri Kadroya Doldur", waitlist_title: "Yedek Liste", waitlist_promote: "Kadroya al", rolestats_total: "aktif karakter", rolestats_title: "Kadro Dağılımı", notes_placeholder: "📝 Kısa not (örn. perşembe geç geliyor)", stats_attendance: "Katılım", stats_history: "Değişim Geçmişi", stats_no_discord_link: "Discord eşleştirmesi yok — katılımı görmek için Discord Eşleştirme sekmesinden bağla.", stats_no_events: "Henüz tamamlanmış etkinlik yok.", stats_no_history: "Henüz kayıt yok.", stats_no_reply: "yanıtsız", stats_of_total: "{n} etkinlikte", roll_item_placeholder: "🎁 Eşya adı (isteğe bağlı)", audit_clear_confirm: "Tüm işlem kayıtları silinsin mi?", purge_button: "Eski Silinmişleri Temizle", purge_hint: "180 günden uzun süre önce silinmiş karakterleri kalıcı olarak kaldırır. Önce yedek indirilir.", purge_none: "{days} günden uzun süre önce silinmiş karakter yok.", purge_unknown_age: "({n} silinmiş karakterin silinme tarihi yok, atlandı.)", purge_confirm: "{days} günden önce silinmiş {n} karakter kalıcı olarak kaldırılsın mı? ({names}) Bu işlem geri alınamaz. Önce yedek indirilecek.", purge_done: "{n} karakter kalıcı olarak kaldırıldı.", backup_title: "Yedekleme & Geri Yükleme", backup_desc: "Tüm guild verisinin tam kopyasını indir ya da daha önce indirdiğin bir dosyadan geri yükle. Sunucu ayrıca her gün otomatik yedek alıyor ve 30 gün saklıyor.", backup_download: "Yedeği İndir", backup_restore: "Dosyadan Geri Yükle", backup_done: "İndirildi.", backup_fail: "Yedekleme işlemi başarısız oldu.", backup_admin_only: "Geri yüklemeyi sadece admin yapabilir.", backup_bad_file: "Bu dosya geçerli bir yedek değil.", backup_restored: "Yedek geri yüklendi.", backup_confirm: "{date} tarihli yedek geri yüklensin mi? İçinde {players} oyuncu ve {plans} raid planı var. MEVCUT TÜM VERİ değiştirilecek. Önce mevcut verinin bir kopyası indirilecek.", save_saving: "Kaydediliyor", save_saved: "Kaydedildi", save_error: "Kaydedilemedi", plan_max_reached: "En fazla {n} kişi!", api_auth_required: "Bu işlem için giriş yapmış olmanız gerekiyor. Sayfayı yenileyip tekrar giriş yapın.", discord_bot_settings: "🤖 Discord Bot Ayarları", discord_bot_settings_note: "Bu bildirimler, bot tarafından sağdaki tüm kanallara gönderilir.", share_to_discord: "📤 Discord'a Paylaş", select_channels_for_share: "Bunu hangi kanal(lar)a paylaşmak istersin:", share_now: "Paylaş", share_success: "Discord'a paylaşıldı!", share_fail: "Paylaşılamadı.", who_online_title: "🟢 Kim Online", no_one_online: "Şu an başka kimse online değil.", currently_viewing: "şurada", dkp_loot_log_title: "💰 DKP / Loot Değişiklikleri", bot_shares_log_title: "📡 Bot Paylaşımları", other_actions_log_title: "📋 Diğer İşlemler", share_to_discord_prompt: "PNG indirildi! Bunu Discord'a da paylaşmak ister misin?", dkp_report_caption: "Raid DKP / Loot Raporu", discordann_rsvp_label: "Bu duyuru için üyelere özelden RSVP hatırlatması gönderilsin", rsvp_enabled_admin_hint: "Sistemi yalnızca admin açıp kapatabilir.", rsvp_ann_count_hint: "Küçük seçici o duyurunun kaç hatırlatma alacağını belirler (etkinliğe en yakın zamanlardan sayılır).", rsvp_dm_status_title: "RSVP DM Durumu", rsvp_dm_status_desc: "Bot her hatırlatmada kimlere ulaşamadı ve neden — burada görünür.", rsvp_dm_none: "Henüz hatırlatma gönderimi yok.", rsvp_dm_sent: "{sent}/{total} kişiye ulaştı", rsvp_dm_all_ok: "Herkese ulaşıldı",
+                edit: "Düzenle", link_none: "bağlı değil", link_character: "Bağlı karakter", link_already_used: "Bu karakter başka bir hesaba bağlı.", link_no_character: "bağlı değil", link_discord_ok: "Discord bağlı", link_discord_missing: "Bu karakterin Discord eşleştirmesi yok", link_admin_only: "Hesap bağlantısını yalnızca admin değiştirebilir.", link_saved: "Hesap {name} karakterine bağlandı.", link_removed: "Hesap bağlantısı kaldırıldı.", link_fail: "Bağlantı kaydedilemedi.", channel_server_unknown: "Sunucu bilinmiyor", channel_detect_servers: "Sunucuları tespit et", channel_detecting: "Sunucular tespit ediliyor…", channel_detect_done: "{n} kanal bir sunucuya eşleştirildi.", channel_detect_failed: "{n} kanal okunamadı.", channel_detect_fail: "Sunucu tespiti başarısız oldu.", bank_added_at: "Eklenme", bank_out_of_stock: "stokta yok", bank_tooltip_hint_staff: "Düzenlemek için tıkla · taşımak için sürükle", bank_tooltip_hint_member: "İstek göndermek için tıkla", audit_bank_item: "Banka eşya: {1} {2} → {3}", audit_bank_gold: "Banka altın: {1} → {2}", audit_bank_slot: "Banka slotu güncellendi: {1}", audit_bank_deleted: "Bankadan silindi: {1}", audit_bank_req_deleted: "Banka isteği silindi: {1}", audit_bank_req_cleared: "Banka istek geçmişi temizlendi: {1}", audit_bank_req_approved: "Banka isteği onaylandı: {1}", audit_bank_req_rejected: "Banka isteği reddedildi: {1}", audit_item_edited: "Eşya kaydı düzenlendi: {1}", audit_item_deleted: "Eşya kaydı silindi: {1}", audit_item_added: "Eşya kaydı eklendi: {1}", audit_roster_removed: "Kadrodan çıkarıldı: {1}", audit_waitlist_promoted: "Yedekten kadroya alındı: {1}", audit_name_changed: "Görünen isim değiştirildi: {1}", audit_char_trashed: "Karakter çöpe atıldı: {1}", audit_char_restored: "Karakter kurtarıldı: {1}", audit_role_granted: "Yetki verildi: {1}", audit_role_revoked: "Yetki alındı: {1}", audit_roll_win: "Zar kazananı: {1}", audit_loot: "Loot: {1}", audit_ann_sent: "Duyuru gönderildi: {1}", audit_ann_finalized: "Duyuru sonlandırıldı: {1}", audit_added: "{1} eklendi.", bank_site_name: "Site hesabı", bank_game_nick: "Oyun içi karakter adı", bank_game_nick_hint: "Zorunlu — eşyayı alacak karakter.", bank_clear_history: "Geçmişi temizle", bank_clear_history_confirm: "Bu sütundaki {n} kaydın hepsi silinsin mi?", bank_delete_request_confirm: "{nick} kişisinin \"{item}\" isteği silinsin mi?", bank_moved: "taşıdı", bank_icon_hint: "Sadece emoji — harf ve rakamlar temizlenir.", bank_already_requested: "Bu eşya için zaten bekleyen bir isteğin var.", bank_request_fail: "İstek gönderilemedi.", bank_page_title: "GUILD BANKASI", bank_page_desc: "Raidlerden toplanan mamüller ve ortak kaynaklar. Bir slota tıklayıp istek gönderebilirsin; yetkililer her isteği inceler. Tüm hareketler kayda geçer ve herkes görebilir.", bank_slots: "Depo", bank_qty: "Adet", bank_desc: "Açıklama", bank_staff_note: "Yetkili notu", bank_added_by: "Ekleyen", bank_icon: "Simge", bank_img_url: "Görsel adresi (isteğe bağlı)", bank_img_hint: "Doğrudan görsel linki yapıştır. Boş bırakırsan aşağıdaki simge kullanılır.", bank_img_invalid: "Görsel linki http:// veya https:// ile başlamalı.", bank_add_item: "Eşya Ekle", bank_edit_item: "Eşyayı Düzenle", bank_name_required: "Eşya adı zorunlu.", bank_edited: "düzenledi", bank_request: "İstek At", bank_request_title: "Eşya İsteği", bank_your_nick: "Karakter adın", bank_reason: "Neden ihtiyacın var?", bank_send_request: "Gönder", bank_nick_required: "Karakter adı zorunlu.", bank_request_sent: "İsteğin gönderildi.", bank_request_login: "İstek göndermek için giriş yap.", bank_requested: "istek attı", bank_req_pending: "Bekleyen", bank_req_approved: "Onaylanan", bank_req_rejected: "Reddedilen", bank_no_request: "İstek yok.", bank_decided_by: "Karar veren", bank_note_required: "Bu işlem için not yazmak zorunlu.", bank_note_optional: "Not (isteğe bağlı)", bank_given_to: "Kime verildi (isteğe bağlı)", notif_title: "Bildirimler", notif_empty: "Yeni bir şey yok.", notif_new_application: "Yeni guild başvurusu", notif_new_access_request: "Yeni site kayıt isteği", notif_upcoming_event: "Yaklaşan etkinlik", bank_title: "Guild Bankası", bank_gold: "Altın", bank_deposit: "Yatır", bank_withdraw: "Çek", bank_items: "Eşyalar", bank_item_name: "Eşya adı", bank_empty: "Banka boş.", bank_log: "Hareketler", bank_no_log: "Henüz hareket yok.", bank_remove_confirm: "\"{item}\" bankadan çıkarılsın mı?", display_name_permission: "İzin reddedildi — Firebase kurallarındaki Roles/name izni henüz yayınlanmamış olabilir.", rsvp_scope_label: "Hangi duyurular?", rsvp_scope_all: "Tüm aktif duyurular", rsvp_scope_selected: "Sadece seçtiklerim", rsvp_count_label: "Kaç hatırlatma", rsvp_no_active: "Yaklaşan duyuru yok.", display_name_need_role: "Görünen ismi değiştirmek için onaylanmış bir role sahip olmalısın.", active_ann_title: "Aktif Etkinlikler", app_login_first: "Önce Google ile giriş yap, ardından başvuru formu açılacak.", tab_applications: "Başvurular", app_page_title: "BAŞVURULAR", app_page_desc: "Guild başvuruları katılmak isteyen oyunculardan gelir. Site kayıt istekleri ise Google ile giriş yapıp yetki bekleyen kişilerdir. Her birini onaylayabilir, reddedebilir ya da silebilirsin.", app_guild_col: "Guild Başvuruları", app_site_col: "Site Kayıt İstekleri", app_site_hint: "Bu kişiler Google ile giriş yaptı ve yetki bekliyor.", app_delete: "Sil", app_delete_admin_only: "Başvuruyu yalnızca admin silebilir.", app_delete_confirm2: "{name} kişisinin başvurusu kalıcı olarak silinsin mi?", app_delete_pending_confirm: "{name} kişisinin kayıt isteği silinsin mi?", app_moved_note: "Başvurular ve kayıt istekleri kendi sekmesine taşındı.", app_go_to_tab: "Başvurular sekmesini aç", rsvp_allow_optout: "Üyeler kapatabilsin", rsvp_allow_optout_hint: "Kapalıyken üyeler bu tercihi göremez ve değiştiremez.", pref_my_character: "Karakterim", pref_select_character: "seç", pref_no_rsvp_dm: "RSVP hatırlatma mesajı gönderilmesin", app_decision_desc: "Bu mesaj adaya DM ile gönderilir. İstediğin gibi düzenleyebilirsin.", app_decision_send: "Kaydet ve Bildir", app_decision_saved: "Karar kaydedildi.", app_default_approve_msg: "Guild başvurun onaylandı. HUNS'a hoş geldin!", app_default_reject_msg: "Başvurun için teşekkürler. Maalesef şu an için başvurunu kabul edemiyoruz.", app_no_discord_uid: "Bu başvuruda Discord hesabı yok — karar kaydedilir ama DM gönderilemez.", dup_link_title: "Discord eşleştirme çakışması", dup_link_multi_main: "Bir Discord kullanıcısı birden fazla ana karaktere bağlı: {names}", dup_link_multi_discord: "{name} karakteri {n} farklı Discord kullanıcısına bağlı", dup_link_hint: "Reinc karakterler ata karakterin bağlantısını otomatik alır — ayrıca eşleştirilmemeli.", app_already_member: "Zaten guild üyesisin.", app_login_required: "Başvurmadan önce Google ile giriş yap.", app_readonly_note: "Cevaplar salt okunurdur. Yetkililer yalnızca onaylayabilir veya reddedebilir.", rsvp_title: "RSVP Hatırlatmaları", rsvp_enabled: "Etkin", rsvp_desc: "Duyuruya oy vermemiş kişilere otomatik DM gönderilir. Etkinlikten önce üç farklı zaman belirleyebilirsin.", rsvp_hours_label: "Etkinlikten kaç saat önce", rsvp_hours_hint: "0 o slotu kapatır. Örnek: 24 / 6 / 1", rsvp_msg_label: "Mesaj (boş bırakırsan varsayılan kullanılır)", app_title: "Üyelik Başvuruları", app_questions_label: "Form soruları", app_list_label: "Başvurular", app_new_question: "Yeni soru…", app_required: "zorunlu", app_no_questions: "Tanımlı soru yok.", app_label_required: "Soru metni zorunlu.", app_delete_confirm: "\"{q}\" sorusu silinsin mi?", app_move_up: "Yukarı taşı", app_move_down: "Aşağı taşı", app_none: "Henüz başvuru yok.", app_pending: "Bekliyor", app_approved: "Onaylandı", app_rejected: "Reddedildi", app_approve: "Onayla", app_reject: "Reddet", app_apply_btn: "GUILD BAŞVURU", app_form_title: "Üyelik Başvurusu", app_form_desc: "Aşağıdaki formu doldur. Bir yetkili başvurunu inceleyecek.", app_submit: "Gönder", app_submitted: "Başvurun gönderildi.", app_submit_fail: "Başvuru gönderilemedi.", app_fill_required: "Lütfen doldur: {q}", raiddom_share_btn: "Görevleri Gönder", raiddom_modal_title: "Raid Dominion — Paylaşım", raiddom_modal_desc: "Her oyuncu yalnızca kendi görevini DM ile alır. Kadro hiçbir kanala gönderilmez.", raiddom_note_label: "Yönetici notu (herkese gider)", raiddom_btn_dm: "DM ile gönder", raiddom_btn_png: "PNG indir", raiddom_btn_channel: "Kanalda paylaş", raiddom_will_receive: "DM alacaklar", raiddom_not_linked: "Discord eşleştirmesi yok", raiddom_not_linked_hint: "Görev alabilmeleri için Discord Eşleştirme sekmesinden bağla.", raiddom_no_recipients: "Kadroda Discord ile eşleştirilmiş kimse yok.", raiddom_sending: "{n} kişiye gönderiliyor…", raiddom_sent: "{total} kişiden {sent} tanesine ulaştı.", raiddom_dm_status: "DM Durumu", raiddom_people: "kişi", raiddom_delivered: "Ulaştı", raiddom_failed: "Ulaşmadı", dm_reason_dm_closed: "DM'leri kapalı", dm_reason_forbidden: "bot ile ortak sunucu yok", dm_reason_unknown_user: "Discord kullanıcısı bulunamadı", dm_reason_rate_limited: "oran limiti, tekrar dene", dm_reason_not_linked: "Discord eşleştirmesi yok", dm_reason_error: "bilinmeyen hata", item_edit_title: "Eşya Kaydını Düzenle", item_edit_dkp_hint: "Sadece kayıt değişir; oyuncunun DKP'si yeniden hesaplanmaz.", is_reinc: "Bu bir reincarnation", reinc_select_parent: "ana karakteri seç", reinc_parent_required: "Kimin reinci olduğunu seç.", reinc_self: "Bir karakter kendi reinci olamaz.", reinc_same_roster: "{name} eklenemez: {other} aynı oyuncu ve zaten kadroda.", linked_characters: "Bağlı karakterler", change_display_name: "Görünen ismini değiştirmek için tıkla", display_name_title: "Görünen İsim", display_name_desc: "Sitede ve Discord duyurularındaki \"Created by\" satırında bu isimle görünürsün.", display_name_hint: "2-24 karakter.", display_name_invalid: "İsim 2-24 karakter olmalı.", display_name_saved: "Görünen isim güncellendi.", display_name_fail: "Görünen isim güncellenemedi.", grant_member: "Üye", tab_access_denied: "Bu sayfaya erişim yetkiniz yok.", channel_purpose: "Kanal amacı", roll_setup_title: "Loot Çekilişi", roll_setup_contenders: "kişi çekilişte", roll_item_label: "Eşya adı", roll_dkp_label: "DKP değeri", roll_dkp_hint: "Kazanandan düşülür. Eksiye düşebilir.", roll_setup_go: "Zar At", roll_item_required: "Eşya adı zorunlu.", roll_channel_ok: "Sonuç şu kanala gönderilecek: {name}", roll_channel_missing: "Loot kanalı seçilmemiş — Yönetim'den işaretle.", item_search_label: "Eşya geçmişi arama", item_search_placeholder: "🎁 Eşya adı yaz…", item_search_none: "Eşleşen eşya kaydı yok.", item_search_records: "kayıt", items_title: "Alınan eşyalar", items_none: "Henüz eşya yok.", item_edit_name: "Eşya adı", item_edit_dkp: "DKP değeri", item_delete_confirm: "\"{item}\" kaydı {name} karakterinden silinsin mi?", skip_to_content: "İçeriğe atla", prompt_url: "Bağlantı adresi:", prompt_image_url: "Görsel adresi:", invalid_link: "Geçersiz link!", prompt_youtube: "YouTube video linki (watch?v=... veya youtu.be/...):", hard_delete_confirm: "Karakteri kalıcı olarak silmek istediğinize emin misiniz? Bu işlem geri alınamaz.", raid_full: "Kadro dolu!", min_one_player: "En az 1 oyuncu gerekli!", delete_history_q: "Geçmiş silinsin mi?", clear_history_q: "Geçmiş temizlensin mi?", no_one_to_penalize: "Ceza verilecek kimse yok.", select_one_roll: "En az bir ROLL seçin!", error: "Hata", empty: "Boş.", stale_title: "Paylaşımdan sonra kadro değişti", stale_desc: "{when} tarihinde Discord'a gönderilen görsel artık güncel kadroyu göstermiyor.", stale_reshare: "Tekrar paylaş", stale_dismiss: "Kapat", tab_linked_to: "Bağlı duyuru", tab_link_missing: "Bağlı duyuru bulunamadı", dup_name_warn: "\"{existing}\" adında bir karakter zaten var. \"{name}\" yine de eklensin mi?", plan_conflict_warn: "{name} başka bir aktif etkinlikte zaten var: {plans}. Yine de eklensin mi?", dup_ann_warn: "\"{title}\" başlıklı bir duyuru son 2 dakika içinde zaten gönderildi. Tekrar gönderilsin mi?", fill_none: "Kabul edenler arasında siteyle eşleştirilmiş karakter yok.", fill_already: "Kabul eden herkes zaten kadroda.", fill_confirm: "Kabul eden {n} kişi kadroya eklensin mi?", fill_done: "{placed} kişi kadroya eklendi, {wait} kişi yedeğe alındı.", fill_button: "Kabul Edenleri Kadroya Doldur", waitlist_title: "Yedek Liste", waitlist_promote: "Kadroya al", rolestats_total: "aktif karakter", rolestats_title: "Kadro Dağılımı", notes_placeholder: "📝 Kısa not (örn. perşembe geç geliyor)", stats_attendance: "Katılım", stats_history: "Değişim Geçmişi", stats_no_discord_link: "Discord eşleştirmesi yok — katılımı görmek için Discord Eşleştirme sekmesinden bağla.", stats_no_events: "Henüz tamamlanmış etkinlik yok.", stats_no_history: "Henüz kayıt yok.", stats_no_reply: "yanıtsız", stats_of_total: "{n} etkinlikte", roll_item_placeholder: "🎁 Eşya adı (isteğe bağlı)", audit_clear_confirm: "Tüm işlem kayıtları silinsin mi?", purge_button: "Eski Silinmişleri Temizle", purge_hint: "180 günden uzun süre önce silinmiş karakterleri kalıcı olarak kaldırır. Önce yedek indirilir.", purge_none: "{days} günden uzun süre önce silinmiş karakter yok.", purge_unknown_age: "({n} silinmiş karakterin silinme tarihi yok, atlandı.)", purge_confirm: "{days} günden önce silinmiş {n} karakter kalıcı olarak kaldırılsın mı? ({names}) Bu işlem geri alınamaz. Önce yedek indirilecek.", purge_done: "{n} karakter kalıcı olarak kaldırıldı.", backup_title: "Yedekleme & Geri Yükleme", backup_desc: "Tüm guild verisinin tam kopyasını indir ya da daha önce indirdiğin bir dosyadan geri yükle. Sunucu ayrıca her gün otomatik yedek alıyor ve 30 gün saklıyor.", backup_download: "Yedeği İndir", backup_restore: "Dosyadan Geri Yükle", backup_done: "İndirildi.", backup_fail: "Yedekleme işlemi başarısız oldu.", backup_admin_only: "Geri yüklemeyi sadece admin yapabilir.", backup_bad_file: "Bu dosya geçerli bir yedek değil.", backup_restored: "Yedek geri yüklendi.", backup_confirm: "{date} tarihli yedek geri yüklensin mi? İçinde {players} oyuncu ve {plans} raid planı var. MEVCUT TÜM VERİ değiştirilecek. Önce mevcut verinin bir kopyası indirilecek.", save_saving: "Kaydediliyor", save_saved: "Kaydedildi", save_error: "Kaydedilemedi", plan_max_reached: "En fazla {n} kişi!", api_auth_required: "Bu işlem için giriş yapmış olmanız gerekiyor. Sayfayı yenileyip tekrar giriş yapın.", discord_bot_settings: "🤖 Discord Bot Ayarları", discord_bot_settings_note: "Bu bildirimler, bot tarafından sağdaki tüm kanallara gönderilir.", share_to_discord: "📤 Discord'a Paylaş", select_channels_for_share: "Bunu hangi kanal(lar)a paylaşmak istersin:", share_now: "Paylaş", share_success: "Discord'a paylaşıldı!", share_fail: "Paylaşılamadı.", who_online_title: "🟢 Kim Online", no_one_online: "Şu an başka kimse online değil.", currently_viewing: "şurada", dkp_loot_log_title: "💰 DKP / Loot Değişiklikleri", bot_shares_log_title: "📡 Bot Paylaşımları", other_actions_log_title: "📋 Diğer İşlemler", share_to_discord_prompt: "PNG indirildi! Bunu Discord'a da paylaşmak ister misin?", dkp_report_caption: "Raid DKP / Loot Raporu", discordann_rsvp_label: "Bu duyuru için üyelere özelden RSVP hatırlatması gönderilsin", rsvp_enabled_admin_hint: "Sistemi yalnızca admin açıp kapatabilir.", rsvp_ann_count_hint: "Küçük seçici o duyurunun kaç hatırlatma alacağını belirler (etkinliğe en yakın zamanlardan sayılır).", rsvp_dm_status_title: "RSVP DM Durumu", rsvp_dm_status_desc: "Bot her hatırlatmada kimlere ulaşamadı ve neden — burada görünür.", rsvp_dm_none: "Henüz hatırlatma gönderimi yok.", rsvp_dm_sent: "{sent}/{total} kişiye ulaştı", rsvp_dm_all_ok: "Herkese ulaşıldı", eu_time_label: "EU sunucu", bank_req_limit_label: "Haftalık istek limiti", bank_req_limit_hint: "Kişi başı haftalık en fazla onaylı istek. 0 = sınırsız.", bank_req_limit_reached: "Bu haftaki onaylı istek limitine ulaştın ({n}). Gelecek hafta tekrar deneyebilirsin.", bank_req_limit_block: "{name} bu hafta zaten {n} onaylı istek aldı — haftalık limit dolu.", tab_tactics: "🗺️ Taktik", tct_page_title: "DOMINION TAKTİK", tct_page_desc: "Bir harita seç ve stratejini çiz. Çizimler kişiseldir: yalnızca sen görürsün ve sonucu görsel olarak indirebilirsin.", tct_admin_title: "Harita Yönetimi", tct_map_name: "Harita adı", tct_map_img: "Görsel adresi (https://...)", tct_map_desc: "Açıklama", tct_map_save: "Harita Ekle", tct_map_update: "Değişiklikleri Kaydet", tct_map_cancel: "Vazgeç", tct_img_hint: "Doğrudan görsel linki kullan (örn. Discord'a yüklenmiş). Görsel siteler arası kullanıma izin vermezse PNG indirme çalışmaz.", tct_no_maps: "Henüz harita yok. Admin yukarıdan ekleyebilir.", tct_name_required: "Harita adı zorunlu.", tct_delete_confirm: "\"{name}\" haritası silinsin mi? Herkesin erişimi kalkar.", tct_back: "Haritalar", tct_export: "PNG İndir", tct_red: "Kırmızı", tct_blue: "Mavi", tct_help: "✋ aracı: boş alanı sürükle = haritayı kaydır, oyuncuyu sürükle = taşı. Oyuncuya çift tıkla = yeniden adlandır. Silgi çizgileri ve oyuncuları siler. Tekerlek / iki parmak = yakınlaştır.", tct_tool_hand: "Taşı / Kaydır", tct_tool_pen: "Kalem", tct_tool_line: "Düz çizgi", tct_tool_arrow: "Ok", tct_tool_erase: "Silgi", tct_clear: "Hepsini temizle", tct_clear_confirm: "Bu haritadaki tüm çizim ve oyuncular temizlensin mi?", tct_team_full: "Bu takım dolu ({n} oyuncu).", tct_player_name: "Oyuncu adı:", tct_img_load_fail: "Harita görseli yüklenemedi.", tct_export_cors: "PNG oluşturulamadı: görselin barındığı site, siteler arası kullanıma (CORS) izin vermiyor. Harita görselini Discord'a yükleyip o linki kullan.",
                 you: "sen", also_editing: "Bu planı görüntüleyen diğerleri",
                 tab_scheduledposts: "⏰ Zamanlanmış Paylaşımlar", scheduled_posts_title: "⏰ Zamanlanmış Paylaşımlar", scheduled_posts_desc: "Bunlar sunucu tarafında çalışır, kimse siteyi açık tutmasa bile. Not: görsel sabit bir link olmalı (örn. daha önce yüklenmiş bir resim) — sitenin anlık görüntüsü burada otomatik oluşturulamaz.", create_scheduled_post: "+ Yeni Zamanlanmış Paylaşım Oluştur", label_for_yourself: "Etiket (kendine not)", image_url_optional: "Görsel Linki (opsiyonel)", message_text: "Mesaj Metni", target_channels: "Hedef Kanallar", schedule_type: "Zamanlama Tipi", sched_type_once: "Bir kez", sched_type_interval_count: "Belirli sayıda tekrarla (X saatte bir)", sched_type_interval_forever: "Süresiz tekrarla (X saatte bir)", sched_type_weekly: "Haftalık (belirli gün + saat, TR saati)", date_time_tr: "Tarih & Saat (TR saati)", every_x_hours: "Kaç saatte bir", repeat_count: "Kaç kez", day_of_week: "Haftanın Günü", day_monday: "Pazartesi", day_tuesday: "Salı", day_wednesday: "Çarşamba", day_thursday: "Perşembe", day_friday: "Cuma", day_saturday: "Cumartesi", day_sunday: "Pazar", time_tr: "Saat (TR saati)", create_scheduled_post_btn: "Oluştur", scheduled_post_created: "Zamanlanmış paylaşım oluşturuldu.", no_scheduled_posts: "Henüz zamanlanmış bir paylaşım yok.", active: "Aktif", paused_or_done: "Duraklatıldı / Bitti", next_fire: "Sıradaki", fired_count: "Gönderilen", pause: "Duraklat", resume: "Devam Ettir", delete_scheduled_post_confirm: "Bu zamanlanmış paylaşım silinsin mi? Bu işlem geri alınamaz.", every: "her", hours_short: "sa",
                 online_now_title: "🟢 Şu An Online", category_dkp_loot: "💰 DKP / Loot Değişiklikleri", category_discord_bot: "📢 Discord Bot Paylaşımları", category_general: "⚙️ Genel", no_one_online: "Şu an online kimse yok."
@@ -1794,6 +1865,7 @@
             if (activeTab === 'applications') { renderApplicationList(); renderApplicationQuestionEditor(); }
             if (activeTab === 'scheduledposts') { renderScheduledPostsList(); }
             if (activeTab === 'discordlink') { renderDiscordLinkTable(); }
+            if (activeTab === 'tactics') { renderTacticsMapList(); }
         }
 
         let cloudData = { players: [], history: [], penaltyHistory: [], rolls: [], announcementHtml: "<h1>Welcome to HUNS</h1>", auditLogs: [], adminMessages: [], siteTitles: {}, raidPlans: [], activeTheme: 1, planQuote: "WE RISE FROM ASHES TO CONQUER THE CHAOS!", discordMotivationalMsg: "WE RISE FROM ASHES TO CONQUER THE CHAOS!", discordNotify: { publish: true, announce: true, roll: true }, exportBgUrl: "", exportBgOpacity: 35, discordLinks: {}, discordChannels: [] };
@@ -3584,7 +3656,24 @@
             b.slots = normalizeSlots(b.slots, BANK_SLOT_COUNT);
             b.requests = normalizeList(b.requests);
             b.log = normalizeList(b.log);
+            b.requestLimit = parseInt(b.requestLimit, 10) || 0;   // 0 = sinirsiz
             return b;
+        }
+
+        /** Kisinin son 7 gundeki ONAYLI istek sayisi. */
+        function approvedRequestsThisWeek(siteName) {
+            const b = getBank();
+            const weekAgo = Date.now() - 7 * 24 * 3600 * 1000;
+            return b.requests.filter(r => r && r.status === 'approved' &&
+                String(r.by) === String(siteName) && (r.decidedAt || r.at || 0) >= weekAgo).length;
+        }
+
+        function setBankRequestLimit(val) {
+            if (!isAdmin()) return;
+            const b = getBank();
+            b.requestLimit = Math.max(0, parseInt(val, 10) || 0);
+            logAudit(`Banka haftalık istek limiti: ${b.requestLimit || 'sınırsız'}`);
+            saveBank();
         }
 
         /**
@@ -3778,7 +3867,8 @@
                 gold: Number(b.gold) || 0,
                 slots: compact,
                 requests: b.requests,
-                log: b.log
+                log: b.log,
+                requestLimit: parseInt(b.requestLimit, 10) || 0
             };
             triggerCloudSave('guildBank');
             renderGuildBank();   // getBank() nesneyi tekrar diziye cevirir
@@ -3806,6 +3896,11 @@
                         <input type="number" id="bankGoldAmount" placeholder="0" class="w-28 neon-theme-input px-2 py-2 rounded-lg text-xs outline-none text-amber-400">
                         <button onclick="bankGoldMove(1)" class="bg-emerald-800 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg text-[10px] font-black uppercase transition">+ ${t('bank_deposit')}</button>
                         <button onclick="bankGoldMove(-1)" class="bg-red-900 hover:bg-red-800 text-white px-3 py-2 rounded-lg text-[10px] font-black uppercase transition">&minus; ${t('bank_withdraw')}</button>
+                    </div>` : ''}
+                    ${isAdmin() ? `
+                    <div class="flex items-center gap-2 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2">
+                        <span class="text-[9px] text-slate-400 font-black uppercase tracking-widest">${t('bank_req_limit_label')}</span>
+                        <input type="number" min="0" max="99" value="${b.requestLimit || 0}" onchange="setBankRequestLimit(this.value)" title="${escAttr(t('bank_req_limit_hint'))}" class="w-14 neon-theme-input px-2 py-1 rounded text-xs outline-none text-blue-400 text-center">
                     </div>` : ''}
                 </div>
 
@@ -4165,6 +4260,11 @@
                 if (res.status === 409) {
                     return showCustomAlert(t('bank_already_requested'), t('info'), 'ℹ️');
                 }
+                if (res.status === 429) {
+                    let lim = '';
+                    try { lim = String((await res.json()).limit || ''); } catch (e) {}
+                    return showCustomAlert(t('bank_req_limit_reached').replace('{n}', lim), t('info'), '🚫');
+                }
                 if (!res.ok) {
                     const msg = await apiErrorText(res);
                     return showCustomAlert(t('bank_request_fail') + '\n\n' + msg, t('error'), '❌');
@@ -4196,6 +4296,18 @@
             const b = getBank();
             const req = b.requests.find(r => r && r.id === reqId);
             if (!req) return;
+
+            // HAFTALIK LIMIT: onay, kisinin bu haftaki onayli istek sayisini
+            // limitin uzerine cikaracaksa engellenir (0 = sinirsiz).
+            if (status === 'approved' && b.requestLimit > 0) {
+                const used = approvedRequestsThisWeek(req.by);
+                if (used >= b.requestLimit) {
+                    return showCustomAlert(
+                        t('bank_req_limit_block').replace('{name}', req.by).replace('{n}', String(b.requestLimit)),
+                        t('info'), '🚫');
+                }
+            }
+
             req.status = status;
             req.decidedBy = currentUser.username || '';
             req.decidedAt = Date.now();
@@ -4503,7 +4615,8 @@
             'players', 'raidPlans', 'history', 'penaltyHistory', 'rolls', 'auditLogs',
             'discordChannels', 'discordLinks', 'siteTitles', 'discordNotify', 'rsvpReminder',
             'applicationQuestions', 'announcementHtml', 'planQuote', 'discordMotivationalMsg',
-            'exportBgUrl', 'exportBgOpacity', 'activeTheme', 'adminMessages', 'guildBank'
+            'exportBgUrl', 'exportBgOpacity', 'activeTheme', 'adminMessages', 'guildBank',
+            'tacticsMaps'
         ];
 
         // Sunucudan en az bir kez veri geldi mi? Tam kayit BUNU bekler --
@@ -5867,6 +5980,7 @@
         const TAB_MIN_ROLE = {
             announcements: 'visitor',
             raid:          'member',
+            tactics:       'member',
             plan:          'officer',
             admin:         'admin',
             discordann:    'officer',
@@ -5877,6 +5991,447 @@
         };
         const ROLE_LEVEL = { visitor: 0, member: 1, officer: 2, admin: 3 };
 
+        // ============================================================================
+        // DOMINION TAKTIK SAYFASI
+        // ============================================================================
+        // Haritalar cloudData.tacticsMaps icinde (admin yonetir, guild-write
+        // dogrular). CIZIMLER KISISELDIR: sunucuya yazilmaz, oturum boyunca
+        // bellekte tutulur (harita basina ayri oturum) ve PNG indirilebilir.
+
+        let tctMap = null;              // acik harita tanimi
+        let tctImg = null;              // yuklu Image nesnesi
+        const tctSessions = {};         // mapId -> { strokes:[], players:[] }
+        let tctS = null;                // aktif oturum kisaltmasi
+        let tctTool = 'pen';
+        let tctColor = '#facc15';
+        let tctView = { scale: 1, ox: 0, oy: 0 };
+        let tctEditingId = null;        // admin harita duzenleme
+        let tctPointers = new Map();    // pointerId -> {x,y} (pinch icin)
+        let tctAction = null;           // surmekte olan cizim/tasima
+        let tctPinchStart = null;
+
+        const TCT_COLORS = ['#facc15','#f97316','#ef4444','#22c55e','#06b6d4','#3b82f6','#a855f7','#ec4899','#f1f5f9','#0f172a'];
+        const TCT_TOOLS = [
+            { id: 'hand',  icon: '✋', key: 'tct_tool_hand' },
+            { id: 'pen',   icon: '✏️', key: 'tct_tool_pen' },
+            { id: 'line',  icon: '📏', key: 'tct_tool_line' },
+            { id: 'arrow', icon: '➡️', key: 'tct_tool_arrow' },
+            { id: 'erase', icon: '🧽', key: 'tct_tool_erase' }
+        ];
+
+        function getTacticsMaps() {
+            return Array.isArray(cloudData.tacticsMaps) ? cloudData.tacticsMaps : [];
+        }
+
+        // ------------------------------------------------------ harita listesi
+        function renderTacticsMapList() {
+            const box = document.getElementById('tctMapList');
+            if (!box) return;
+            const maps = getTacticsMaps();
+            if (!maps.length) {
+                box.innerHTML = `<p class="text-[11px] text-slate-500 italic col-span-full">${t('tct_no_maps')}</p>`;
+                return;
+            }
+            box.innerHTML = maps.map(m => `
+                <div class="neon-theme-box rounded-2xl overflow-hidden shadow-lg group">
+                    <div onclick="tctOpenMap('${m.id}')" class="cursor-pointer">
+                        <div class="h-40 bg-slate-950 overflow-hidden">
+                            <img src="${escAttr(m.img)}" alt="${escAttr(m.name)}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+                        </div>
+                        <div class="p-3">
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="text-sm font-black text-slate-100 truncate">${esc(m.name)}</span>
+                                <span class="text-[9px] font-black px-2 py-0.5 rounded-full ${m.mode === 12 ? 'bg-purple-900/40 text-purple-300 border border-purple-700' : 'bg-cyan-900/40 text-cyan-300 border border-cyan-700'}">${m.mode} vs ${m.mode}</span>
+                            </div>
+                            ${m.desc ? `<p class="text-[10px] text-slate-400 mt-1 leading-relaxed line-clamp-2">${esc(m.desc)}</p>` : ''}
+                        </div>
+                    </div>
+                    ${isAdmin() ? `
+                    <div class="flex gap-1 px-3 pb-3">
+                        <button onclick="tctEditMap('${m.id}')" class="flex-1 bg-slate-800 hover:bg-indigo-700 text-slate-300 hover:text-white py-1 rounded text-[9px] font-black uppercase transition">✎ ${t('edit')}</button>
+                        <button onclick="tctDeleteMap('${m.id}')" class="flex-1 bg-slate-800 hover:bg-red-800 text-red-400 hover:text-white py-1 rounded text-[9px] font-black uppercase transition">🗑 ${t('delete')}</button>
+                    </div>` : ''}
+                </div>`).join('');
+        }
+
+        // ------------------------------------------------------ admin yonetimi
+        function tctSaveMap() {
+            if (!isAdmin()) return;
+            const name = document.getElementById('tctMapName').value.trim();
+            const img = document.getElementById('tctMapImg').value.trim();
+            const desc = document.getElementById('tctMapDesc').value.trim();
+            const mode = parseInt(document.getElementById('tctMapMode').value, 10) === 12 ? 12 : 6;
+            if (!name) return showCustomAlert(t('tct_name_required'), t('error'), '⚠️');
+            if (!/^https?:\/\//i.test(img)) return showCustomAlert(t('bank_img_invalid'), t('error'), '⚠️');
+
+            if (!Array.isArray(cloudData.tacticsMaps)) cloudData.tacticsMaps = [];
+            if (tctEditingId) {
+                const m = cloudData.tacticsMaps.find(x => x.id === tctEditingId);
+                if (m) { m.name = name; m.img = img; m.desc = desc; m.mode = mode; }
+                logAudit(`Taktik haritası düzenlendi: ${name}`);
+            } else {
+                cloudData.tacticsMaps.push({ id: 'map_' + Date.now(), name, img, desc, mode });
+                logAudit(`Taktik haritası eklendi: ${name}`);
+            }
+            triggerCloudSave('tacticsMaps');
+            tctCancelEdit();
+            renderTacticsMapList();
+        }
+
+        function tctEditMap(id) {
+            const m = getTacticsMaps().find(x => x.id === id);
+            if (!m) return;
+            tctEditingId = id;
+            document.getElementById('tctMapName').value = m.name || '';
+            document.getElementById('tctMapImg').value = m.img || '';
+            document.getElementById('tctMapDesc').value = m.desc || '';
+            document.getElementById('tctMapMode').value = String(m.mode || 6);
+            document.getElementById('tctSaveMapBtn').innerText = t('tct_map_update');
+            document.getElementById('tctCancelEditBtn').classList.remove('hidden');
+        }
+
+        function tctCancelEdit() {
+            tctEditingId = null;
+            ['tctMapName','tctMapImg','tctMapDesc'].forEach(i => { const el = document.getElementById(i); if (el) el.value = ''; });
+            const b = document.getElementById('tctSaveMapBtn'); if (b) b.innerText = t('tct_map_save');
+            const c = document.getElementById('tctCancelEditBtn'); if (c) c.classList.add('hidden');
+        }
+
+        function tctDeleteMap(id) {
+            if (!isAdmin()) return;
+            const m = getTacticsMaps().find(x => x.id === id);
+            if (!m) return;
+            showCustomConfirm(t('tct_delete_confirm').replace('{name}', m.name), () => {
+                cloudData.tacticsMaps = getTacticsMaps().filter(x => x.id !== id);
+                delete tctSessions[id];
+                logAudit(`Taktik haritası silindi: ${m.name}`);
+                triggerCloudSave('tacticsMaps');
+                renderTacticsMapList();
+            }, t('confirm'), '🗑️');
+        }
+
+        // ------------------------------------------------------ editor acilis
+        function tctOpenMap(id) {
+            const m = getTacticsMaps().find(x => x.id === id);
+            if (!m) return;
+            tctMap = m;
+            if (!tctSessions[id]) tctSessions[id] = { strokes: [], players: [] };
+            tctS = tctSessions[id];
+
+            document.getElementById('tctListView').classList.add('hidden');
+            document.getElementById('tctEditorView').classList.remove('hidden');
+            document.getElementById('tctEditorTitle').textContent = m.name + '  ·  ' + m.mode + 'v' + m.mode;
+            tctRenderToolbar();
+
+            tctImg = new Image();
+            tctImg.crossOrigin = 'anonymous';   // PNG indirme icin sart
+            tctImg.onload = () => { tctResizeCanvas(); tctFitView(); };
+            tctImg.onerror = () => showCustomAlert(t('tct_img_load_fail'), t('error'), '❌');
+            tctImg.src = m.img;
+
+            tctBindCanvas();
+            tctUpdateCounts();
+        }
+
+        function tctCloseEditor() {
+            document.getElementById('tctEditorView').classList.add('hidden');
+            document.getElementById('tctListView').classList.remove('hidden');
+            tctMap = null; tctImg = null; tctS = null;
+        }
+
+        function tctRenderToolbar() {
+            document.getElementById('tctTools').innerHTML = TCT_TOOLS.map(tl =>
+                `<button onclick="tctSetTool('${tl.id}')" id="tctTool_${tl.id}" title="${escAttr(t(tl.key))}" class="tct-btn ${tctTool === tl.id ? 'active' : ''}">${tl.icon}</button>`).join('');
+            document.getElementById('tctColors').innerHTML = TCT_COLORS.map(c =>
+                `<div onclick="tctSetColor('${c}')" title="${c}" class="w-6 h-6 rounded-full cursor-pointer border-2 transition hover:scale-110 ${tctColor === c ? 'border-white scale-110' : 'border-slate-700'}" style="background:${c}"></div>`).join('');
+        }
+        function tctSetTool(id) { tctTool = id; tctRenderToolbar(); }
+        function tctSetColor(c) { tctColor = c; if (tctTool === 'hand' || tctTool === 'erase') tctTool = 'pen'; tctRenderToolbar(); }
+
+        function tctUpdateCounts() {
+            if (!tctMap || !tctS) return;
+            const r = tctS.players.filter(pl => pl.team === 'red').length;
+            const b = tctS.players.filter(pl => pl.team === 'blue').length;
+            const rEl = document.getElementById('tctRedCount'); if (rEl) rEl.textContent = r + '/' + tctMap.mode;
+            const bEl = document.getElementById('tctBlueCount'); if (bEl) bEl.textContent = b + '/' + tctMap.mode;
+        }
+
+        // ------------------------------------------------------ gorunum/cizim
+        function tctResizeCanvas() {
+            const wrap = document.getElementById('tctCanvasWrap');
+            const cv = document.getElementById('tctCanvas');
+            if (!wrap || !cv) return;
+            const dpr = window.devicePixelRatio || 1;
+            cv.width = wrap.clientWidth * dpr;
+            cv.height = wrap.clientHeight * dpr;
+            tctDraw();
+        }
+        window.addEventListener('resize', () => { if (tctMap) tctResizeCanvas(); });
+
+        function tctFitView() {
+            const cv = document.getElementById('tctCanvas');
+            if (!cv || !tctImg || !tctImg.naturalWidth) return;
+            const scale = Math.min(cv.width / tctImg.naturalWidth, cv.height / tctImg.naturalHeight) * 0.98;
+            tctView = {
+                scale,
+                ox: (cv.width - tctImg.naturalWidth * scale) / 2,
+                oy: (cv.height - tctImg.naturalHeight * scale) / 2
+            };
+            tctDraw();
+        }
+
+        function tctZoom(f, cx, cy) {
+            const cv = document.getElementById('tctCanvas');
+            if (!cv) return;
+            if (cx === undefined) { cx = cv.width / 2; cy = cv.height / 2; }
+            const ns = Math.min(12, Math.max(0.1, tctView.scale * f));
+            const k = ns / tctView.scale;
+            tctView.ox = cx - (cx - tctView.ox) * k;
+            tctView.oy = cy - (cy - tctView.oy) * k;
+            tctView.scale = ns;
+            tctDraw();
+        }
+
+        function tctToMap(sx, sy) {
+            return { x: (sx - tctView.ox) / tctView.scale, y: (sy - tctView.oy) / tctView.scale };
+        }
+
+        function tctPlayerRadius() { return tctImg ? Math.max(14, tctImg.naturalWidth / 55) : 18; }
+        function tctStrokeWidth() { return tctImg ? Math.max(3, tctImg.naturalWidth / 300) : 4; }
+
+        function tctDrawStroke(ctx, st) {
+            ctx.strokeStyle = st.color;
+            ctx.lineWidth = st.width;
+            ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+            const pts = st.points;
+            if (!pts || pts.length < 2) return;
+            ctx.beginPath();
+            ctx.moveTo(pts[0].x, pts[0].y);
+            if (st.tool === 'pen') { for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y); }
+            else { ctx.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y); }
+            ctx.stroke();
+            if (st.tool === 'arrow') {
+                const a = pts[0], b = pts[pts.length - 1];
+                const ang = Math.atan2(b.y - a.y, b.x - a.x);
+                const hl = st.width * 4;
+                ctx.beginPath();
+                ctx.moveTo(b.x, b.y);
+                ctx.lineTo(b.x - hl * Math.cos(ang - 0.45), b.y - hl * Math.sin(ang - 0.45));
+                ctx.moveTo(b.x, b.y);
+                ctx.lineTo(b.x - hl * Math.cos(ang + 0.45), b.y - hl * Math.sin(ang + 0.45));
+                ctx.stroke();
+            }
+        }
+
+        function tctDrawPlayers(ctx) {
+            const r = tctPlayerRadius();
+            tctS.players.forEach(pl => {
+                ctx.beginPath();
+                ctx.arc(pl.x, pl.y, r, 0, Math.PI * 2);
+                ctx.fillStyle = pl.team === 'red' ? '#dc2626' : '#2563eb';
+                ctx.fill();
+                ctx.lineWidth = r * 0.16;
+                ctx.strokeStyle = '#f8fafc';
+                ctx.stroke();
+                ctx.fillStyle = '#fff';
+                ctx.font = `bold ${r}px Inter, sans-serif`;
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(String(pl.name || '?').slice(0, 2).toUpperCase(), pl.x, pl.y + r * 0.05);
+                // isim etiketi
+                ctx.font = `bold ${r * 0.85}px Inter, sans-serif`;
+                const label = String(pl.name || '');
+                const tw = ctx.measureText(label).width;
+                ctx.fillStyle = 'rgba(2,6,23,0.75)';
+                ctx.fillRect(pl.x - tw / 2 - r * 0.3, pl.y + r * 1.15, tw + r * 0.6, r * 1.2);
+                ctx.fillStyle = pl.team === 'red' ? '#fca5a5' : '#93c5fd';
+                ctx.fillText(label, pl.x, pl.y + r * 1.75);
+            });
+        }
+
+        function tctDraw() {
+            const cv = document.getElementById('tctCanvas');
+            if (!cv || !tctImg || !tctS) return;
+            const ctx = cv.getContext('2d');
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.fillStyle = '#020617';
+            ctx.fillRect(0, 0, cv.width, cv.height);
+            ctx.setTransform(tctView.scale, 0, 0, tctView.scale, tctView.ox, tctView.oy);
+            if (tctImg.naturalWidth) ctx.drawImage(tctImg, 0, 0);
+            tctS.strokes.forEach(st => tctDrawStroke(ctx, st));
+            if (tctAction && tctAction.stroke) tctDrawStroke(ctx, tctAction.stroke);
+            tctDrawPlayers(ctx);
+        }
+
+        // ------------------------------------------------------ girdi
+        let tctBound = false;
+        function tctBindCanvas() {
+            if (tctBound) return;
+            tctBound = true;
+            const cv = document.getElementById('tctCanvas');
+            const dpr = () => window.devicePixelRatio || 1;
+            const pos = (e) => { const r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) * dpr(), y: (e.clientY - r.top) * dpr() }; };
+
+            cv.addEventListener('pointerdown', (e) => {
+                cv.setPointerCapture(e.pointerId);
+                const p = pos(e);
+                tctPointers.set(e.pointerId, p);
+                if (tctPointers.size === 2) {   // pinch baslangici
+                    const [a, b] = [...tctPointers.values()];
+                    tctPinchStart = { d: Math.hypot(a.x - b.x, a.y - b.y), scale: tctView.scale, cx: (a.x + b.x) / 2, cy: (a.y + b.y) / 2, ox: tctView.ox, oy: tctView.oy };
+                    tctAction = null;
+                    return;
+                }
+                const mp = tctToMap(p.x, p.y);
+                const hit = tctHitPlayer(mp);
+                if (tctTool === 'hand') {
+                    tctAction = hit
+                        ? { type: 'movePlayer', player: hit, dx: hit.x - mp.x, dy: hit.y - mp.y }
+                        : { type: 'pan', sx: p.x, sy: p.y, ox: tctView.ox, oy: tctView.oy };
+                } else if (tctTool === 'erase') {
+                    if (hit) { tctS.players = tctS.players.filter(x => x !== hit); tctUpdateCounts(); }
+                    else tctEraseAt(mp);
+                    tctAction = { type: 'erase' };
+                    tctDraw();
+                } else {
+                    tctAction = { type: 'draw', stroke: { tool: tctTool, color: tctColor, width: tctStrokeWidth(), points: [mp, mp] } };
+                }
+            });
+
+            cv.addEventListener('pointermove', (e) => {
+                if (!tctPointers.has(e.pointerId)) return;
+                const p = pos(e);
+                tctPointers.set(e.pointerId, p);
+                if (tctPointers.size === 2 && tctPinchStart) {
+                    const [a, b] = [...tctPointers.values()];
+                    const d = Math.hypot(a.x - b.x, a.y - b.y);
+                    const f = d / (tctPinchStart.d || 1);
+                    const ns = Math.min(12, Math.max(0.1, tctPinchStart.scale * f));
+                    const k = ns / tctPinchStart.scale;
+                    tctView.scale = ns;
+                    tctView.ox = tctPinchStart.cx - (tctPinchStart.cx - tctPinchStart.ox) * k;
+                    tctView.oy = tctPinchStart.cy - (tctPinchStart.cy - tctPinchStart.oy) * k;
+                    tctDraw();
+                    return;
+                }
+                if (!tctAction) return;
+                const mp = tctToMap(p.x, p.y);
+                if (tctAction.type === 'pan') {
+                    tctView.ox = tctAction.ox + (p.x - tctAction.sx);
+                    tctView.oy = tctAction.oy + (p.y - tctAction.sy);
+                } else if (tctAction.type === 'movePlayer') {
+                    tctAction.player.x = mp.x + tctAction.dx;
+                    tctAction.player.y = mp.y + tctAction.dy;
+                } else if (tctAction.type === 'draw') {
+                    if (tctAction.stroke.tool === 'pen') tctAction.stroke.points.push(mp);
+                    else tctAction.stroke.points[1] = mp;
+                } else if (tctAction.type === 'erase') {
+                    tctEraseAt(mp);
+                }
+                tctDraw();
+            });
+
+            const up = (e) => {
+                tctPointers.delete(e.pointerId);
+                if (tctPointers.size < 2) tctPinchStart = null;
+                if (tctAction && tctAction.type === 'draw') {
+                    const st = tctAction.stroke;
+                    const a = st.points[0], b = st.points[st.points.length - 1];
+                    if (st.points.length > 2 || Math.hypot(b.x - a.x, b.y - a.y) > 2) tctS.strokes.push(st);
+                }
+                tctAction = null;
+                tctDraw();
+            };
+            cv.addEventListener('pointerup', up);
+            cv.addEventListener('pointercancel', up);
+
+            cv.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const p = pos(e);
+                tctZoom(e.deltaY < 0 ? 1.12 : 0.89, p.x, p.y);
+            }, { passive: false });
+
+            cv.addEventListener('dblclick', (e) => {
+                const p = pos(e);
+                const hit = tctHitPlayer(tctToMap(p.x, p.y));
+                if (hit) {
+                    const name = prompt(t('tct_player_name'), hit.name || '');
+                    if (name !== null) { hit.name = name.trim().slice(0, 16) || hit.name; tctDraw(); }
+                }
+            });
+        }
+
+        function tctHitPlayer(mp) {
+            const r = tctPlayerRadius() * 1.2;
+            for (let i = tctS.players.length - 1; i >= 0; i--) {
+                const pl = tctS.players[i];
+                if (Math.hypot(pl.x - mp.x, pl.y - mp.y) <= r) return pl;
+            }
+            return null;
+        }
+
+        function tctEraseAt(mp) {
+            const th = tctStrokeWidth() * 4;
+            tctS.strokes = tctS.strokes.filter(st =>
+                !st.points.some(pt => Math.hypot(pt.x - mp.x, pt.y - mp.y) <= th));
+        }
+
+        function tctUndo() {
+            if (tctS && tctS.strokes.length) { tctS.strokes.pop(); tctDraw(); }
+        }
+
+        function tctClearAll() {
+            if (!tctS) return;
+            showCustomConfirm(t('tct_clear_confirm'), () => {
+                tctS.strokes = []; tctS.players = [];
+                tctUpdateCounts(); tctDraw();
+            }, t('confirm'), '🗑️');
+        }
+
+        function tctAddPlayer(team) {
+            if (!tctMap || !tctS || !tctImg) return;
+            const cur = tctS.players.filter(pl => pl.team === team).length;
+            if (cur >= tctMap.mode) {
+                return showCustomAlert(t('tct_team_full').replace('{n}', tctMap.mode), t('info'), '⚠️');
+            }
+            const name = prompt(t('tct_player_name'), (team === 'red' ? 'R' : 'B') + (cur + 1));
+            if (name === null) return;
+            // Gorunumun ortasina, hafif serpistirerek birak.
+            const cv = document.getElementById('tctCanvas');
+            const c = tctToMap(cv.width / 2, cv.height / 2);
+            tctS.players.push({
+                id: 'pl_' + Date.now() + '_' + Math.floor(Math.random() * 999),
+                team,
+                name: name.trim().slice(0, 16) || (team + (cur + 1)),
+                x: c.x + (Math.random() - 0.5) * tctPlayerRadius() * 6,
+                y: c.y + (Math.random() - 0.5) * tctPlayerRadius() * 6
+            });
+            tctUpdateCounts();
+            tctDraw();
+        }
+
+        // ------------------------------------------------------ PNG indirme
+        function tctExportPng() {
+            if (!tctImg || !tctImg.naturalWidth || !tctS) return;
+            try {
+                const off = document.createElement('canvas');
+                off.width = tctImg.naturalWidth;
+                off.height = tctImg.naturalHeight;
+                const ctx = off.getContext('2d');
+                ctx.drawImage(tctImg, 0, 0);
+                tctS.strokes.forEach(st => tctDrawStroke(ctx, st));
+                tctDrawPlayers(ctx);
+                const a = document.createElement('a');
+                a.download = 'taktik_' + (tctMap.name || 'map').replace(/[^a-z0-9]+/gi, '_') + '.png';
+                a.href = off.toDataURL('image/png');
+                a.click();
+            } catch (e) {
+                // Gorsel CORS izni vermiyorsa tarayici canvas'i "kirli" sayar
+                // ve dataURL uretilemez.
+                console.error('tctExportPng:', e);
+                showCustomAlert(t('tct_export_cors'), t('error'), '❌');
+            }
+        }
+
         function canSeeTab(tabId) {
             const need = TAB_MIN_ROLE[tabId] || 'officer';
             return (ROLE_LEVEL[currentRole()] || 0) >= (ROLE_LEVEL[need] || 0);
@@ -5885,6 +6440,7 @@
         function switchTab(tabId) {
             hideBankTooltip();   // sekme degisince acik kalan bilgi kutusu kapansin
             if (tabId === 'bank') { setTimeout(() => safeRender('guildBank', renderGuildBank), 0); }
+            if (tabId === 'tactics') { setTimeout(() => safeRender('tacticsList', renderTacticsMapList), 0); }
             if (tabId === 'applications') { setTimeout(() => { renderApplicationList(); renderApplicationQuestionEditor(); renderUserCards(); updateAppBadges(); }, 0); }
             if (!canSeeTab(tabId)) {
                 showCustomAlert(t('tab_access_denied'), t('info'), '🔒');
@@ -7235,6 +7791,32 @@ function buildSlotContentCanvasDataUri(name, pills, reincText) {
         // planExportContainer içindeki TÜM <img> etiketlerinin (SVG data-URI'ler dahil) tam
         // yüklenmesini garanti eder. Önceki denemede html2canvas görseller yüklenmeden yakalama
         // yaptığı için kutucuklar boş çıkmıştı — bu fonksiyon o kesin garantiyi sağlıyor.
+        /**
+         * TR SAATI -> EU SUNUCU SAATI ipucu.
+         * Sitedeki tum saatler TURKIYE saati (UTC+3, yaz saati yok) olarak
+         * girilir ve sunucuya oyle kaydedilir — bu DEGISMEDI. Bu fonksiyon
+         * yalnizca girilen saatin Allods EU sunucu saatindeki (CET/CEST,
+         * Berlin) karsiligini aninda gosterir; boylece TR disindaki uyeler
+         * icin dogru saat duyurulur.
+         */
+        function updateEuTimeHint(inputEl, hintId) {
+            const el = document.getElementById(hintId);
+            if (!el) return;
+            const raw = inputEl && inputEl.value;
+            if (!raw) { el.textContent = ''; return; }
+            try {
+                const [d, tm] = raw.split('T');
+                const [y, mo, dd] = d.split('-').map(Number);
+                const [hh, mm] = tm.split(':').map(Number);
+                const utcMs = Date.UTC(y, mo - 1, dd, hh, mm) - 3 * 3600 * 1000; // TR = UTC+3 sabit
+                const eu = new Intl.DateTimeFormat(currentLang === 'tr' ? 'tr-TR' : 'en-GB', {
+                    timeZone: 'Europe/Berlin',
+                    day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
+                }).format(new Date(utcMs));
+                el.textContent = '🇹🇷 TR ' + tm + '  →  🇪🇺 ' + t('eu_time_label') + ' ' + eu;
+            } catch (e) { el.textContent = ''; }
+        }
+
         // html2canvas (~200KB) yalnızca PNG dışa aktarmada gerekiyor.
         // Sayfa açılışını yavaşlatmasın diye ilk ihtiyaç anında yükleniyor.
         let _h2cPromise = null;
