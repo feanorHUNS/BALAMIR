@@ -19,6 +19,7 @@ import { onRequestPost as linkPreview, buildLinkPreviewEmbedFromText } from './f
 import { onRequestPost as guildWrite } from './functions/api/guild-write.js';
 import { onRequestPost as auditLog } from './functions/api/audit-log.js';
 import { onRequestPost as bankRequest } from './functions/api/bank-request.js';
+import { onRequestPost as tacticsMapRoute } from './functions/api/tactics-map.js';
 import { onRequestPost as detectChannels } from './functions/api/detect-channels.js';
 
 // ============================================================================
@@ -54,6 +55,9 @@ const ROUTES = {
     '/api/audit-log':             { handler: auditLog,            minRole: 'officer', limit: 300, windowMs: 600000 },
     // Uyeler banka istegi gonderebilir; bu uc YALNIZCA requests listesine ekler.
     '/api/bank-request':          { handler: bankRequest,         minRole: 'member',  limit: 20,  windowMs: 600000 },
+    // Taktik haritalari: GET herkes (uye+), yazma islemleri handler icinde
+    // ayrica yalnizca admin'e zorlanir. Gorseller gomulu oldugu icin limit genis.
+    '/api/tactics-map':           { handler: tacticsMapRoute,     minRole: 'member',  limit: 120, windowMs: 600000 },
     // Kanallarin hangi Discord sunucusuna ait oldugunu tespit eder.
     '/api/detect-channels':       { handler: detectChannels,      minRole: 'officer', limit: 10,  windowMs: 600000 }
 };
