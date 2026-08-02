@@ -198,15 +198,21 @@ export async function onRequestPost(context) {
     // mevcut deger korunur (istek reddedilmez, yalnizca o alan sabitlenir).
     if (sections.rsvpReminder && typeof sections.rsvpReminder === 'object' && auth.role !== 'admin') {
         try {
-            const curRes = await fetch(fb(env, 'GuildData/rsvpReminder/enabled'));
-            const curEnabled = curRes.ok ? await curRes.json() : null;
-            const effective = curEnabled === null || curEnabled === undefined ? true : curEnabled;
-            if (sections.rsvpReminder.enabled !== effective) {
+            const curRes = await fetch(fb(env, 'GuildData/rsvpReminder'));
+            const cur = (curRes.ok ? await curRes.json() : null) || {};
+            const effEnabled = cur.enabled === undefined || cur.enabled === null ? true : cur.enabled;
+            const effOptOut = cur.allowOptOut === true;
+            if (sections.rsvpReminder.enabled !== effEnabled) {
                 console.log(`[guild-write] ${auth.uid} (${auth.role}) RSVP enabled degisikligi yoksayildi.`);
-                sections.rsvpReminder.enabled = effective;
+                sections.rsvpReminder.enabled = effEnabled;
+            }
+            // "Uyeler kapatabilsin" tercihi de yalnizca admin tarafindan degistirilebilir.
+            if (sections.rsvpReminder.allowOptOut !== effOptOut) {
+                console.log(`[guild-write] ${auth.uid} (${auth.role}) RSVP allowOptOut degisikligi yoksayildi.`);
+                sections.rsvpReminder.allowOptOut = effOptOut;
             }
         } catch (e) {
-            console.error('[guild-write] rsvp enabled kontrolu yapilamadi:', e);
+            console.error('[guild-write] rsvp yetki kontrolu yapilamadi:', e);
         }
     }
 
