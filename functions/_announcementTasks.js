@@ -32,6 +32,36 @@ export async function finalizeAnnouncementCore(env, annId, reason) {
         if (!ann) return { ok: false, notFound: true };
         if (ann.finalized) return { ok: true, alreadyFinalized: true };
 
+        // 0) DUYURU MESAJI HALA DISCORD'DA MI?
+        // Mesaj elle SILINMISSE bu duyuru artik "iptal edilmis" sayilir:
+        // tesekkur mesaji GONDERILMEZ, buton guncellemesi denenmez; yalnizca
+        // Firebase'de kapali olarak isaretlenir. Onceden silinen duyurular icin
+        // bile kanala tesekkur mesaji atilmaya devam ediyordu — sebebi, silinme
+        // kontrolunun 10 dakikada bir yapilmasi ve etkinlik saatinin araya
+        // girebilmesiydi.
+        let messageDeleted = false;
+        if (ann.channelId && ann.messageId) {
+            try {
+                const msgRes = await fetch(
+                    `https://discord.com/api/v10/channels/${ann.channelId}/messages/${ann.messageId}`,
+                    { headers: { 'Authorization': `Bot ${env.DISCORD_BOT_TOKEN}` } });
+                if (msgRes.status === 404) messageDeleted = true;
+            } catch (e) { /* kontrol basarisizsa normal akisa devam */ }
+        }
+        if (messageDeleted) {
+            await fetch(fb(env, `Announcements/${annId}`), {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    finalized: true,
+                    finalizedAt: Date.now(),
+                    finalizedReason: reason || 'auto_expired',
+                    autoClosedReason: 'discord_message_deleted'
+                })
+            });
+            return { ok: true, messageDeleted: true };
+        }
+
         // 1) Tesekkur mesaji
         let thanksMsgId = null;
         try {
