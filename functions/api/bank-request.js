@@ -54,11 +54,14 @@ export async function onRequestPost(context) {
             const limList = Array.isArray(rawLims) ? rawLims : Object.values(rawLims);
             const ov = limList.find(x => x && String(x.name) === me);
             const limit = ov ? (Math.max(0, parseInt(ov.limit, 10) || 0)) : globalLimit;
+            // Donem: 7 = hafta, 14 = iki hafta, 30 = ay (admin secer).
+            const days = [7, 14, 30].includes(parseInt(bank.requestLimitDays, 10))
+                ? parseInt(bank.requestLimitDays, 10) : 7;
             if (limit > 0) {
-                const weekAgo = Date.now() - 7 * 24 * 3600 * 1000;
-                const approvedThisWeek = list.filter(r => r && r.status === 'approved' &&
-                    String(r.by) === me && (r.decidedAt || r.at || 0) >= weekAgo).length;
-                if (approvedThisWeek >= limit) {
+                const since = Date.now() - days * 24 * 3600 * 1000;
+                const approvedInPeriod = list.filter(r => r && r.status === 'approved' &&
+                    String(r.by) === me && (r.decidedAt || r.at || 0) >= since).length;
+                if (approvedInPeriod >= limit) {
                     return json({ error: 'weekly_limit', limit }, 429);
                 }
             }
