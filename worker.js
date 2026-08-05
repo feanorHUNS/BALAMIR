@@ -425,7 +425,27 @@ async function runRsvpReminders(env, announcements, guildData, now) {
     const hours = Array.isArray(cfg.hours) && cfg.hours.length ? cfg.hours : RSVP_DEFAULT_HOURS;
     const links = (guildData && guildData.discordLinks) || {};
     const linkedUids = Object.keys(links);
-    if (linkedUids.length === 0) return;
+
+    // --- HEDEF KITLE -----------------------------------------------------
+    // 'server' (varsayilan): duyurunun paylasildigi Discord SUNUCUSUNDAKI
+    //   tum uyeler (botlar haric). Eslestirme sart degil.
+    // 'linked': eski davranis — yalnizca sitede Discord eslestirmesi
+    //   yapilmis hesaplar.
+    const audience = cfg.audience === 'linked' ? 'linked' : 'server';
+    if (audience === 'linked' && linkedUids.length === 0) return;
+
+    // --- HICBIR AKTIF DUYURUYA OY VERMEYENLER ---------------------------
+    // Kullanicinin istedigi kural: su an ETKIN olan (sonlandirilmamis,
+    // zamani gecmemis) duyurulardan HERHANGI BIRINE tepki vermis kisi
+    // hatirlatma almaz. Yalnizca hicbirine dokunmayanlara gonderilir.
+    const votedAnywhere = new Set();
+    for (const [, a] of Object.entries(announcements)) {
+        if (!a || a.finalized || !a.time) continue;
+        const tms = new Date(a.time).getTime();
+        if (isNaN(tms) || tms <= now) continue;
+        ['accepted', 'declined', 'tentative'].forEach(k =>
+            Object.keys(a[k] || {}).forEach(uid => votedAnywhere.add(uid)));
+    }
 
     // --- Kadro plani YAYINLANMIS duyurular ------------------------------
     // Yalnizca bunlar "bu haftaki raidine yazildi" saymak icin kullanilir;
@@ -483,11 +503,9 @@ async function runRsvpReminders(env, announcements, guildData, now) {
         // sonradan degistirilirse indeks kaymasi eski kilidi gecersiz kilmasin.
         if (!(await claimLock(env, `${annId}_rsvp_h${Number(effHours[slotIndex])}`))) continue;
 
-        const voted = new Set([
-            ...Object.keys(ann.accepted || {}),
-            ...Object.keys(ann.declined || {}),
-            ...Object.keys(ann.tentative || {})
-        ]);
+        // NOT: Bu duyuruya oy verenler zaten `votedAnywhere` icinde —
+        // aktif duyurularin HERHANGI BIRINE tepki veren herkes hedeften
+        // cikariliyor (kullanicinin istedigi kural).
 
         // --- Bu hafta BASKA bir raide zaten yazilmis olanlar --------------
         // Ayni raid haftasindaki, kadro plani yayinlanmis diger duyurularda
@@ -502,15 +520,29 @@ async function runRsvpReminders(env, announcements, guildData, now) {
             Object.keys(other.accepted || {}).forEach(uid => committed.add(uid));
         }
 
-        let targets = linkedUids.filter(uid =>
-            !voted.has(uid) && !committed.has(uid) && !optedOutUids.has(uid));
-
-        // --- Sunucu ayrimi -------------------------------------------------
-        // Duyuru hangi sunucuda paylasildiysa YALNIZCA o sunucunun uyelerine
-        // hatirlatma gider. Bot birden fazla sunucudaysa, baska sunucudaki
-        // birine gormedigi bir duyuru icin mesaj atilmaz.
+        // --- HEDEF LISTESI --------------------------------------------------
+        // Sunucu modunda once duyurunun paylasildigi sunucunun uye listesi
+        // cekilir; boylece eslestirme yapmamis kisiler de hatirlatma alir.
+        // Uye listesi okunamazsa (SERVER MEMBERS INTENT kapali) eski
+        // davranisa guvenli sekilde geri donulur.
         const annGuildId = await guildIdForChannel(env, ann.channelId, guildData);
-        if (annGuildId && targets.length) {
+        let pool = null;
+        let usedServerList = false;
+
+        if (audience === 'server' && annGuildId) {
+            const memberIds = await fetchGuildMemberIds(env, annGuildId);
+            if (memberIds && memberIds.length) { pool = memberIds; usedServerList = true; }
+            else console.warn(`[rsvp] ${annId}: sunucu uye listesi alinamadi, eslestirilmis hesaplara donuluyor.`);
+        }
+        if (!pool) pool = linkedUids;
+
+        let targets = pool.filter(uid =>
+            !votedAnywhere.has(uid) && !committed.has(uid) && !optedOutUids.has(uid));
+
+        // Sunucu listesi kullanilmadiysa kisi kisi sunucu uyeligi dogrulanir
+        // (eslestirilmis hesap baska bir sunucudan olabilir). Sunucu listesi
+        // zaten o sunucudan geldigi icin o durumda bu kontrol gereksiz.
+        if (!usedServerList && annGuildId && targets.length) {
             const inGuild = [];
             for (const uid of targets) {
                 if (await isGuildMember(env, annGuildId, uid)) inGuild.push(uid);
@@ -521,8 +553,14 @@ async function runRsvpReminders(env, announcements, guildData, now) {
             targets = inGuild;
         }
 
+        // Guvenlik siniri: tek turda en fazla 400 DM (oran limiti + sure).
+        if (targets.length > 400) {
+            console.warn(`[rsvp] ${annId}: ${targets.length} hedef 400'e kirpildi.`);
+            targets = targets.slice(0, 400);
+        }
+
         if (targets.length === 0) {
-            console.log(`[rsvp] ${annId}: gonderilecek kimse yok (oy veren ${voted.size}, bu hafta baska raidde ${committed.size}, kapali ${optedOutUids.size}).`);
+            console.log(`[rsvp] ${annId}: gonderilecek kimse yok (aktif duyurulara oy veren ${votedAnywhere.size}, bu hafta baska raidde ${committed.size}, kapali ${optedOutUids.size}).`);
             continue;
         }
 
@@ -610,6 +648,55 @@ async function runRsvpReminders(env, announcements, guildData, now) {
  *
  * Admin bu ozelligi kapattiysa (allowOptOut !== true) tercih YOK SAYILIR.
  */
+/**
+ * Bir Discord sunucusundaki TUM uyeleri listeler (botlar haric).
+ *
+ * NEDEN: RSVP hatirlatmalari eskiden yalnizca sitede "Discord Eslestirme"
+ * yapilmis hesaplara gidiyordu — sunucudaki yuzlerce kisi hedef kumesine hic
+ * girmiyor, sistem de kendi kucuk listesinin tamamina ulastigi icin
+ * "herkese ulasildi" diyordu. Artik sunucunun gercek uye listesi cekiliyor.
+ *
+ * ONEMLI: Bu uc, Discord'da AYRICALIKLI izin ister. Discord Developer
+ * Portal > Bot > Privileged Gateway Intents altindan "SERVER MEMBERS INTENT"
+ * ACIK olmalidir. Kapaliysa Discord 403 doner; o durumda sistem eski
+ * davranisa (yalnizca eslestirilmis hesaplar) guvenli sekilde geri doner.
+ *
+ * Sayfalama: her istekte en fazla 1000 uye, `after` ile devam edilir.
+ */
+async function fetchGuildMemberIds(env, guildId) {
+    if (!guildId) return null;
+    const ids = [];
+    let after = '0';
+    for (let page = 0; page < 12; page++) {   // en fazla ~12.000 uye
+        const url = `https://discord.com/api/v10/guilds/${guildId}/members?limit=1000&after=${after}`;
+        const res = await fetch(url, { headers: { 'Authorization': `Bot ${env.DISCORD_BOT_TOKEN}` } });
+        if (res.status === 403) {
+            console.error('[rsvp] Uye listesi okunamadi: SERVER MEMBERS INTENT kapali olabilir.');
+            return null;
+        }
+        if (res.status === 429) {
+            const retry = Number(res.headers.get('retry-after') || 1);
+            await new Promise(r => setTimeout(r, (retry + 0.5) * 1000));
+            page--;   // ayni sayfayi tekrar dene
+            continue;
+        }
+        if (!res.ok) {
+            console.error('[rsvp] Uye listesi hatasi:', res.status);
+            return ids.length ? ids : null;
+        }
+        const batch = await res.json();
+        if (!Array.isArray(batch) || batch.length === 0) break;
+        batch.forEach(m => {
+            // Botlar hatirlatma almaz.
+            if (m && m.user && !m.user.bot) ids.push(String(m.user.id));
+        });
+        after = String(batch[batch.length - 1].user.id);
+        if (batch.length < 1000) break;
+        await new Promise(r => setTimeout(r, 250));   // oran limiti
+    }
+    return ids;
+}
+
 async function collectOptedOutDiscordUids(env, links, cfg) {
     const out = new Set();
     if (!cfg || cfg.allowOptOut !== true) return out;
