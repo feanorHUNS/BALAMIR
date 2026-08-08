@@ -4973,6 +4973,7 @@
         //      yerel veriyi ezmesin.
         let inFlightSections = new Set();
         let inFlightFull = false;
+        let _saveFailCount = 0;   // ust uste reddedilen kayit sayisi
         const sectionProtectUntil = {};   // { bolumAdi: zamanDamgasi }
 
         /**
@@ -5245,6 +5246,16 @@
                 if (!silent) setSaveStatus('saved');
             } else {
                 // Değişikliği DÜŞÜRME: bekleyenlere geri koy, kısa süre sonra tekrar dene.
+                // ANCAK sonsuz döngü olmasın: sunucu bir bölümü ısrarla reddediyorsa
+                // (örn. o bölüm sunucu listesinde yoksa) 3 denemeden sonra vazgeç,
+                // yoksa site sürekli "Kaydedilemedi" gösterip durur.
+                _saveFailCount++;
+                if (_saveFailCount >= 3) {
+                    console.error('Kaydetme üst üste 3 kez reddedildi, denemeler durduruldu:', flown);
+                    _saveFailCount = 0;
+                    setSaveStatus('error');
+                    return;
+                }
                 if (wasFull) pendingSaveFull = true;
                 flown.forEach(s => pendingSaveSections.add(s));
                 setSaveStatus('error');
@@ -5252,6 +5263,7 @@
                 saveTimeout = setTimeout(dispatchCloudSave, 1500);
                 return;
             }
+            _saveFailCount = 0;
 
             // Kayıt sürerken yeni değişiklik yapıldıysa hemen gönder.
             if (pendingSaveFull || pendingSaveSections.size) dispatchCloudSave();
@@ -8515,7 +8527,11 @@ function buildSlotContentCanvasDataUri(name, pills, reincText, className) {
             const _lbl = plan.time ? trEuLabel(plan.time) : null;
             document.getElementById('exportPlanTime').innerText = _lbl ? _lbl.tr : t("no_date");
             const _euEl = document.getElementById('exportPlanTimeEu');
-            if (_euEl) _euEl.innerText = _lbl ? _lbl.eu : ''; 
+            if (_euEl) {
+                // Tarih secilmemisse bos bir cerceve gorunuyordu — tamamen gizle.
+                _euEl.innerText = _lbl ? _lbl.eu : '';
+                _euEl.style.display = _lbl ? 'block' : 'none';
+            } 
             document.getElementById('exportPlanGrid').innerHTML = eStr; 
             
             const exportQuoteEl = document.getElementById('exportEpicQuote');
@@ -8923,124 +8939,155 @@ function buildSlotContentCanvasDataUri(name, pills, reincText, className) {
         }
 
         /**
-         * Kadro gorselini yakalar, kare kare animasyon uretir.
-         * onFrames(frames, w, h) ile ImageData yerine hazir canvas listesi doner.
+         * Kadro gorselini yakalar ve kare kare animasyon uretir.
+         *
+         * ANIMASYON = secilen 06 + 04:
+         *   06 ROL DALGASI : satirlar yukaridan asagi sirayla tema renginde
+         *                    yanip soner (dolgu + kalin cerceve + hafif parlama)
+         *   04 ASTRAL SIS  : arkada iki renk bulutu surunur, kivilcimlar yukselir
+         *
+         * Renkler --neon-color'dan, yani SITENIN AKTIF TEMASINDAN alinir.
          */
         function buildRaidFrames(onDone, onProgress) {
+            // Satir konumlarini html2canvas'tan ONCE olc: yakalama sirasinda
+            // export alani ekranda hareket ettigi icin sonra olcmek kayik
+            // sonuc veriyordu (dalga yanlis yerde cikiyordu).
+            const grid = document.getElementById('exportPlanGrid');
+            const cont = document.getElementById('planExportContainer');
+            const contRect = cont.getBoundingClientRect();
+            const rowRects = [];
+            if (grid) {
+                grid.querySelectorAll('.space-y-5 > *').forEach(el => {
+                    const r = el.getBoundingClientRect();
+                    if (r.width < 10 || r.height < 10) return;
+                    rowRects.push({
+                        left: r.left - contRect.left,
+                        top: r.top - contRect.top,
+                        width: r.width,
+                        height: r.height
+                    });
+                });
+            }
+            // Satirlari YUKARIDAN ASAGI sirala: dalga tepeden asagi aksin.
+            rowRects.sort((a, b) => a.top - b.top || a.left - b.left);
+            const capturedW = contRect.width || 1;
+
             capturePlanExportPNG(async (shot) => {
                 try {
-                    // Olcek: GIF boyutu patlamasin diye genislik sinirlanir.
                     const scale = Math.min(1, RAID_ANIM.maxWidth / shot.width);
                     const W = Math.round(shot.width * scale);
                     const H = Math.round(shot.height * scale);
+
+                    // Olcum ekran pikselinde yapildi; yakalanan goruntunun
+                    // olcegine cevir (html2canvas scale:2 kullaniyor).
+                    const k = W / capturedW;
+                    const rows = rowRects.map(r => ({
+                        x: r.left * k, y: r.top * k, w: r.width * k, h: r.height * k
+                    })).filter(r => r.y + r.h <= H + 4);
 
                     const bg = await loadRaidBgImage();
                     const col = themeRgb();
                     const rgba = (a) => `rgba(${col.r},${col.g},${col.b},${a})`;
 
-                    // Kadro satirlarinin yerini bul: dalga tam onlarin uzerinden gecsin.
-                    const grid = document.getElementById('exportPlanGrid');
-                    const gridRect = grid ? grid.getBoundingClientRect() : null;
-                    const contRect = document.getElementById('planExportContainer').getBoundingClientRect();
-                    const rows = [];
-                    if (gridRect) {
-                        grid.querySelectorAll('img[src^="data:image/svg"], .export-slot, div > img').forEach(() => {});
-                        // Slot kutulari: dogrudan alt seviyedeki satir kapsayicilari.
-                        grid.querySelectorAll('div.space-y-5 > *').forEach(el => {
-                            const r = el.getBoundingClientRect();
-                            rows.push({
-                                x: (r.left - contRect.left) * scale,
-                                y: (r.top - contRect.top) * scale,
-                                w: r.width * scale,
-                                h: r.height * scale
-                            });
-                        });
-                    }
-                    // Satir bulunamadiysa dalga tum karti tarasin (guvenli davranis).
-                    if (!rows.length) rows.push({ x: 0, y: 0, w: W, h: H });
+                    // Ikinci renk: tema renginin tamamlayicisi (sabit mor yerine),
+                    // boylece sis her temada uyumlu gorunur.
+                    const alt = { r: 255 - col.r, g: Math.min(255, col.b + 40), b: Math.max(60, col.g) };
+                    const rgbaAlt = (a) => `rgba(${alt.r},${alt.g},${alt.b},${a})`;
 
-                    // Kivilcimlar: sabit baslangic noktalari, karelere gore yukselir.
-                    const sparks = Array.from({ length: 18 }, (_, i) => ({
-                        x: (i * 97 % 100) / 100 * W,
-                        phase: (i * 137 % 100) / 100,
-                        speed: 0.6 + ((i * 53 % 40) / 100),
-                        size: 1.2 + ((i * 31 % 20) / 10)
+                    const N = RAID_ANIM.frames;
+                    const sparks = Array.from({ length: 26 }, (_, i) => ({
+                        x: ((i * 61) % 100) / 100 * W,
+                        phase: ((i * 37) % 100) / 100,
+                        speed: 0.55 + ((i * 17) % 50) / 100,
+                        size: 1.4 + ((i * 23) % 22) / 10,
+                        sway: 6 + ((i * 13) % 14)
                     }));
 
                     const frames = [];
-                    for (let f = 0; f < RAID_ANIM.frames; f++) {
-                        const p = f / RAID_ANIM.frames;           // 0..1 dongü konumu
+                    for (let f = 0; f < N; f++) {
+                        const p = f / N;
                         const cv = document.createElement('canvas');
                         cv.width = W; cv.height = H;
                         const ctx = cv.getContext('2d');
 
-                        // 1) zemin
                         ctx.fillStyle = '#020617';
                         ctx.fillRect(0, 0, W, H);
 
-                        // 2) kullanicinin yukledigi arka plan (varsa), hafif kayarak
+                        // --- 04a: kullanicinin arka plani, hafif suzulerek
                         if (bg && bg.naturalWidth) {
-                            const drift = Math.sin(p * Math.PI * 2) * 10;
-                            const k = Math.max(W / bg.naturalWidth, H / bg.naturalHeight) * 1.06;
-                            const bw = bg.naturalWidth * k, bh = bg.naturalHeight * k;
-                            ctx.globalAlpha = 0.45;
-                            ctx.drawImage(bg, (W - bw) / 2 + drift, (H - bh) / 2 - drift * 0.5, bw, bh);
+                            const drift = Math.sin(p * Math.PI * 2) * 12;
+                            const kk = Math.max(W / bg.naturalWidth, H / bg.naturalHeight) * 1.08;
+                            const bw = bg.naturalWidth * kk, bh = bg.naturalHeight * kk;
+                            ctx.globalAlpha = 0.5;
+                            ctx.drawImage(bg, (W - bw) / 2 + drift, (H - bh) / 2 - drift * 0.4, bw, bh);
                             ctx.globalAlpha = 1;
                         }
 
-                        // 3) ASTRAL SIS — iki yumusak bulut, ters yonde surunur
+                        // --- 04b: astral sis (kadronun ALTINDA, atmosfer)
+                        const ang = p * Math.PI * 2;
                         const g1 = ctx.createRadialGradient(
-                            W * (0.3 + 0.12 * Math.sin(p * Math.PI * 2)), H * (0.35 + 0.08 * Math.cos(p * Math.PI * 2)), 0,
-                            W * 0.3, H * 0.35, W * 0.55);
-                        g1.addColorStop(0, rgba(0.20)); g1.addColorStop(1, rgba(0));
+                            W * (0.28 + 0.14 * Math.sin(ang)), H * (0.32 + 0.10 * Math.cos(ang)), 0,
+                            W * (0.28 + 0.14 * Math.sin(ang)), H * (0.32 + 0.10 * Math.cos(ang)), W * 0.62);
+                        g1.addColorStop(0, rgba(0.26)); g1.addColorStop(1, rgba(0));
                         ctx.fillStyle = g1; ctx.fillRect(0, 0, W, H);
 
                         const g2 = ctx.createRadialGradient(
-                            W * (0.72 - 0.1 * Math.sin(p * Math.PI * 2)), H * (0.68 - 0.07 * Math.cos(p * Math.PI * 2)), 0,
-                            W * 0.72, H * 0.68, W * 0.5);
-                        g2.addColorStop(0, `rgba(168,85,247,0.16)`); g2.addColorStop(1, 'rgba(168,85,247,0)');
+                            W * (0.74 - 0.13 * Math.sin(ang)), H * (0.70 - 0.09 * Math.cos(ang)), 0,
+                            W * (0.74 - 0.13 * Math.sin(ang)), H * (0.70 - 0.09 * Math.cos(ang)), W * 0.55);
+                        g2.addColorStop(0, rgbaAlt(0.20)); g2.addColorStop(1, rgbaAlt(0));
                         ctx.fillStyle = g2; ctx.fillRect(0, 0, W, H);
 
-                        // 4) KADRO GORUNTUSU
+                        // --- kadro goruntusu
                         ctx.drawImage(shot, 0, 0, W, H);
 
-                        // 5) ROL DALGASI — satirlar sirayla tema renginde parlar
+                        // --- 06: ROL DALGASI (kadronun USTUNDE, belirgin)
+                        // Dalga tepeden asagi 1 dongude bir kez gecer; her satir
+                        // kisa ve keskin parlar, sonra soner.
+                        const spread = 0.55;                 // dalganin toplam yayilimi
                         rows.forEach((r, i) => {
-                            const step = (i / Math.max(1, rows.length)) * 0.75;
-                            let d = p - step; if (d < 0) d += 1;
-                            const glow = Math.max(0, 1 - d * 6);     // kisa, keskin parlama
-                            if (glow <= 0.02) return;
-                            ctx.fillStyle = rgba(0.16 * glow);
+                            const step = rows.length > 1 ? (i / (rows.length - 1)) * spread : 0;
+                            let d = p - step;
+                            if (d < 0) d += 1;
+                            // 0..0.18 araliginda parla, sonra hizla sifirla
+                            const glow = d < 0.18 ? Math.sin((d / 0.18) * Math.PI) : 0;
+                            if (glow <= 0.03) return;
+
+                            ctx.save();
+                            ctx.fillStyle = rgba(0.30 * glow);
                             ctx.fillRect(r.x, r.y, r.w, r.h);
-                            ctx.strokeStyle = rgba(0.85 * glow);
-                            ctx.lineWidth = 2;
-                            ctx.strokeRect(r.x + 1, r.y + 1, r.w - 2, r.h - 2);
+                            ctx.shadowColor = rgba(0.9 * glow);
+                            ctx.shadowBlur = 22 * glow;
+                            ctx.strokeStyle = rgba(Math.min(1, 1.1 * glow));
+                            ctx.lineWidth = 3;
+                            ctx.strokeRect(r.x + 1.5, r.y + 1.5, r.w - 3, r.h - 3);
+                            ctx.restore();
                         });
 
-                        // 6) KIVILCIMLAR — asagidan yukari suzulur
+                        // --- 04c: kivilcimlar (en ustte)
                         sparks.forEach(sp => {
-                            let t2 = (p * sp.speed + sp.phase) % 1;
-                            const y = H - t2 * H * 0.9;
-                            const alpha = Math.sin(t2 * Math.PI) * 0.9;
-                            if (alpha <= 0.02) return;
+                            const t2 = (p * sp.speed + sp.phase) % 1;
+                            const y = H - t2 * H * 0.95;
+                            const a = Math.sin(t2 * Math.PI) * 0.95;
+                            if (a <= 0.03) return;
+                            ctx.save();
                             ctx.beginPath();
-                            ctx.arc(sp.x + Math.sin(t2 * 6) * 8, y, sp.size, 0, Math.PI * 2);
-                            ctx.fillStyle = rgba(alpha);
-                            ctx.shadowColor = rgba(alpha); ctx.shadowBlur = 6;
+                            ctx.arc(sp.x + Math.sin(t2 * 7 + sp.phase * 6) * sp.sway, y, sp.size, 0, Math.PI * 2);
+                            ctx.fillStyle = rgba(a);
+                            ctx.shadowColor = rgba(a);
+                            ctx.shadowBlur = 8;
                             ctx.fill();
-                            ctx.shadowBlur = 0;
+                            ctx.restore();
                         });
 
                         frames.push(cv);
-                        if (onProgress) onProgress((f + 1) / RAID_ANIM.frames);
-                        // Tarayici kilitlenmesin diye arada nefes aldir.
+                        if (onProgress) onProgress((f + 1) / N);
                         if (f % 4 === 3) await new Promise(r2 => setTimeout(r2, 0));
                     }
 
                     onDone(frames, W, H);
                 } catch (e) {
                     console.error('buildRaidFrames:', e);
-                    showCustomAlert(t('anim_fail'), t('error'), '❌');
+                    showCustomAlert(t('anim_fail') + '\n' + (e && e.message ? e.message : ''), t('error'), '❌');
                 }
             });
         }
@@ -9081,10 +9128,10 @@ function buildSlotContentCanvasDataUri(name, pills, reincText, className) {
         function framesToGif(frames, W, H, quality) {
             return ensureGifJs().then(() => new Promise((resolve, reject) => {
                 const gif = new GIF({
-                    workers: 2,
-                    quality: quality || 14,      // dusuk sayi = daha iyi kalite, daha yavas
+                    workers: 3,
+                    quality: quality || 8,       // dusuk sayi = daha iyi renk (GIF 256 renkli)
                     width: W, height: H,
-                    dither: false,
+                    dither: 'FloydSteinberg-serpentine',   // koyu zeminde bantlanmayi azaltir
                     workerScript: _gifWorkerUrl
                 });
                 let done = false;
