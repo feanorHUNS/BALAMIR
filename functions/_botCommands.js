@@ -107,12 +107,26 @@ function channelAllowed(settings, channelId) {
 /** Ertelenmis yaniti tamamlar (orijinal yaniti duzenler). */
 async function editReply(interaction, payload) {
     const url = `https://discord.com/api/v10/webhooks/${interaction.application_id}/${interaction.token}/messages/@original`;
-    const res = await fetch(url, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-    });
-    if (!res.ok) console.error('[bot] yanit duzenleme hatasi:', res.status, await res.text());
+
+    // YARIS KOSULU KORUMASI: Bu is arka planda calisiyor ve Discord'un
+    // "dusunuyorum" yanitini isleme almasindan ONCE duzenleme istegi giderse
+    // Discord "Unknown Webhook" (10015) doner, komut da sessizce oler.
+    // Bu yuzden kisa bir bekleme + birkac deneme yapiliyor.
+    for (let attempt = 0; attempt < 4; attempt++) {
+        if (attempt > 0) await new Promise(r => setTimeout(r, 400 * attempt));
+        const res = await fetch(url, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (res.ok) return;
+        const txt = await res.text();
+        // 10015 = Unknown Webhook -> henuz hazir degil, tekrar dene
+        if (res.status === 404 && txt.includes('10015')) continue;
+        console.error('[bot] yanit duzenleme hatasi:', res.status, txt);
+        return;
+    }
+    console.error('[bot] yanit duzenlenemedi: Discord ertelenmis yaniti kabul etmedi.');
 }
 
 function optionValue(interaction, name) {
@@ -126,6 +140,7 @@ function optionValue(interaction, name) {
 // ---------------------------------------------------------------------------
 export async function handleSlashCommand(interaction, env) {
     const name = interaction.data && interaction.data.name;
+    console.log('[bot] komut geldi:', name, 'kanal:', interaction.channel_id);
     const user = (interaction.member && interaction.member.user) || interaction.user;
     const settings = await loadBotSettings(env);
 
