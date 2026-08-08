@@ -20,6 +20,10 @@ import { onRequestPost as guildWrite } from './functions/api/guild-write.js';
 import { onRequestPost as auditLog } from './functions/api/audit-log.js';
 import { onRequestPost as bankRequest } from './functions/api/bank-request.js';
 import { onRequestPost as tacticsMapRoute } from './functions/api/tactics-map.js';
+import { onRequestPost as botCommandsRoute } from './functions/api/bot-commands.js';
+import { onRequestPost as uploadImageRoute } from './functions/api/upload-image.js';
+import { onRequestPost as raidAnimBgRoute } from './functions/api/raid-anim-bg.js';
+import { loadBotSettings } from './functions/_botCommands.js';
 import { onRequestPost as detectChannels } from './functions/api/detect-channels.js';
 
 // ============================================================================
@@ -58,6 +62,10 @@ const ROUTES = {
     // Taktik haritalari: GET herkes (uye+), yazma islemleri handler icinde
     // ayrica yalnizca admin'e zorlanir. Gorseller gomulu oldugu icin limit genis.
     '/api/tactics-map':           { handler: tacticsMapRoute,     minRole: 'member',  limit: 120, windowMs: 600000 },
+    // Slash komut kaydi (admin) + /match kararlari (yetkili).
+    '/api/bot-commands':          { handler: botCommandsRoute,    minRole: 'officer', limit: 100, windowMs: 600000 },
+    '/api/upload-image':          { handler: uploadImageRoute,    minRole: 'admin',   limit: 40,  windowMs: 600000 },
+    '/api/raid-anim-bg':          { handler: raidAnimBgRoute,     minRole: 'member',  limit: 60,  windowMs: 600000 },
     // Kanallarin hangi Discord sunucusuna ait oldugunu tespit eder.
     '/api/detect-channels':       { handler: detectChannels,      minRole: 'officer', limit: 10,  windowMs: 600000 }
 };
@@ -245,6 +253,9 @@ async function runTimeBasedAutomation(env) {
 
         // --- 4) Temizlik: etkinlikten 2 saat sonra her seyi sil ----------
         await runPostEventCleanup(env, announcements, guildData, now);
+
+        // --- 5) Sunucuya yeni katilanlara hosgeldin mesaji ----------------
+        await runWelcomeMessages(env, guildData, now);
     } catch (e) {
         console.error('runTimeBasedAutomation genel hata:', e);
     }
@@ -414,6 +425,116 @@ async function isGuildMember(env, guildId, userId) {
         console.error('isGuildMember error:', e);
         return true;   // suphede kalirsak gondermeyi engellemiyoruz
     }
+}
+
+/**
+ * SUNUCUYA YENI KATILANLARA HOSGELDIN MESAJI
+ *
+ * MIMARI NOT: Discord'un "uye katildi" olayi (GUILD_MEMBER_ADD) yalnizca
+ * kalici WebSocket baglantisiyla (gateway) dinlenebilir; Cloudflare Workers
+ * boyle bir baglanti tutamaz. COZUM: cron her dakika calisiyor zaten —
+ * sunucunun uye listesindeki `joined_at` alanina bakip son kontrolden BERI
+ * katilanlari buluyoruz. Gecikme en fazla bir dakika.
+ *
+ * SERVER MEMBERS INTENT gerektirir (RSVP sunucu modu ile ayni izin).
+ */
+async function runWelcomeMessages(env, guildData, now) {
+    const cfg = (guildData && guildData.botSettings) || {};
+    if (!cfg.welcomeEnabled) return;
+    if (!cfg.welcomeChannelId) return;
+
+    const guildId = env.DISCORD_GUILD_ID;
+    if (!guildId) return;
+
+    // Son kontrol zamani. Ilk calistirmada gecmise donuk mesaj YOLLAMAMAK icin
+    // yalnizca zaman damgasi kaydedilir.
+    let sinceRes, since = 0;
+    try {
+        sinceRes = await fetch(fb(env, 'WelcomeState/lastCheck'));
+        since = (await sinceRes.json()) || 0;
+    } catch (e) { since = 0; }
+
+    if (!since) {
+        await fetch(fb(env, 'WelcomeState/lastCheck'), {
+            method: 'PUT', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(now)
+        });
+        return;
+    }
+
+    // Yeni katilanlar listenin SONUNDA degil, katilma tarihine gore dagitik
+    // olabilir; tam liste cekilip filtreleniyor.
+    const members = await fetchGuildMembersFull(env, guildId);
+    if (!members) return;   // intent kapali ya da hata
+
+    const fresh = members.filter(m => {
+        if (!m || !m.user || m.user.bot || !m.joined_at) return false;
+        const t = new Date(m.joined_at).getTime();
+        return t > since && t <= now;
+    });
+
+    if (fresh.length) {
+        for (const m of fresh) {
+            // Ayni kisiye iki kez gonderilmesin (cron ust uste calisirsa).
+            if (!(await claimLock(env, `welcome_${m.user.id}`))) continue;
+            await sendWelcome(env, cfg, m.user);
+            await new Promise(r => setTimeout(r, 400));
+        }
+        console.log(`[welcome] ${fresh.length} yeni uyeye mesaj gonderildi.`);
+    }
+
+    await fetch(fb(env, 'WelcomeState/lastCheck'), {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(now)
+    });
+}
+
+/** Uye listesini TAM nesne olarak getirir (joined_at gerekli). */
+async function fetchGuildMembersFull(env, guildId) {
+    const out = [];
+    let after = '0';
+    for (let page = 0; page < 12; page++) {
+        const res = await fetch(
+            `https://discord.com/api/v10/guilds/${guildId}/members?limit=1000&after=${after}`,
+            { headers: { 'Authorization': `Bot ${env.DISCORD_BOT_TOKEN}` } });
+        if (res.status === 403) { console.error('[welcome] SERVER MEMBERS INTENT kapali.'); return null; }
+        if (!res.ok) return out.length ? out : null;
+        const batch = await res.json();
+        if (!Array.isArray(batch) || !batch.length) break;
+        out.push(...batch);
+        after = String(batch[batch.length - 1].user.id);
+        if (batch.length < 1000) break;
+        await new Promise(r => setTimeout(r, 250));
+    }
+    return out;
+}
+
+/** Hosgeldin mesajini kanala gonderir. {user} ve {server} yer tutucusu desteklenir. */
+async function sendWelcome(env, cfg, user) {
+    const raw = String(cfg.welcomeMessage || 'Welcome {user}! · Hoş geldin {user}!');
+    const text = raw
+        .replace(/\{user\}/g, `<@${user.id}>`)
+        .replace(/\{name\}/g, user.global_name || user.username)
+        .slice(0, 1800);
+
+    const body = {
+        content: text,
+        allowed_mentions: { users: [String(user.id)] }
+    };
+    // Gorsel varsa embed icinde gosterilir.
+    if (cfg.welcomeImage) {
+        body.embeds = [{
+            color: 0x06b6d4,
+            image: { url: String(cfg.welcomeImage) }
+        }];
+    }
+
+    const res = await fetch(`https://discord.com/api/v10/channels/${cfg.welcomeChannelId}/messages`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bot ${env.DISCORD_BOT_TOKEN}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    });
+    if (!res.ok) console.error('[welcome] gonderilemedi:', res.status, await res.text());
 }
 
 async function runRsvpReminders(env, announcements, guildData, now) {
