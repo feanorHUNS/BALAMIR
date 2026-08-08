@@ -37,7 +37,11 @@ const SECTIONS = {
     exportBgOpacity:        { type: 'number', min: 0, max: 100 },
     activeTheme:            { type: 'number', min: 0, max: 200 },
     adminMessages:          { type: 'array',  max: 200 },
-    guildBank:              { type: 'object', max: 10, validate: validateBank }
+    guildBank:              { type: 'object', max: 10, validate: validateBank },
+    // BOT AYARLARI: komut kanallari + hosgeldin mesaji. Bu bolum listede
+    // OLMADIGI icin her kayit reddediliyor ve site sonsuz "Kaydedilemedi"
+    // dongusune giriyordu.
+    botSettings:            { type: 'object', max: 20, validate: validateBotSettings }
     // NOT: Taktik haritalari GuildData'da DEGIL — gomulu gorselleriyle birlikte
     // ayri 'TacticsMaps' Firebase yolunda tutulur; yazma yetkisi kurallarla
     // yalnizca admin'e verilmistir.
@@ -45,6 +49,22 @@ const SECTIONS = {
 
 // Tek bir istekte yazilabilecek en fazla bolum sayisi.
 const MAX_SECTIONS_PER_REQUEST = 25;
+
+function validateBotSettings(o) {
+    if (o.commandChannels !== undefined) {
+        if (!Array.isArray(o.commandChannels) || o.commandChannels.length > 50) return 'botSettings: kanal listesi gecersiz';
+        for (const c of o.commandChannels) {
+            if (typeof c !== 'string' || !/^[0-9]{5,25}$/.test(c)) return 'botSettings: kanal kimligi gecersiz';
+        }
+    }
+    if (o.welcomeChannelId !== undefined && o.welcomeChannelId !== '' &&
+        !/^[0-9]{5,25}$/.test(String(o.welcomeChannelId))) return 'botSettings: hosgeldin kanali gecersiz';
+    if (o.welcomeMessage !== undefined && String(o.welcomeMessage).length > 2000) return 'botSettings: mesaj cok uzun';
+    if (o.welcomeImage !== undefined && o.welcomeImage !== '' &&
+        !/^https?:\/\//i.test(String(o.welcomeImage))) return 'botSettings: gorsel adresi gecersiz';
+    if (o.welcomeEnabled !== undefined && typeof o.welcomeEnabled !== 'boolean') return 'botSettings: etkin degeri gecersiz';
+    return null;
+}
 
 function validateBank(_unused, value) {
     // Bu bolum nesne oldugu icin dogrulama checkSection tarafindan ayrica cagriliyor.

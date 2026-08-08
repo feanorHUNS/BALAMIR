@@ -34,11 +34,21 @@ export async function onRequestPost(context) {
         const imageBuffer = await imageFile.arrayBuffer();
         const results = {};
 
+        // DOSYA TIPI: Gonderilen dosya GIF olabilir. Onceden burada tip ve ad
+        // 'image/png' + 'plan.png' olarak SABITLENMISTI — bu yuzden hareketli
+        // GIF Discord'a hareketsiz PNG gibi gidiyordu. Artik yuklenen dosyanin
+        // gercek tipi kullaniliyor.
+        const rawType = String(imageFile.type || '').toLowerCase();
+        const isGif = rawType.includes('gif') || String(imageFile.name || '').toLowerCase().endsWith('.gif');
+        const isWebp = rawType.includes('webp') || String(imageFile.name || '').toLowerCase().endsWith('.webp');
+        const mime = isGif ? 'image/gif' : (isWebp ? 'image/webp' : 'image/png');
+        const fname = isGif ? 'plan.gif' : (isWebp ? 'plan.webp' : 'plan.png');
+
         for (const channelId of allowedChannels) {
             try {
                 const discordForm = new FormData();
                 discordForm.append('payload_json', JSON.stringify({ content, embeds: [buildPortalEmbed()], allowed_mentions: { parse: ['everyone'] } }));
-                discordForm.append('files[0]', new Blob([imageBuffer], { type: 'image/png' }), 'plan.png');
+                discordForm.append('files[0]', new Blob([imageBuffer], { type: mime }), fname);
 
                 const discordRes = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
                     method: 'POST',
