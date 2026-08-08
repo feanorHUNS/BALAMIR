@@ -46,7 +46,10 @@ function formatDates(tms) {
  */
 export async function postObsRotation(env, cfg, rot, tms, isTest) {
     if (!cfg || !cfg.channelId) return { ok: false, error: 'Kanal secilmemis.' };
-    const url = cfg.gifs && cfg.gifs[rot];
+    // Anahtar "r1".."r5"; eski kayitlar icin sayisal anahtar ve dizi bicimi de
+    // destekleniyor.
+    const g = cfg.gifs || {};
+    const url = g['r' + rot] || g[rot] || (Array.isArray(g) ? g[rot] : null);
     if (!url) return { ok: false, error: `Rotasyon ${rot} icin gorsel hazirlanmamis.` };
 
     const dates = formatDates(tms);
