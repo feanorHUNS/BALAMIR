@@ -10,6 +10,11 @@
 
 import { fb } from '../_auth.js';
 
+// Bu dosyanin surumu. Teshis ekraninda gorunur; boylece Cloudflare'e GERCEKTEN
+// yeni dosyanin yuklenip yuklenmedigi tek bakista anlasilir. ("Bilinmeyen
+// islem." hatasi, sunucuda hala ESKI surumun calistigi anlamina gelir.)
+const API_VERSION = '2026-08-08.3';
+
 const COMMANDS = [
     {
         name: 'hi',
@@ -41,11 +46,54 @@ export async function onRequestPost(context) {
     try { payload = await request.json(); } catch (e) { return json({ error: 'Invalid JSON' }, 400); }
     const action = String(payload.action || '');
 
+    // ------------------------------------------------------------- teshis
+    // Komutlar Discord'da gorunmuyorsa sorunun NEREDE oldugunu soyler:
+    // degisken eksik mi, bot sunucuda mi, komutlar kayitli mi.
+    if (action === 'diagnose') {
+        if (auth.role !== 'admin') return json({ error: 'Yalnizca admin.' }, 403);
+        const appId = env.DISCORD_APPLICATION_ID || env.DISCORD_APP_ID || '';
+        const gid = env.DISCORD_GUILD_ID || '';
+        const out = {
+            version: API_VERSION,
+            applicationIdSet: !!appId && !/BURAYA/i.test(appId),
+            applicationIdLooksValid: /^[0-9]{15,25}$/.test(appId),
+            guildIdSet: !!gid,
+            uploadChannelSet: !!(env.DISCORD_UPLOAD_CHANNEL_ID && !/BURAYA/i.test(env.DISCORD_UPLOAD_CHANNEL_ID)),
+            botTokenSet: !!env.DISCORD_BOT_TOKEN,
+            publicKeySet: !!env.DISCORD_PUBLIC_KEY,
+            registered: null,
+            error: null
+        };
+        if (out.applicationIdLooksValid && gid) {
+            try {
+                const r = await fetch(`https://discord.com/api/v10/applications/${appId}/guilds/${gid}/commands`,
+                    { headers: { 'Authorization': `Bot ${env.DISCORD_BOT_TOKEN}` } });
+                const body = await r.text();
+                if (r.ok) {
+                    const arr = JSON.parse(body);
+                    out.registered = Array.isArray(arr) ? arr.map(c => c.name) : [];
+                } else {
+                    out.error = `${r.status}: ${body.slice(0, 200)}`;
+                    if (body.includes('50001')) out.error += ' | Bot "applications.commands" izniyle davet edilmemis.';
+                    if (r.status === 401) out.error += ' | Bot token yanlis ya da Application ID bota ait degil.';
+                }
+            } catch (e) {
+                out.error = String(e && e.message ? e.message : e);
+            }
+        }
+        return json(out);
+    }
+
     // ---------------------------------------------------------------- kaydet
     if (action === 'register') {
         if (auth.role !== 'admin') return json({ error: 'Yalnizca admin.' }, 403);
         const appId = env.DISCORD_APPLICATION_ID || env.DISCORD_APP_ID;
-        if (!appId) return json({ error: 'DISCORD_APPLICATION_ID tanimli degil (Cloudflare Dashboard).' }, 400);
+        if (!appId || /BURAYA/i.test(appId)) {
+            return json({ error: 'DISCORD_APPLICATION_ID tanimli degil. wrangler.jsonc icindeki "BURAYA_APPLICATION_ID_YAZ" yerine Developer Portal > General Information > Application ID degerini yazip yeniden deploy et.' }, 400);
+        }
+        if (!/^[0-9]{15,25}$/.test(String(appId))) {
+            return json({ error: `DISCORD_APPLICATION_ID gecersiz gorunuyor ("${String(appId).slice(0, 30)}"). Yalnizca rakamlardan olusmali.` }, 400);
+        }
 
         // Sunucuya ozel kayit ANINDA aktif olur; global kayit ~1 saat surer.
         const gid = env.DISCORD_GUILD_ID;
@@ -159,7 +207,7 @@ export async function onRequestPost(context) {
         return json({ ok: true, decision, playerId: linkedPlayerId });
     }
 
-    return json({ error: 'Bilinmeyen islem.' }, 400);
+    return json({ error: `Bilinmeyen islem: "${action}". Sunucudaki surum: ${API_VERSION}` }, 400);
 }
 
 /** Karar sonucunu kisiye DM ile bildirir (basarisiz olsa da akisi bozmaz). */
