@@ -64,9 +64,18 @@ export async function onRequestPost(context) {
         const body = await res.text();
         if (!res.ok) {
             console.error('[bot-commands] kayit hatasi:', res.status, body);
-            return json({ error: `Discord reddetti (${res.status}): ${body.slice(0, 300)}` }, 502);
+            // 50001 Missing Access: bot sunucuya "applications.commands" izni
+            // OLMADAN davet edilmis demektir; komutlar bu izin verilmeden
+            // hicbir sekilde gorunmez.
+            const hint = body.includes('50001')
+                ? ' — Bot sunucuya "applications.commands" izniyle davet edilmemis. Developer Portal > OAuth2 > URL Generator ile bot + applications.commands secip botu YENIDEN davet et.'
+                : '';
+            return json({ error: `Discord reddetti (${res.status}): ${body.slice(0, 250)}${hint}` }, 502);
         }
-        return json({ ok: true, scope: gid ? 'guild' : 'global', count: COMMANDS.length });
+        let count = COMMANDS.length;
+        try { const arr = JSON.parse(body); if (Array.isArray(arr)) count = arr.length; } catch (e) {}
+        console.log(`[bot-commands] ${count} komut kaydedildi (${gid ? 'guild' : 'global'}).`);
+        return json({ ok: true, scope: gid ? 'guild' : 'global', count });
     }
 
     // ------------------------------------------------------- /match karari
