@@ -9013,6 +9013,20 @@ function buildSlotContentCanvasDataUri(name, pills, reincText, className) {
             if (!cloudData.obsRotation || typeof cloudData.obsRotation !== 'object') cloudData.obsRotation = {};
             const c = cloudData.obsRotation;
             if (!c.gifs || typeof c.gifs !== 'object') c.gifs = {};
+            // FIREBASE TUZAGI: Anahtarlari "1".."5" olan bir nesne, Firebase'den
+            // geri okunurken 0. elemani BOS olan bir DIZIYE donusebiliyor. Bu da
+            // sunucu dogrulamasini patlatip kaydin sessizce reddedilmesine yol
+            // aciyordu. Bu yuzden anahtarlar "r1".."r5" seklinde harfle basliyor;
+            // asagidaki donusum eski kayitlari da yeni bicime tasir.
+            if (Array.isArray(c.gifs)) {
+                const fixed = {};
+                c.gifs.forEach((v, i) => { if (v) fixed['r' + i] = v; });
+                c.gifs = fixed;
+            } else {
+                Object.keys(c.gifs).forEach(k => {
+                    if (/^[0-9]+$/.test(k)) { c.gifs['r' + k] = c.gifs[k]; delete c.gifs[k]; }
+                });
+            }
             if (typeof c.cryEn !== 'string') c.cryEn = 'TO ARMS, HUNS — THE ASTRAL AWAITS!';
             if (typeof c.cryTr !== 'string') c.cryTr = 'SİLAH BAŞINA HUNS — ASTRAL BEKLİYOR!';
             return c;
@@ -9061,11 +9075,11 @@ function buildSlotContentCanvasDataUri(name, pills, reincText, className) {
             }
 
             box.innerHTML = Array.from({ length: OBS_COUNT }, (_, i) => i + 1).map(r => {
-                const ready = !!c.gifs[r];
+                const ready = !!c.gifs['r' + r];
                 return `
                 <div class="bg-slate-950 border ${ready ? 'border-emerald-900/60' : 'border-slate-800'} rounded-lg p-2.5 flex items-center gap-2">
                     <span class="text-[11px] font-black ${ready ? 'text-emerald-400' : 'text-slate-500'} w-16 shrink-0">${t('obs_rotation')} ${r}</span>
-                    ${ready ? `<a href="${escAttr(c.gifs[r])}" target="_blank" rel="noopener" class="text-[9px] text-cyan-400 underline shrink-0">${t('obs_view')}</a>` : `<span class="text-[9px] text-slate-600 shrink-0">${t('obs_not_ready')}</span>`}
+                    ${ready ? `<a href="${escAttr(c.gifs['r' + r])}" target="_blank" rel="noopener" class="text-[9px] text-cyan-400 underline shrink-0">${t('obs_view')}</a>` : `<span class="text-[9px] text-slate-600 shrink-0">${t('obs_not_ready')}</span>`}
                     <button onclick="obsPrepare(${r})" class="ml-auto bg-slate-800 hover:bg-amber-700 text-slate-300 hover:text-white px-2 py-1 rounded text-[9px] font-black uppercase transition shrink-0">${ready ? t('obs_rebuild') : t('obs_prepare')}</button>
                 </div>`;
             }).join('');
@@ -9106,7 +9120,7 @@ function buildSlotContentCanvasDataUri(name, pills, reincText, className) {
                 im.src = b.img;
             })));
 
-            const S = 560;                     // kare kart
+            const S = 480;                     // kare kart (yukleme sinirina takilmasin)
             const c = getObsCfg();
             const col = themeRgb();
             const frames = [];
@@ -9206,7 +9220,7 @@ function buildSlotContentCanvasDataUri(name, pills, reincText, className) {
                 const data = await res.json();
 
                 const c = getObsCfg();
-                c.gifs[rot] = data.url;
+                c.gifs['r' + rot] = data.url;
                 cloudData.obsRotation = c;
                 triggerCloudSave('obsRotation');
                 logAudit(`OBS rotasyon ${rot} görseli hazırlandı.`);
@@ -9215,6 +9229,12 @@ function buildSlotContentCanvasDataUri(name, pills, reincText, className) {
             } catch (e) {
                 console.error('obsPrepare:', e);
                 obsStatus(`❌ ${e && e.message ? e.message : e}`);
+                // Sessizce gecme: kullanici "Hepsini hazirla" dedikten sonra
+                // neden hazir olmadigini bilmeli.
+                showCustomAlert(
+                    `${t('obs_rotation')} ${rot}\n${e && e.message ? e.message : e}`,
+                    t('error'), '❌');
+                throw e;   // obsPrepareAll dursun
             }
         }
 
@@ -9222,9 +9242,13 @@ function buildSlotContentCanvasDataUri(name, pills, reincText, className) {
             if (!isAdmin()) return;
             const btn = document.getElementById('obsPrepareAllBtn');
             if (btn) btn.disabled = true;
-            for (let r = 1; r <= OBS_COUNT; r++) await obsPrepare(r);
+            try {
+                for (let r = 1; r <= OBS_COUNT; r++) await obsPrepare(r);
+                obsStatus('✅ ' + t('obs_all_ready'));
+            } catch (e) {
+                obsStatus('❌ ' + (e && e.message ? e.message : e));
+            }
             if (btn) btn.disabled = false;
-            obsStatus('✅ ' + t('obs_all_ready'));
         }
 
         /** TEST: bu haftanin rotasyonunu secili kanala HEMEN gonderir. */
@@ -9233,7 +9257,7 @@ function buildSlotContentCanvasDataUri(name, pills, reincText, className) {
             const c = getObsCfg();
             if (!c.channelId) return showCustomAlert(t('obs_no_channel'), t('error'), '⚠️');
             const rot = obsRotationAt(Date.now());
-            if (!c.gifs[rot]) return showCustomAlert(t('obs_not_prepared').replace('{r}', String(rot)), t('error'), '⚠️');
+            if (!c.gifs['r' + rot]) return showCustomAlert(t('obs_not_prepared').replace('{r}', String(rot)), t('error'), '⚠️');
 
             obsStatus('📤 ' + t('obs_sending'));
             apiFetch('/api/obs-rotation', {
