@@ -5,6 +5,7 @@
 import { verifyKey, InteractionType, InteractionResponseType } from 'discord-interactions';
 import { buildAnnouncementEmbed, buildRsvpComponents } from '../_embedHelper.js';
 import { fb } from '../_auth.js';
+import { handleSlashCommand } from '../_botCommands.js';
 
 // ============================================================================
 // ÖNEMLİ MİMARİ NOTU — DISCORD'UN 3 SANİYE KURALI
@@ -62,6 +63,23 @@ export async function onRequestPost(context) {
 
         // Discord'a anında yanıt: "aldım". Mesaj birazdan arka planda güncellenecek.
         return jsonResponse({ type: InteractionResponseType.DEFERRED_UPDATE_MESSAGE });
+    }
+
+    // 4) Slash komutu (/hi, /dkp, /match).
+    //    Buton akisiyla AYNI mantik: once "dusunuyorum" de, isi arka planda yap.
+    //    Yanit EPHEMERAL (flags: 64) — yalnizca komutu yazan gorur; /hi ise
+    //    herkesin gormesi icin asagida flags'siz gonderilir.
+    if (interaction.type === InteractionType.APPLICATION_COMMAND) {
+        const isPublic = interaction.data && interaction.data.name === 'hi';
+        if (ctx && typeof ctx.waitUntil === 'function') {
+            ctx.waitUntil(handleSlashCommand(interaction, env));
+        } else {
+            await handleSlashCommand(interaction, env);
+        }
+        return jsonResponse({
+            type: InteractionResponseType.DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
+            data: isPublic ? {} : { flags: 64 }
+        });
     }
 
     return new Response('Unhandled interaction type', { status: 400 });
