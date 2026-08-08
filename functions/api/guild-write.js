@@ -59,11 +59,16 @@ function validateObsRotation(o) {
     for (const k of ['cryEn', 'cryTr']) {
         if (o[k] !== undefined && String(o[k]).length > 120) return `obsRotation: ${k} cok uzun`;
     }
-    if (o.gifs !== undefined) {
-        if (typeof o.gifs !== 'object' || o.gifs === null) return 'obsRotation: gifs gecersiz';
+    if (o.gifs !== undefined && o.gifs !== null) {
+        if (typeof o.gifs !== 'object') return 'obsRotation: gifs gecersiz';
+        // Anahtar bicimi "r1".."r5" (Firebase'in sayisal anahtarli nesneleri
+        // diziye cevirmesini onlemek icin). Eski "1".."5" bicimi de kabul
+        // edilir; bos degerler yok sayilir (dizi donusumunden kalan bosluklar).
         for (const k in o.gifs) {
-            if (!/^[1-9][0-9]?$/.test(k)) return 'obsRotation: rotasyon numarasi gecersiz';
-            if (!/^https?:\/\//i.test(String(o.gifs[k])) || String(o.gifs[k]).length > 800) {
+            const v = o.gifs[k];
+            if (v === null || v === undefined || v === '') continue;
+            if (!/^r?[0-9]{1,2}$/.test(k)) return 'obsRotation: rotasyon anahtari gecersiz: ' + k;
+            if (!/^https?:\/\//i.test(String(v)) || String(v).length > 800) {
                 return 'obsRotation: gorsel adresi gecersiz';
             }
         }

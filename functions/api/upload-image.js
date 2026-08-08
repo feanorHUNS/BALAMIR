@@ -23,8 +23,10 @@ export async function onRequestPost(context) {
 
     const file = form.get('file');
     if (!file || typeof file === 'string') return json({ error: 'Dosya yok.' }, 400);
-    // 8MB Discord siniri; biz daha da dusuk tutuyoruz.
-    if (file.size > 4 * 1024 * 1024) return json({ error: 'Gorsel cok buyuk (max 4MB).' }, 413);
+    // Discord'un ucretsiz sunucu siniri 10MB; guvenli tarafta 8MB.
+    if (file.size > 8 * 1024 * 1024) {
+        return json({ error: `Dosya cok buyuk (${Math.round(file.size / 1024 / 1024)}MB, en fazla 8MB).` }, 413);
+    }
 
     const out = new FormData();
     out.append('files[0]', file, 'upload.png');
@@ -39,7 +41,13 @@ export async function onRequestPost(context) {
     if (!res.ok) {
         const txt = await res.text();
         console.error('[upload-image] Discord reddetti:', res.status, txt);
-        return json({ error: `Yuklenemedi (${res.status}).` }, 502);
+        // En sik sebep: DISCORD_UPLOAD_CHANNEL_ID yanlis ya da botun o kanalda
+        // yazma yetkisi yok. Kullanici tahmin etmesin, acikca yazalim.
+        let hint = '';
+        if (res.status === 404) hint = ' Kanal bulunamadi — DISCORD_UPLOAD_CHANNEL_ID yanlis olabilir.';
+        if (res.status === 403) hint = ' Botun bu kanala yazma yetkisi yok.';
+        if (res.status === 401) hint = ' Bot token gecersiz.';
+        return json({ error: `Yuklenemedi (${res.status}).${hint}` }, 502);
     }
 
     const msg = await res.json();
