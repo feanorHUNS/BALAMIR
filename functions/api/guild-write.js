@@ -41,7 +41,9 @@ const SECTIONS = {
     // BOT AYARLARI: komut kanallari + hosgeldin mesaji. Bu bolum listede
     // OLMADIGI icin her kayit reddediliyor ve site sonsuz "Kaydedilemedi"
     // dongusune giriyordu.
-    botSettings:            { type: 'object', max: 20, validate: validateBotSettings }
+    botSettings:            { type: 'object', max: 20, validate: validateBotSettings },
+    // Haftalik OBS rotasyonu: kanal, savas cagrisi ve hazirlanan GIF baglantilari.
+    obsRotation:            { type: 'object', max: 20, validate: validateObsRotation }
     // NOT: Taktik haritalari GuildData'da DEGIL — gomulu gorselleriyle birlikte
     // ayri 'TacticsMaps' Firebase yolunda tutulur; yazma yetkisi kurallarla
     // yalnizca admin'e verilmistir.
@@ -49,6 +51,25 @@ const SECTIONS = {
 
 // Tek bir istekte yazilabilecek en fazla bolum sayisi.
 const MAX_SECTIONS_PER_REQUEST = 25;
+
+function validateObsRotation(o) {
+    if (o.channelId !== undefined && o.channelId !== '' &&
+        !/^[0-9]{5,25}$/.test(String(o.channelId))) return 'obsRotation: kanal kimligi gecersiz';
+    if (o.enabled !== undefined && typeof o.enabled !== 'boolean') return 'obsRotation: etkin degeri gecersiz';
+    for (const k of ['cryEn', 'cryTr']) {
+        if (o[k] !== undefined && String(o[k]).length > 120) return `obsRotation: ${k} cok uzun`;
+    }
+    if (o.gifs !== undefined) {
+        if (typeof o.gifs !== 'object' || o.gifs === null) return 'obsRotation: gifs gecersiz';
+        for (const k in o.gifs) {
+            if (!/^[1-9][0-9]?$/.test(k)) return 'obsRotation: rotasyon numarasi gecersiz';
+            if (!/^https?:\/\//i.test(String(o.gifs[k])) || String(o.gifs[k]).length > 800) {
+                return 'obsRotation: gorsel adresi gecersiz';
+            }
+        }
+    }
+    return null;
+}
 
 function validateBotSettings(o) {
     if (o.commandChannels !== undefined) {
