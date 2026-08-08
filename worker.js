@@ -23,6 +23,8 @@ import { onRequestPost as tacticsMapRoute } from './functions/api/tactics-map.js
 import { onRequestPost as botCommandsRoute } from './functions/api/bot-commands.js';
 import { onRequestPost as uploadImageRoute } from './functions/api/upload-image.js';
 import { onRequestPost as raidAnimBgRoute } from './functions/api/raid-anim-bg.js';
+import { onRequestPost as obsRotationRoute } from './functions/api/obs-rotation.js';
+import { postObsRotation, obsRotationAt, obsCurrentSlot } from './functions/_obsTasks.js';
 import { loadBotSettings } from './functions/_botCommands.js';
 import { onRequestPost as detectChannels } from './functions/api/detect-channels.js';
 
@@ -66,6 +68,8 @@ const ROUTES = {
     '/api/bot-commands':          { handler: botCommandsRoute,    minRole: 'officer', limit: 100, windowMs: 600000 },
     '/api/upload-image':          { handler: uploadImageRoute,    minRole: 'admin',   limit: 40,  windowMs: 600000 },
     '/api/raid-anim-bg':          { handler: raidAnimBgRoute,     minRole: 'member',  limit: 60,  windowMs: 600000 },
+    // Haftalik OBS rotasyonu: "simdi gonder" testi (admin).
+    '/api/obs-rotation':          { handler: obsRotationRoute,    minRole: 'admin',   limit: 20,  windowMs: 600000 },
     // Kanallarin hangi Discord sunucusuna ait oldugunu tespit eder.
     '/api/detect-channels':       { handler: detectChannels,      minRole: 'officer', limit: 10,  windowMs: 600000 }
 };
@@ -256,6 +260,9 @@ async function runTimeBasedAutomation(env) {
 
         // --- 5) Sunucuya yeni katilanlara hosgeldin mesaji ----------------
         await runWelcomeMessages(env, guildData, now);
+
+        // --- 6) Haftalik OBS rotasyonu (persembe 05:00 TR) ----------------
+        await runObsRotation(env, guildData, now);
     } catch (e) {
         console.error('runTimeBasedAutomation genel hata:', e);
     }
@@ -425,6 +432,32 @@ async function isGuildMember(env, guildId, userId) {
         console.error('isGuildMember error:', e);
         return true;   // suphede kalirsak gondermeyi engellemiyoruz
     }
+}
+
+/**
+ * HAFTALIK OBS ROTASYONU
+ *
+ * Her PERSEMBE 05:00 (TR) sirali rotasyon paylasilir. Cron dakikada bir
+ * calistigi icin: o haftanin gonderim ani gecmisse ve daha once
+ * gonderilmemisse (kilit) gonderilir. Kilit anahtari gonderim anini icerir,
+ * boylece ayni hafta ikinci kez gonderilmez.
+ *
+ * Gorsel onceden hazirlanip Discord'a yuklendigi icin burada yalnizca hazir
+ * baglanti ve tarih paylasilir — bekleme yok.
+ */
+async function runObsRotation(env, guildData, now) {
+    const cfg = (guildData && guildData.obsRotation) || {};
+    if (!cfg.enabled || !cfg.channelId) return;
+
+    const slot = obsCurrentSlot(now);
+    if (now < slot) return;                       // ilk gonderim ani henuz gelmedi
+    if (now - slot > 6 * 3600 * 1000) return;     // 6 saatten eskiyse atla (gec kalmis gonderim yapma)
+
+    if (!(await claimLock(env, `obs_${slot}`))) return;
+
+    const rot = obsRotationAt(now);
+    const out = await postObsRotation(env, cfg, rot, slot, false);
+    console.log(`[obs] rotasyon ${rot} gonderimi:`, out.ok ? 'basarili' : out.error);
 }
 
 /**
