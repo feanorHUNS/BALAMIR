@@ -9193,7 +9193,8 @@ function buildSlotContentCanvasDataUri(name, pills, reincText, className) {
                 const maxW = S * 0.72, maxH = S * 0.52;
                 const k = Math.min(maxW / im.naturalWidth, maxH / im.naturalHeight) * scale;
                 const w = im.naturalWidth * k, h = im.naturalHeight * k;
-                ctx.globalAlpha = alpha;
+                // Yalnizca boss ve adi soluyor; baslik/cerceve/cagri hep net.
+                ctx.globalAlpha = Math.max(0.15, alpha);
                 ctx.drawImage(im, (S - w) / 2, 108 + (maxH - h) / 2, w, h);
 
                 // boss adi
@@ -9214,14 +9215,18 @@ function buildSlotContentCanvasDataUri(name, pills, reincText, className) {
                 ctx.fillText(c.cryTr, S / 2, S - 20);
             };
 
-            const HOLD = 2400, FADE = 90;
+            const HOLD = 2600, FADE = 110;
             for (let i = 0; i < imgs.length; i++) {
-                // giris (3 kare) + bekleme (1 uzun kare) + cikis (2 kare)
-                const steps = [
-                    { a: 0.25, s: 0.94, d: FADE }, { a: 0.6, s: 0.97, d: FADE }, { a: 1, s: 1, d: FADE },
-                    { a: 1, s: 1, d: HOLD },
-                    { a: 0.6, s: 1.02, d: FADE }, { a: 0.2, s: 1.04, d: FADE }
-                ];
+                // Ilk boss TAM PARLAK bir kareyle baslar: hem kapak karesi net
+                // olur hem de solma karesiyle baslamanin yol actigi karanlik
+                // gorunum ortadan kalkar.
+                const steps = i === 0
+                    ? [{ a: 1, s: 1, d: HOLD }, { a: 0.55, s: 1.03, d: FADE }, { a: 0.2, s: 1.05, d: FADE }]
+                    : [
+                        { a: 0.3, s: 0.95, d: FADE }, { a: 0.7, s: 0.98, d: FADE },
+                        { a: 1, s: 1, d: HOLD },
+                        { a: 0.55, s: 1.03, d: FADE }, { a: 0.2, s: 1.05, d: FADE }
+                      ];
                 for (const st of steps) {
                     const cv = document.createElement('canvas');
                     cv.width = S; cv.height = S;
@@ -9235,9 +9240,15 @@ function buildSlotContentCanvasDataUri(name, pills, reincText, className) {
 
         function obsFramesToGif(frames) {
             return ensureGifJs().then(() => new Promise((resolve, reject) => {
+                // globalPalette BURADA KAPALI.
+                // Sebep: tek palet, ILK KAREDEN hesaplaniyor. Bu animasyon
+                // solarak basladigi icin ilk kare karanlikti; palet de karanlik
+                // cikip TUM animasyonu soluklastiriyordu. Bu GIF yalnizca BIR KEZ
+                // uretildigi icin kare basina palet hesaplamanin yavasligi sorun
+                // degil — kalite onemli.
                 const gif = new GIF({
-                    workers: 3, quality: 5, width: frames[0].width, height: frames[0].height,
-                    globalPalette: true, dither: false, workerScript: _gifWorkerUrl
+                    workers: 3, quality: 3, width: frames[0].width, height: frames[0].height,
+                    globalPalette: false, dither: false, workerScript: _gifWorkerUrl
                 });
                 frames.forEach(cv => gif.addFrame(cv, { delay: cv._delay || 120, copy: true }));
                 gif.on('finished', b => resolve(b));
