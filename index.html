@@ -309,6 +309,9 @@
         }
 
         /* --- üst şerit --- */
+        /* Ust serit ve icerik SOL RAYA bitisik baslar: onceki halde ortalanmis
+           icerik yuzunden ray ile baslik arasinda bosluk kaliyordu. */
+        body.shell-on #mainContent{ max-width:none !important; margin-left:0 !important; margin-right:0 !important; }
         #topBar{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:10px 18px;
             border-bottom:1px solid var(--edge-soft); position:sticky; top:0; z-index:55;
             background:color-mix(in srgb, var(--neon-color) 5%, rgba(4,6,11,.85)); backdrop-filter:blur(12px); }
@@ -376,6 +379,33 @@
             #raidSidebar{ bottom:62px !important; }
         }
 
+
+        /* ══ ÇARK MENÜSÜ (ayarlar çekmecesi) ══
+           Düzenleme modu düğmesinin yerini alır; tema rengi, dil, düzenleme modu
+           ve hesap işlemleri burada toplanır. */
+        #gearBtn{ display:grid; place-items:center; width:38px; height:38px; border-radius:9px;
+            border:1px solid var(--edge-soft); background:var(--surface2); color:var(--neon-color);
+            font-size:17px; cursor:pointer; transition:.15s; }
+        #gearBtn:hover{ border-color:var(--edge); box-shadow:0 0 14px var(--halo); }
+        #gearDrawer{ position:fixed; top:0; right:0; bottom:0; width:min(330px,92vw); z-index:120;
+            transform:translateX(104%); transition:transform .26s ease; overflow-y:auto; padding:18px;
+            background:color-mix(in srgb, var(--neon-color) 8%, rgba(5,7,12,.98));
+            border-left:1px solid var(--edge); backdrop-filter:blur(16px);
+            box-shadow:-24px 0 60px rgba(0,0,0,.65); }
+        #gearDrawer.open{ transform:none; }
+        #gearDrawer h4{ font-family:'Cinzel Decorative',serif; font-size:12px; letter-spacing:.14em;
+            text-transform:uppercase; color:var(--neon-color); margin:18px 0 9px; }
+        #gearDrawer h4:first-of-type{ margin-top:0; }
+        #gearDrawer .grow{ display:flex; align-items:center; justify-content:space-between; gap:10px;
+            padding:9px 0; border-bottom:1px solid var(--edge-soft); font-size:15px; }
+        #gearClose{ background:none; border:0; color:var(--neon-color); font-size:20px; cursor:pointer; }
+        #themeSwatches{ display:flex; flex-wrap:wrap; gap:9px; }
+        #themeSwatches button{ width:32px; height:32px; border-radius:50%; cursor:pointer;
+            border:2px solid transparent; transition:.15s; padding:0; }
+        #themeSwatches button:hover{ transform:scale(1.12); }
+        #themeSwatches button.on{ border-color:#fff; box-shadow:0 0 14px currentColor; }
+        #gearMask{ position:fixed; inset:0; z-index:110; background:rgba(2,3,8,.6); display:none; }
+        #gearMask.open{ display:block; }
         /* ══ KUTU RENKLERİ TEMAYA UYUMLU ══
            Arayüzdeki kutular Tailwind'in sabit "slate" grisini kullanıyordu; bu
            yüzden tema rengi değişse bile paneller lacivert kalıyordu. Aşağıdaki
@@ -408,6 +438,17 @@
         input:not([type=checkbox]):not([type=radio]):not([type=range]), select, textarea{
             border-radius:9px;
         }
+
+        /* Tablo, liste ve rozetlerdeki sabit mavi/mor tonlar da temaya uysun */
+        .bg-blue-900\/30,.bg-blue-900\/20,.bg-blue-950\/40,.bg-indigo-900\/30,.bg-purple-900\/30{
+            background-color:color-mix(in srgb, var(--neon-color) 16%, rgba(8,11,18,.7)) !important; }
+        .border-blue-800,.border-blue-700,.border-indigo-700,.border-purple-700{
+            border-color:color-mix(in srgb, var(--neon-color) 34%, transparent) !important; }
+        .text-blue-400,.text-indigo-400,.text-purple-400{
+            color:color-mix(in srgb, var(--neon-color) 78%, #dbe6ff) !important; }
+        thead th{ color:color-mix(in srgb, var(--neon-color) 55%, #9aa5b8) !important; }
+        tbody tr:hover > td{ background:color-mix(in srgb, var(--neon-color) 8%, transparent) !important; }
+        input[type=checkbox]{ accent-color:var(--neon-color); }
         /* eski yatay menü artık kullanılmıyor */
         body.shell-on #mainNav{ }
 
@@ -1086,10 +1127,6 @@
                     </div>
                 </div>
 
-                <div class="neon-theme-box p-5 rounded-2xl shadow-lg mb-8">
-                    <h3 class="text-xs font-black text-white mb-4 tracking-widest border-b border-slate-800 pb-2 uppercase flex items-center gap-2" data-i18n="system_theme">🌌 SYSTEM THEME</h3>
-                    <div id="themeContainer" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-8 gap-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar"></div>
-                </div>
                 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
                     <div class="space-y-8">
@@ -1980,7 +2017,7 @@
                 roll_logs: "ROLL LOGS", raid_history: "RAID HISTORY", event_plan: "EVENT CENTER", no_events: "No Active Events", 
                 add_character: "Add Character", add_roster: "+ ADD TO ROSTER", registered_players: "Registered Players", 
                 event_title: "Event Title", date_time: "Date & Time", event_roster: "EVENT ROSTER", delete_plan: "Delete Plan", 
-                publish: "PUBLISH", system_management: "SYSTEM MANAGEMENT", system_theme: "🌌 SYSTEM THEME", 
+                publish: "PUBLISH", system_management: "SYSTEM MANAGEMENT", system_theme: "🌌 SYSTEM THEME", settings_title: "Settings", settings_account: "Account", settings_role: "Your role", theme_hint: "The colour changes panels, borders and background together — not just accents.", 
                 penalty_mgmt: "⚖️ Penalty Management", mass_cut: "Mass Cut", history: "History", pending_penalties: "Pending Penalties", 
                 officer_accounts: "🛡️ Officer Accounts", add: "Add", audit_logs: "📋 Audit Logs", unauthorized: "Unauthorized Access.", 
                 roll_dice: "Roll Dice", save_raid: "Save & Finish Raid", character: "CHARACTER", 
@@ -2026,7 +2063,7 @@
                 roll_logs: "ZAR KAYITLARI", raid_history: "GEÇMİŞ RAİD KAYITLARI", event_plan: "ETKİNLİK MERKEZİ", no_events: "Aktif Etkinlik Yok", 
                 add_character: "Karakter Ekle", add_roster: "+ KADROYA EKLE", registered_players: "Kayıtlı Oyuncular", 
                 event_title: "Etkinlik Başlığı", date_time: "Tarih & Saat", event_roster: "ETKİNLİK KADROSU", delete_plan: "Planı Sil", 
-                publish: "YAYINLA", system_management: "SİSTEM YÖNETİMİ", system_theme: "🌌 SİSTEM TEMASI", 
+                publish: "YAYINLA", system_management: "SİSTEM YÖNETİMİ", system_theme: "🌌 SİSTEM TEMASI", settings_title: "Ayarlar", settings_account: "Hesap", settings_role: "Rolün", theme_hint: "Renk yalnızca vurguyu değil; panelleri, kenarları ve zemini birlikte değiştirir.", 
                 penalty_mgmt: "⚖️ Ceza & Yaptırım Yönetimi", mass_cut: "Toplu Kes", history: "Geçmiş", pending_penalties: "Cezalı Bekleyenler", 
                 officer_accounts: "🛡️ Officer Hesapları", add: "Ekle", audit_logs: "📋 Denetim Kayıtları", unauthorized: "Yetkisiz Erişim.", 
                 roll_dice: "Kader Zarı At", save_raid: "Raidi Kaydet & Bitir", character: "KARAKTER", 
@@ -5505,7 +5542,7 @@
             }
         }
 
-        function applyTheme(id) { const tObj = NEON_THEMES.find(x => x.id === id) || NEON_THEMES[0]; document.getElementById('dynamicTheme').innerHTML = `:root { --neon-color: ${tObj.color}; --neon-bg: ${tObj.bg}; --neon-shadow: ${tObj.color}80; }`; if (cloudData.activeTheme !== id && isAdmin()) { cloudData.activeTheme = id; triggerCloudSave(); } renderThemeButtons(); }
+        function applyTheme(id) { const tObj = NEON_THEMES.find(x => x.id === id) || NEON_THEMES[0]; document.getElementById('dynamicTheme').innerHTML = `:root { --neon-color: ${tObj.color}; --neon-bg: ${tObj.bg}; --neon-shadow: ${tObj.color}80; }`; if (cloudData.activeTheme !== id && isAdmin()) { cloudData.activeTheme = id; triggerCloudSave(); } renderThemeButtons(); try { renderThemeSwatches(); } catch(e){} }
 
         // ============ PNG EXPORT ARKAPLAN GÖRSELİ ============
         function applyExportBackgrounds() {
@@ -7622,6 +7659,56 @@
             const controls = header.querySelector('.flex.items-center.gap-2');
             if (controls) top.appendChild(controls);
 
+            // --- ÇARK MENÜSÜ ---------------------------------------------------
+            // Düzenleme modu düğmesi üst şeritten çekilip buraya alınır; yanına
+            // tema rengi seçici (Yönetim'den taşındı) ve dil eklenir.
+            const mask = document.createElement('div');
+            mask.id = 'gearMask';
+            mask.onclick = closeGear;
+            document.body.appendChild(mask);
+
+            const drawer = document.createElement('div');
+            drawer.id = 'gearDrawer';
+            drawer.innerHTML =
+                '<div class="grow" style="border:0;padding-top:0">' +
+                '<h4 style="margin:0" data-i18n="settings_title">Ayarlar</h4>' +
+                '<button id="gearClose" type="button" aria-label="Kapat">✕</button></div>' +
+                '<h4 data-i18n="system_theme">🌌 Tema</h4>' +
+                '<div id="themeSwatches"></div>' +
+                '<p style="font-size:12.5px;line-height:1.6;margin:8px 0 0;opacity:.7" data-i18n="theme_hint">' +
+                'Renk yalnızca vurguyu değil; panelleri, kenarları ve zemini birlikte değiştirir.</p>' +
+                '<h4 data-i18n="settings_account">Hesap</h4>' +
+                '<div class="grow" id="gearLangRow"><span data-i18n="language">Dil</span></div>' +
+                '<div class="grow" id="gearEditRow"><span data-i18n="edit_mode">Düzenleme modu</span></div>' +
+                '<div class="grow" id="gearUserRow"><span data-i18n="settings_role">Rolün</span></div>' +
+                '<div class="grow" id="gearAuthRow" style="border:0"></div>';
+            document.body.appendChild(drawer);
+            drawer.querySelector('#gearClose').onclick = closeGear;
+
+            // Mevcut düğmeleri çekmeceye TAŞI (klonlamıyoruz; işlevleri korunur)
+            const move = (id, rowId) => {
+                const el = document.getElementById(id);
+                const row = document.getElementById(rowId);
+                if (el && row) row.appendChild(el);
+            };
+            move('langSwitcher', 'gearLangRow');
+            move('editModeBtn', 'gearEditRow');
+            move('userRoleBadge', 'gearUserRow');
+            move('loginBtn', 'gearAuthRow');
+            move('applyBtn', 'gearAuthRow');
+            move('logoutBtn', 'gearAuthRow');
+
+            const gear = document.createElement('button');
+            gear.id = 'gearBtn'; gear.type = 'button';
+            gear.setAttribute('aria-label', 'Ayarlar');
+            gear.textContent = '⚙';
+            gear.onclick = () => {
+                drawer.classList.toggle('open');
+                mask.classList.toggle('open', drawer.classList.contains('open'));
+                renderThemeSwatches();
+            };
+            top.appendChild(gear);
+
             // --- mobil alt çubuk (mevcut switchTab'i çağırır)
             const bar = document.createElement('nav');
             bar.id = 'mobBar';
@@ -7637,6 +7724,26 @@
 
             document.body.classList.add('shell-on');
             syncShell();
+        }
+
+        function closeGear() {
+            const d = document.getElementById('gearDrawer');
+            const m = document.getElementById('gearMask');
+            if (d) d.classList.remove('open');
+            if (m) m.classList.remove('open');
+        }
+
+        /**
+         * Tema renkleri çark menüsünde renk yuvarlakları olarak gösterilir.
+         * Yönetim'deki eski liste kaldırıldı; applyTheme aynı fonksiyon.
+         */
+        function renderThemeSwatches() {
+            const box = document.getElementById('themeSwatches');
+            if (!box) return;
+            box.innerHTML = NEON_THEMES.map(tObj =>
+                `<button type="button" title="${escAttr(tObj.name)}" onclick="applyTheme(${tObj.id})"
+                    class="${cloudData.activeTheme === tObj.id ? 'on' : ''}"
+                    style="background:${tObj.color};color:${tObj.color}"></button>`).join('');
         }
 
         /** Aktif sekmeyi mobil çubukta işaretler ve mobilde menüyü kapatır. */
