@@ -312,11 +312,13 @@
         /* Ust serit ve icerik SOL RAYA bitisik baslar: onceki halde ortalanmis
            icerik yuzunden ray ile baslik arasinda bosluk kaliyordu. */
         body.shell-on #mainContent{ max-width:none !important; margin-left:0 !important; margin-right:0 !important; }
-        body.shell-on #mainContent{ padding-top:70px !important; }
-        /* Ust serit de RAY GIBI SABIT: raid tablosu ekrandan genis oldugunda
-           sayfa yatay kayiyor ve serit sagda kalip solda bosluk biraikiyordu. */
-        #topBar{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:10px 18px;
-            border-bottom:1px solid var(--edge-soft); position:fixed; top:0; left:var(--rail-w); right:0; z-index:55;
+        body.shell-on #mainContent{ padding-top:14px !important; }
+        /* ÜST ŞERİT KALDIRILDI.
+           Artık tam genişlikte bir çubuk yok; kontroller sağ üstte SERBEST
+           yüzüyor (çark + mobilde menü düğmesi). Zemin, çerçeve ve gölge yok. */
+        #topBar{ display:flex; align-items:center; justify-content:flex-end; gap:8px; padding:10px 14px;
+            position:fixed; top:0; right:0; left:auto; z-index:55; width:auto;
+            border:0 !important; background:none !important; backdrop-filter:none !important;
             background:var(--mx10)); backdrop-filter:blur(12px); }
         #topBar .spacer{ flex:1; }
         #mobBrand{ display:none; align-items:center; gap:9px; }
@@ -344,7 +346,6 @@
 
         @media (max-width:900px){
             #appShell{ padding-left:0; }
-            #topBar{ left:0; }
             #sideRail{ width:250px; transform:translateX(-102%);
                 transition:transform .25s ease; box-shadow:20px 0 50px rgba(0,0,0,.6); }
             #sideRail.open{ transform:none; }
@@ -489,22 +490,20 @@
             #railClose{ display:block; }
             #sideRail.open ~ #railMask, #railMask.on{ display:block; }
         }
-        /* ══ TARALI DOKU ══  önizlemedeki çapraz tarama, tema tonunda */
-        /* ══ TARAMA: ÇİZGİ ARALARI TAMAMEN SAYDAM ══
-           Zeminde hiç koyu dolgu yok; yalnızca tema renginde ince çizgiler var,
-           aralardan arka plan görseli olduğu gibi görünür. Yazının okunaklı
-           kalması için zemini karartmak yerine ARKAYI BULANIKLAŞTIRIYORUZ
-           (backdrop-filter) — böylece hem saydam hem okunur. */
-        .neon-theme-box, #sideRail, #topBar, #gearDrawer{
-            background-color:transparent !important;
-            background-image:
-              repeating-linear-gradient(115deg,
-                rgba(var(--neon-rgb),.14) 0 6px,
-                transparent 6px 15px) !important;
-            backdrop-filter:blur(16px) saturate(140%) !important;
-            -webkit-backdrop-filter:blur(16px) saturate(140%) !important;
+
+        /* Serbest yüzen kontroller: her biri kendi küçük cam düğmesi gibi */
+        #topBar > *{ background:rgba(4,6,11,.55); border:1px solid var(--edge-soft);
+            border-radius:9px; backdrop-filter:blur(10px); }
+        #topBar #mobBrand{ background:none; border:0; backdrop-filter:none; }
+        /* Yüzeyler düz ve saydam: desen yok, arka plan bulanıklaştırılarak
+           okunaklılık sağlanır. */
+        .neon-theme-box, #sideRail, #gearDrawer{
+            background-color:rgba(6,9,16,.42) !important;
+            background-image:none !important;
+            backdrop-filter:blur(18px) saturate(140%) !important;
+            -webkit-backdrop-filter:blur(18px) saturate(140%) !important;
         }
-        #planExportArea .neon-theme-box{ background-image:none !important; }
+        #planExportArea .neon-theme-box{ background-color:#0f172a !important; backdrop-filter:none !important; }
         /* eski yatay menü artık kullanılmıyor */
         body.shell-on #mainNav{ }
 
@@ -719,7 +718,7 @@
                     <button onclick="if(!isEditMode) switchTab('discordann')" id="tab-discordann" class="tab-btn auth-only px-3 md:px-4 py-2 text-xs font-black uppercase tracking-widest border-b-2 border-transparent relative z-20">
                         <span data-i18n="tab_discordann">📢 Discord Announcement</span>
                     </button>
-                    <button onclick="if(!isEditMode) switchTab('bank')" id="tab-bank" class="tab-btn px-3 md:px-4 py-2 text-xs font-black uppercase tracking-widest border-b-2 border-transparent transition flex items-center gap-2">
+                    <button onclick="if(!isEditMode) switchTab('bank')" id="tab-bank" class="tab-btn member-only px-3 md:px-4 py-2 text-xs font-black uppercase tracking-widest border-b-2 border-transparent transition flex items-center gap-2">
                         &#127974; <span data-i18n="bank_title">Guild Bank</span>
                     </button>
                     <button onclick="if(!isEditMode) switchTab('applications')" id="tab-applications" class="tab-btn auth-only px-3 md:px-4 py-2 text-xs font-black uppercase tracking-widest border-b-2 border-transparent transition items-center gap-2">
@@ -6616,7 +6615,7 @@
             plan:          'officer',
             admin:         'admin',
             discordann:    'officer',
-            bank:          'visitor',
+            bank:          'member',   // ziyaretciye kapali
             applications:  'officer',
             discordlink:   'officer',
             scheduledposts:'officer'
@@ -7725,6 +7724,7 @@
                 '<div class="grow" style="border:0;padding-top:0">' +
                 '<h4 style="margin:0" data-i18n="settings_title">Ayarlar</h4>' +
                 '<button id="gearClose" type="button" aria-label="Kapat">✕</button></div>' +
+                '<div id="gearAdminOnly">' +
                 '<h4 data-i18n="system_theme">🌌 Tema</h4>' +
                 '<div id="themeSwatches"></div>' +
                 '<p style="font-size:12.5px;line-height:1.6;margin:8px 0 0;opacity:.7" data-i18n="theme_hint">' +
@@ -7733,11 +7733,12 @@
                 '<span data-i18n="nav_edit_title">Sekme yerlerini düzenle</span>' +
                 '<span id="navEditSign" style="color:var(--neon-color);font-weight:700">+</span></button>' +
                 '<div id="navEditWrap" style="display:none"></div>' +
+                '</div>' +
                 '<h4 data-i18n="settings_account">Hesap</h4>' +
                 '<div class="grow" id="gearLangRow"><span data-i18n="language">Dil</span></div>' +
                 '<div class="grow" id="gearEditRow"><span data-i18n="edit_mode">Düzenleme modu</span></div>' +
                 '<div class="grow" id="gearUserRow"><span data-i18n="settings_role">Rolün</span></div>' +
-                '<div class="grow" id="gearAuthRow" style="border:0"></div>';
+                '';
             document.body.appendChild(drawer);
             drawer.querySelector('#gearClose').onclick = closeGear;
 
@@ -7750,9 +7751,11 @@
             move('langSwitcher', 'gearLangRow');
             move('editModeBtn', 'gearEditRow');
             move('userRoleBadge', 'gearUserRow');
-            move('loginBtn', 'gearAuthRow');
-            move('applyBtn', 'gearAuthRow');
-            move('logoutBtn', 'gearAuthRow');
+            // Giriş / Başvuru / Çıkış çarkın DIŞINDA, sağ üstte çarkın soluna sıralanır.
+            ['applyBtn', 'loginBtn', 'logoutBtn'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) top.appendChild(el);
+            });
 
             const gear = document.createElement('button');
             gear.id = 'gearBtn'; gear.type = 'button';
@@ -7762,6 +7765,8 @@
                 drawer.classList.toggle('open');
                 mask.classList.toggle('open', drawer.classList.contains('open'));
                 renderThemeSwatches();
+                const adminBox = document.getElementById('gearAdminOnly');
+                if (adminBox) adminBox.style.display = isAdmin() ? 'block' : 'none';
                 try { renderNavEditor(); } catch (e) {}
                 const tg = document.getElementById('navEditToggle');
                 if (tg && !tg.dataset.bound) {
