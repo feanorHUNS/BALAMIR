@@ -453,6 +453,45 @@
         thead th{ color:var(--mx29) !important; }
         tbody tr:hover > td{ background:var(--mx30) !important; }
         input[type=checkbox]{ accent-color:var(--neon-color); }
+
+        /* ══ DIŞA AKTARIM ALANI: tema boyamasından MUAF ══
+           Kutu boyama kuralları yüzlerce öğeye degrade ekliyordu; html2canvas
+           bunların hepsini yeniden çizdiği için PNG üretimi hem yavaşlıyor hem
+           yumuşak/soluk çıkıyordu. Dışa aktarım alanı orijinal düz renklerine
+           döndürülür: hızlı ve keskin çıktı. */
+        #planExportArea .bg-slate-950, #planExportArea .bg-slate-950\/95,
+        #planExportArea .bg-slate-950\/90, #planExportArea .bg-slate-950\/60{
+            background-color:#020617 !important; background-image:none !important; }
+        #planExportArea .bg-slate-900, #planExportArea .bg-slate-900\/60,
+        #planExportArea .bg-slate-900\/50, #planExportArea .bg-slate-900\/40{
+            background-color:#0f172a !important; background-image:none !important; }
+        #planExportArea .bg-slate-800, #planExportArea .bg-slate-800\/60{
+            background-color:#1e293b !important; background-image:none !important; }
+        #planExportArea .bg-slate-700{ background-color:#334155 !important; background-image:none !important; }
+        #planExportArea .border-slate-800{ border-color:#1e293b !important; }
+        #planExportArea .border-slate-700{ border-color:#334155 !important; }
+        #planExportArea *{ backdrop-filter:none !important; }
+
+        /* Başlık ile saat kutusu iç içe giriyordu: aralarına net boşluk */
+        #exportPlanTitle{ line-height:1.12; margin-bottom:22px !important; }
+        #planExportContainer .themed-clock-container{ margin-top:6px; padding:9px 26px; }
+
+        /* BOŞ SLOTLAR belirgin olsun (hem ekranda hem çıktıda) */
+        .plan-slot{
+            border:2px dashed rgba(148,163,184,.5) !important;
+            background:rgba(15,23,42,.6) !important;
+            color:#a9b4c6 !important;
+            background-image:none !important;
+        }
+        #planExportArea .plan-slot{
+            border-color:rgba(148,163,184,.7) !important;
+            background:rgba(2,6,23,.75) !important;
+            color:#c3ccdb !important;
+        }
+
+        /* Sol ray ve üst şerit daha opak: içerikten net ayrılsın */
+        #sideRail{ background:rgba(4,6,11,.97) !important; }
+        #topBar{ background:rgba(4,6,11,.96) !important; }
         /* eski yatay menü artık kullanılmıyor */
         body.shell-on #mainNav{ }
 
@@ -7597,7 +7636,7 @@
                 rail.appendChild(h);
                 const list = document.createElement('div');
                 list.className = 'rail-list';
-                btns.forEach(b => { list.appendChild(b); placed.add(b.id); });
+                btns.forEach(b => { list.appendChild(b); placed.add(b.id); makeTabEditable(b); });
                 rail.appendChild(list);
             });
             // Listede olmayan sekme kalırsa kaybolmasın
@@ -7698,6 +7737,37 @@
 
             document.body.classList.add('shell-on');
             syncShell();
+        }
+
+        /**
+         * SEKME ADINI DEĞİŞTİRME
+         * Düzenleme modu açıkken sol menüdeki sekme adına tıklanınca mevcut
+         * başlık düzenleme penceresi açılır (marka adıyla aynı sistem). Kaydedilen
+         * ad renderTitles() ile her dilde geri yüklenir.
+         */
+        function makeTabEditable(btn) {
+            if (!btn || btn.dataset.editableBound) return;
+            btn.dataset.editableBound = '1';
+            const key = 'tab_' + btn.id.replace('tab-', '');
+            const span = btn.querySelector('span[data-i18n]') || btn.querySelector('span') || btn;
+            span.id = 'dyn-' + key;
+            span.classList.add('editable-text');
+            btn.addEventListener('click', (e) => {
+                if (isEditMode && isAdmin()) { handleTitleClick(e, key); }
+            }, true);
+        }
+
+        /** Kaydedilmiş sekme adlarını uygular (dil bazlı). */
+        function applyTabTitles() {
+            document.querySelectorAll('#sideRail .tab-btn').forEach(btn => {
+                const key = 'tab_' + btn.id.replace('tab-', '');
+                const raw = cloudData.siteTitles && cloudData.siteTitles[key];
+                const ov = raw ? (raw[currentLang] || (raw.text ? raw : null)) : null;
+                const span = document.getElementById('dyn-' + key);
+                if (!span) return;
+                if (ov && ov.text) { span.innerText = ov.text; span.style.color = ov.color || ''; }
+                else { span.style.color = ''; }
+            });
         }
 
         function closeGear() {
@@ -7867,6 +7937,7 @@
                 if (ov && ov.text) { el.innerText = ov.text; el.style.color = ov.color || ''; }
                 else { el.innerText = defaultTitles[key]; el.style.color = ''; }
             });
+            try { applyTabTitles(); } catch (e) {}
         }
 
         function showCustomAlert(msg, title="INFO", icon="🔔") { document.getElementById('alertMessage').innerText = msg; document.getElementById('alertTitle').innerText = title; document.getElementById('alertIcon').innerText = icon; document.getElementById('customAlertOverlay').classList.remove('hidden'); }
@@ -9388,7 +9459,7 @@ function buildSlotContentCanvasDataUri(name, pills, reincText, className) {
                 // bu try/catch olmadan .then()/.catch() zincirine hiç ulaşılamaz ve ekran asılı kalırdı.
                 try {
                     // useCORS: true eklendi ki dışarıdaki resim yüklenirken siyah ekran vermesin
-                    html2canvas(planContainer, { backgroundColor: '#020617', scale: 2, useCORS: true }).then(canvas => {
+                    html2canvas(planContainer, { backgroundColor: '#020617', scale: 2, useCORS: true, logging: false, imageTimeout: 15000, removeContainer: true }).then(canvas => {
                         settled = true;
                         if (onCaptured) onCaptured(canvas);
                         resetVisibility();
