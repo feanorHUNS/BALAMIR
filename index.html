@@ -478,10 +478,6 @@
         }
 
         /* Sol ray ve üst şerit daha opak: içerikten net ayrılsın */
-        /* Taramanin koyu araliklari SAYDAM: arkadaki gorsel suzulerek gorunur,
-           ama yazi okunakli kalsin diye zemin yine de yeterince koyu. */
-        #sideRail{ background-color:rgba(4,6,11,.78) !important; }
-        #topBar{ background-color:rgba(4,6,11,.76) !important; }
 
 
         /* mobil menü kapatma düğmesi + perde */
@@ -494,14 +490,20 @@
             #sideRail.open ~ #railMask, #railMask.on{ display:block; }
         }
         /* ══ TARALI DOKU ══  önizlemedeki çapraz tarama, tema tonunda */
+        /* ══ TARAMA: ÇİZGİ ARALARI TAMAMEN SAYDAM ══
+           Zeminde hiç koyu dolgu yok; yalnızca tema renginde ince çizgiler var,
+           aralardan arka plan görseli olduğu gibi görünür. Yazının okunaklı
+           kalması için zemini karartmak yerine ARKAYI BULANIKLAŞTIRIYORUZ
+           (backdrop-filter) — böylece hem saydam hem okunur. */
         .neon-theme-box, #sideRail, #topBar, #gearDrawer{
+            background-color:transparent !important;
             background-image:
               repeating-linear-gradient(115deg,
-                rgba(var(--neon-rgb),.10) 0 6px,
+                rgba(var(--neon-rgb),.14) 0 6px,
                 transparent 6px 15px) !important;
+            backdrop-filter:blur(16px) saturate(140%) !important;
+            -webkit-backdrop-filter:blur(16px) saturate(140%) !important;
         }
-        /* Panel zemini yari saydam: tarama araliklarindan arka plan gorunur */
-        .neon-theme-box{ background-color:rgba(6,9,16,.60) !important; }
         #planExportArea .neon-theme-box{ background-image:none !important; }
         /* eski yatay menü artık kullanılmıyor */
         body.shell-on #mainNav{ }
