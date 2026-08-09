@@ -866,6 +866,9 @@
             </div>
             
             <div id="editorToolbar" class="hidden edit-mode-only bg-slate-900 border border-blue-900/50 p-3 rounded-xl mb-4 flex-wrap gap-2 items-center shadow-2xl transition-all">
+                <button onclick="formatDoc('justifyLeft')" title="Sola hizala" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 w-9 h-9 rounded-lg text-sm font-black transition">⬅</button>
+                <button onclick="formatDoc('justifyCenter')" title="Ortala" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 w-9 h-9 rounded-lg text-sm font-black transition">↔</button>
+                <button onclick="formatDoc('justifyRight')" title="Sağa hizala" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 w-9 h-9 rounded-lg text-sm font-black transition">➡</button>
                 <div class="flex gap-1 border-r border-slate-700 pr-2">
                     <button onclick="formatDoc('bold')" title="Bold" class="px-3 py-1.5 font-bold rounded hover:bg-slate-800 transition" aria-label="Bold">B</button>
                     <button onclick="formatDoc('italic')" title="Italic" class="px-3 py-1.5 italic rounded hover:bg-slate-800 transition" aria-label="Italic">I</button>
@@ -2144,7 +2147,7 @@
                 roll_logs: "ROLL LOGS", raid_history: "RAID HISTORY", event_plan: "EVENT CENTER", no_events: "No Active Events", 
                 add_character: "Add Character", add_roster: "+ ADD TO ROSTER", registered_players: "Registered Players", 
                 event_title: "Event Title", date_time: "Date & Time", event_roster: "EVENT ROSTER", delete_plan: "Delete Plan", 
-                publish: "PUBLISH", system_management: "SYSTEM MANAGEMENT", system_theme: "🌌 SYSTEM THEME", settings_title: "Settings", nav_grp_event: "EVENTS", nav_grp_guild: "GUILD", nav_grp_bot: "BOT", nav_grp_system: "SYSTEM", nav_edit_title: "Move tabs between groups", settings_account: "Account", settings_role: "Your role", theme_hint: "The colour changes panels, borders and background together — not just accents.", 
+                publish: "PUBLISH", system_management: "SYSTEM MANAGEMENT", system_theme: "🌌 SYSTEM THEME", settings_title: "Settings", bulletin_broadcast_ask: "Also post this bulletin to the Discord channels?", bulletin_broadcast_title: "New Bulletin Published", nav_grp_event: "EVENTS", nav_grp_guild: "GUILD", nav_grp_bot: "BOT", nav_grp_system: "SYSTEM", nav_edit_title: "Move tabs between groups", settings_account: "Account", settings_role: "Your role", theme_hint: "The colour changes panels, borders and background together — not just accents.", 
                 penalty_mgmt: "⚖️ Penalty Management", mass_cut: "Mass Cut", history: "History", pending_penalties: "Pending Penalties", 
                 officer_accounts: "🛡️ Officer Accounts", add: "Add", audit_logs: "📋 Audit Logs", unauthorized: "Unauthorized Access.", 
                 roll_dice: "Roll Dice", save_raid: "Save & Finish Raid", character: "CHARACTER", 
@@ -2190,7 +2193,7 @@
                 roll_logs: "ZAR KAYITLARI", raid_history: "GEÇMİŞ RAİD KAYITLARI", event_plan: "ETKİNLİK MERKEZİ", no_events: "Aktif Etkinlik Yok", 
                 add_character: "Karakter Ekle", add_roster: "+ KADROYA EKLE", registered_players: "Kayıtlı Oyuncular", 
                 event_title: "Etkinlik Başlığı", date_time: "Tarih & Saat", event_roster: "ETKİNLİK KADROSU", delete_plan: "Planı Sil", 
-                publish: "YAYINLA", system_management: "SİSTEM YÖNETİMİ", system_theme: "🌌 SİSTEM TEMASI", settings_title: "Ayarlar", nav_grp_event: "ETKİNLİK", nav_grp_guild: "LONCA", nav_grp_bot: "BOT", nav_grp_system: "SİSTEM", nav_edit_title: "Sekmeleri gruplar arasında taşı", settings_account: "Hesap", settings_role: "Rolün", theme_hint: "Renk yalnızca vurguyu değil; panelleri, kenarları ve zemini birlikte değiştirir.", 
+                publish: "YAYINLA", system_management: "SİSTEM YÖNETİMİ", system_theme: "🌌 SİSTEM TEMASI", settings_title: "Ayarlar", bulletin_broadcast_ask: "Bu bülten Discord kanallarına da gönderilsin mi?", bulletin_broadcast_title: "Yeni Duyuru Yayınlandı", nav_grp_event: "ETKİNLİK", nav_grp_guild: "LONCA", nav_grp_bot: "BOT", nav_grp_system: "SİSTEM", nav_edit_title: "Sekmeleri gruplar arasında taşı", settings_account: "Hesap", settings_role: "Rolün", theme_hint: "Renk yalnızca vurguyu değil; panelleri, kenarları ve zemini birlikte değiştirir.", 
                 penalty_mgmt: "⚖️ Ceza & Yaptırım Yönetimi", mass_cut: "Toplu Kes", history: "Geçmiş", pending_penalties: "Cezalı Bekleyenler", 
                 officer_accounts: "🛡️ Officer Hesapları", add: "Ekle", audit_logs: "📋 Denetim Kayıtları", unauthorized: "Yetkisiz Erişim.", 
                 roll_dice: "Kader Zarı At", save_raid: "Raidi Kaydet & Bitir", character: "KARAKTER", 
@@ -2674,6 +2677,7 @@
                             // Kullanıcı o an bir alana yazıyor/seçim yapıyorsa, yeniden
                             // çizim yazdığını silmesin: değer + imleç korunarak çizilir.
                             withActiveFieldPreserved(renderAll);
+                            try { rebuildRail(); } catch (e) {}   // kaydedilmis sekme gruplarini uygula
                         } catch (e) {
                             console.error('ilk cizim hatasi:', e);
                         } finally {
@@ -5939,10 +5943,35 @@
             }).catch(e => console.error('broadcastBotTextToAllChannels error:', e));
         }
 
+        let _lastBroadcastHtml = null;
+        /**
+         * Bülten kaydedildiğinde Discord'a duyuru yayını.
+         *
+         * ÖNCEKİ DAVRANIŞ (sorun): Her "Kaydet" işleminde, içerik değişmemiş
+         * olsa bile TÜM kanallara otomatik mesaj gidiyordu. İki kez kaydedince
+         * iki mesaj düşüyor ve bot kendiliğinden yazıyormuş gibi görünüyordu.
+         * ARTIK: içerik gerçekten değiştiyse ve yönetici ONAYLARSA gönderilir.
+         * Ayrıca &nbsp; gibi HTML varlıkları düz metne çevrilir (mesajda ham
+         * "&nbsp;" görünüyordu).
+         */
         function notifyDiscordAnnouncement(html) {
             if (!cloudData.discordNotify || !cloudData.discordNotify.announce) return;
-            const plainText = html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().substring(0, 300);
-            broadcastBotTextToAllChannels(`📜 **Yeni Duyuru Yayınlandı**\n${plainText || 'Duyuru güncellendi.'}`);
+
+            const tmp = document.createElement('div');
+            tmp.innerHTML = String(html || '');
+            const plainText = (tmp.textContent || '')
+                .replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim().substring(0, 300);
+
+            if (!plainText) return;
+            if (_lastBroadcastHtml === plainText) return;   // aynı içerik tekrar gönderilmez
+
+            showCustomConfirm(
+                t('bulletin_broadcast_ask'),
+                () => {
+                    _lastBroadcastHtml = plainText;
+                    broadcastBotTextToAllChannels(`📜 **${t('bulletin_broadcast_title')}**\n${plainText}`);
+                },
+                t('confirm'), '📢');
         }
 
         /**
@@ -7764,11 +7793,8 @@
             toggle.onclick = () => { const o = rail.classList.toggle('open'); const m = document.getElementById('railMask'); if (m) m.classList.toggle('on', o); };
             top.appendChild(toggle);
 
-            const mb = document.createElement('div');
-            mb.id = 'mobBrand';
-            mb.innerHTML = '<img alt=""><b>HUNS</b>';
-            mb.querySelector('img').src = logoSrc;
-            top.appendChild(mb);
+            // NOT: Mobil marka bloğu kaldırıldı — sol menüde zaten logo ve HUNS
+            // yazısı var, üstte tekrar etmesi yer kaplıyordu.
 
             const sp = document.createElement('div');
             sp.className = 'spacer';
@@ -7778,6 +7804,18 @@
             // düzenleme modu) OLDUĞU GİBİ taşınır — hepsi çalışmaya devam eder.
             const controls = header.querySelector('.flex.items-center.gap-2');
             if (controls) top.appendChild(controls);
+
+            // Boş kalan kapsayıcıları temizle: içindeki düğmeler tek tek üst
+            // şeride taşındığı için geriye boş kutular kalıyor ve stil gereği
+            // "boş pil" gibi görünüyorlardı.
+            setTimeout(() => {
+                Array.from(top.children).forEach(el => {
+                    if (el.id === 'gearBtn' || el.id === 'railToggle') return;
+                    const hasText = (el.textContent || '').trim().length > 0;
+                    const hasCtrl = el.querySelector('button, select, a, input, img');
+                    if (!hasText && !hasCtrl) el.remove();
+                });
+            }, 0);
 
             // --- ÇARK MENÜSÜ ---------------------------------------------------
             // Düzenleme modu düğmesi üst şeritten çekilip buraya alınır; yanına
