@@ -467,17 +467,24 @@
         #planExportContainer .themed-clock-container{ margin-top:6px; padding:9px 26px; }
 
         /* BOŞ SLOTLAR belirgin olsun (hem ekranda hem çıktıda) */
-        .plan-slot{
+        /* BOŞ SLOT — yalnızca kesikli çerçeveli (boş) kutular.
+           ÖNEMLİ: Kural eskiden tüm .plan-slot ögelerine uygulanıyordu; dolu
+           kutuların SINIF RENGİ çerçevesini de eziyor ve PNG/GIF çıktısında
+           renkler kaybolup gri kesikli çerçeveye dönüşüyordu. Artık yalnızca
+           .border-dashed taşıyan boş slotlara uygulanıyor. */
+        .plan-slot.border-dashed{
             border:2px dashed rgba(148,163,184,.5) !important;
             background:rgba(15,23,42,.6) !important;
             color:#a9b4c6 !important;
             background-image:none !important;
         }
-        #planExportArea .plan-slot{
+        #planExportArea .plan-slot.border-dashed{
             border-color:rgba(148,163,184,.7) !important;
             background:rgba(2,6,23,.75) !important;
             color:#c3ccdb !important;
         }
+        /* Dolu kutuların sınıf rengi hiçbir kuralla ezilmesin */
+        #planExportArea .plan-slot:not(.border-dashed) > *{ background-image:none !important; }
 
         /* Sol ray ve üst şerit daha opak: içerikten net ayrılsın */
 
@@ -9029,7 +9036,7 @@
     // PNG ciktisinda cerceveler cok soluk kaliyordu, renkler secilemiyordu.
     // Disa aktarimda cerceve kalinlastirilip cift katmanli neon parilti ekleniyor.
     const neonFrame = isExport
-        ? `border-width:3.5px; box-shadow: 0 0 8px ${borderColor}, 0 0 18px ${borderColor}99, inset 0 0 10px ${borderColor}40;`
+        ? `border-width:4px; box-shadow: 0 0 10px ${borderColor}, 0 0 26px ${borderColor}CC, inset 0 0 14px ${borderColor}55;`
         : `box-shadow: 0 0 6px ${borderColor}80;`;
     const pillsHtml = pills.map(p => `<span style="display:inline-block; vertical-align:middle; height: 21px; line-height: 21px; border: 2.5px solid ${p.color}; color: #ffffff; background-color: ${p.color}70; border-radius: 9999px; padding: 0 11px; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap; text-shadow: 0 1px 3px rgba(0,0,0,0.9); margin: 0 2px;">${p.text}</span>`).join('');
 
