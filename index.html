@@ -376,6 +376,7 @@
         /* ══ ÇARK MENÜSÜ (ayarlar çekmecesi) ══
            Düzenleme modu düğmesinin yerini alır; tema rengi, dil, düzenleme modu
            ve hesap işlemleri burada toplanır. */
+        body.admin-mode #gearBtn{ align-items:center; justify-content:center; }
         #gearBtn{ display:grid; place-items:center; width:38px; height:38px; border-radius:9px;
             border:1px solid var(--edge-soft); background:var(--surface2); color:var(--neon-color);
             font-size:17px; cursor:pointer; transition:.15s; }
@@ -7670,10 +7671,12 @@
                 const h = document.createElement('div');
                 h.className = 'rail-grp';
                 h.setAttribute('data-i18n', gkey);
+                h.dataset.grp = gkey;
                 h.textContent = t(gkey);
                 rail.appendChild(h);
                 const list = document.createElement('div');
                 list.className = 'rail-list';
+                list.dataset.grp = gkey;
                 btns.forEach(b => { list.appendChild(b); placed.add(b.id); makeTabEditable(b); });
                 rail.appendChild(list);
             });
@@ -7735,9 +7738,7 @@
                 '<div id="navEditWrap" style="display:none"></div>' +
                 '</div>' +
                 '<h4 data-i18n="settings_account">Hesap</h4>' +
-                '<div class="grow" id="gearLangRow"><span data-i18n="language">Dil</span></div>' +
                 '<div class="grow" id="gearEditRow"><span data-i18n="edit_mode">Düzenleme modu</span></div>' +
-                '<div class="grow" id="gearUserRow"><span data-i18n="settings_role">Rolün</span></div>' +
                 '';
             document.body.appendChild(drawer);
             drawer.querySelector('#gearClose').onclick = closeGear;
@@ -7748,9 +7749,13 @@
                 const row = document.getElementById(rowId);
                 if (el && row) row.appendChild(el);
             };
-            move('langSwitcher', 'gearLangRow');
+            // Dil ve rol rozeti çarkın DIŞINDA, sağ üstte durur; çark yalnızca
+            // admin ayarları içerdiği için admin dışındaki roller onu hiç görmez.
+            ['langSwitcher', 'userRoleBadge'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) top.appendChild(el);
+            });
             move('editModeBtn', 'gearEditRow');
-            move('userRoleBadge', 'gearUserRow');
             // Giriş / Başvuru / Çıkış çarkın DIŞINDA, sağ üstte çarkın soluna sıralanır.
             ['applyBtn', 'loginBtn', 'logoutBtn'].forEach(id => {
                 const el = document.getElementById(id);
@@ -7761,6 +7766,7 @@
             gear.id = 'gearBtn'; gear.type = 'button';
             gear.setAttribute('aria-label', 'Ayarlar');
             gear.textContent = '⚙';
+            gear.classList.add('admin-only-flex');   // yalnizca admin gorur
             gear.onclick = () => {
                 drawer.classList.toggle('open');
                 mask.classList.toggle('open', drawer.classList.contains('open'));
@@ -7801,6 +7807,7 @@
 
             document.body.classList.add('shell-on');
             syncShell();
+            try { syncRailGroups(); } catch (e) {}
         }
 
         /**
@@ -7878,14 +7885,17 @@
                 const h = document.createElement('div');
                 h.className = 'rail-grp';
                 h.setAttribute('data-i18n', gkey);
+                h.dataset.grp = gkey;
                 h.textContent = t(gkey);
                 rail.appendChild(h);
                 const list = document.createElement('div');
                 list.className = 'rail-list';
+                list.dataset.grp = gkey;
                 btns.forEach(b => list.appendChild(b));
                 rail.appendChild(list);
             });
             try { applyTabTitles(); } catch (e) {}
+            try { syncRailGroups(); } catch (e) {}
         }
 
         function closeGear() {
@@ -7906,6 +7916,33 @@
                 `<button type="button" title="${escAttr(tObj.name)}" onclick="applyTheme(${tObj.id})"
                     class="${cloudData.activeTheme === tObj.id ? 'on' : ''}"
                     style="background:${tObj.color};color:${tObj.color}"></button>`).join('');
+        }
+
+        /**
+         * Boş grupları gizler: bir grupta o kullanıcının görebildiği hiçbir sekme
+         * yoksa başlığı da görünmez. Ziyaretçi bu sayede yalnızca "ETKİNLİK"
+         * başlığını ve Duyurular sekmesini görür.
+         */
+        // applyPermissions her calistiginda gruplari da tazele (guvenli sarmalama)
+        (function () {
+            if (typeof applyPermissions !== 'function' || applyPermissions._railWrapped) return;
+            const orig = applyPermissions;
+            applyPermissions = function () {
+                const r = orig.apply(this, arguments);
+                try { syncRailGroups(); } catch (e) {}
+                return r;
+            };
+            applyPermissions._railWrapped = true;
+        })();
+
+        function syncRailGroups() {
+            document.querySelectorAll('#sideRail .rail-list').forEach(list => {
+                const visible = Array.from(list.children).some(b =>
+                    getComputedStyle(b).display !== 'none');
+                list.style.display = visible ? '' : 'none';
+                const head = document.querySelector(`#sideRail .rail-grp[data-grp="${list.dataset.grp}"]`);
+                if (head) head.style.display = visible ? '' : 'none';
+            });
         }
 
         /** Aktif sekmeyi mobil çubukta işaretler ve mobilde menüyü kapatır. */
