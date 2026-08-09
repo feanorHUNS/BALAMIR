@@ -521,6 +521,34 @@
         #planExportArea .neon-theme-box{ background-color:#0f172a !important; backdrop-filter:none !important;
             box-shadow:none !important; }
 
+
+        /* ══ MOBİL ÜST ŞERİT ══
+           Kontroller masaüstünde sağ üstte serbest yüzer; mobilde ise gerçek bir
+           şerit olur. Önceden yüzer haldeyken sayfa başlığının üstüne biniyor ve
+           menü düğmesi sıkışıp görünmüyordu. */
+        @media (max-width:900px){
+            #topBar{
+                position:sticky !important; top:0; left:0 !important; right:0 !important;
+                width:100% !important; justify-content:flex-start !important; flex-wrap:wrap;
+                gap:6px; padding:8px 10px;
+                background:rgba(6,9,16,.72) !important;
+                backdrop-filter:blur(14px) !important;
+                border-bottom:1px solid rgba(var(--neon-rgb),.35) !important;
+            }
+            #topBar #railToggle{ order:-2; }
+            #topBar #mobBrand{ order:-1; margin-right:auto; }
+            #topBar > *{ font-size:11px !important; padding:6px 9px !important; }
+            body.shell-on #mainContent{ padding-top:10px !important; }
+        }
+
+        /* ══ ARAPÇA (RTL) ══ sağdaki kutucuklar başlığı kapatıyordu:
+           kontroller sol rayın yanına alınır. */
+        body[dir="rtl"] #topBar{
+            right:auto; left:var(--rail-w); justify-content:flex-start;
+        }
+        @media (max-width:900px){
+            body[dir="rtl"] #topBar{ left:0; }
+        }
         /* ══ SAĞ ÜST KONTROLLER ══ okunaklılık ve neon çerçeve */
         #topBar > *{
             background:rgba(6,9,16,.55) !important;
@@ -7580,7 +7608,8 @@
                         t('error'), '❌');
                 }
                 if (!res.ok) return showCustomAlert((d.error || raw).slice(0, 500), t('error'), '❌');
-                const ok = (b) => b ? '✅' : '❌';
+                // null/undefined = "bilinmiyor" -> ne ✅ ne ❌
+                const ok = (b) => (b === null || b === undefined) ? '➖' : (b ? '✅' : '❌');
                 const lines = [
                     `📦 ${t('botcmd_version')}: ${d.version || '?'}`,
                     `${ok(d.applicationIdSet && d.applicationIdLooksValid)} DISCORD_APPLICATION_ID`,
@@ -7597,6 +7626,7 @@
                 if (d.registered && d.registered.length === 0 && !d.error) {
                     lines.push('', '👉 ' + t('botcmd_need_register'));
                 }
+                if (d.notes && d.notes.length) lines.push('', 'ℹ️ ' + d.notes.join(' · '));
                 if (d.error) lines.push('', '⚠️ ' + d.error);
                 showCustomAlert(lines.join('\n'), t('botcmd_diagnose'), '🩺');
             }).catch(e => showCustomAlert(String(e), t('error'), '❌'));
@@ -7619,7 +7649,7 @@
                         const d = await res.json();
                         extra = (d.commands && d.commands.length)
                             ? '\n' + d.commands.map(c => '/' + c).join('  ')
-                            : '\n⚠️ Discord kayıt listesini boş döndürdü.';
+                            : '';
                     } catch (e) {}
                     msg = t('botcmd_register_ok') + extra;
                 } else {
