@@ -9162,54 +9162,85 @@ function buildSlotContentCanvasDataUri(name, pills, reincText, className) {
                 im.src = b.img;
             })));
 
-            const S = 480;                     // kare kart (yukleme sinirina takilmasin)
+            const S = 520;                     // kare kart
             const c = getObsCfg();
             const col = themeRgb();
             const frames = [];
 
+            /** Yuvarlak kose yolu (roundRect her tarayicida yok). */
+            const rr = (ctx, x, y, w, h, r) => {
+                ctx.beginPath();
+                ctx.moveTo(x + r, y);
+                ctx.arcTo(x + w, y, x + w, y + h, r);
+                ctx.arcTo(x + w, y + h, x, y + h, r);
+                ctx.arcTo(x, y + h, x, y, r);
+                ctx.arcTo(x, y, x + w, y, r);
+                ctx.closePath();
+            };
+
+            // Onizlemedeki "TEK TEK SAHNE" duzeni:
+            //   ust baslik  ->  cerceveli ic panel (kose numarasi + boss + adi)
+            //   ->  iki dilli savas cagrisi
             const draw = (ctx, idx, alpha, scale) => {
                 ctx.clearRect(0, 0, S, S);
-                // zemin
-                const g = ctx.createRadialGradient(S / 2, 0, 0, S / 2, S, S);
-                g.addColorStop(0, '#1a1207'); g.addColorStop(1, '#070c18');
-                ctx.fillStyle = g; ctx.fillRect(0, 0, S, S);
-                // cerceve
-                ctx.strokeStyle = `rgb(${col.r},${col.g},${col.b})`;
-                ctx.lineWidth = 4; ctx.strokeRect(2, 2, S - 4, S - 4);
 
-                // ust baslik (rotasyon numarasi ve saat YOK — istek uzerine)
+                // --- dis zemin + cerceve
+                const g = ctx.createRadialGradient(S / 2, S * 0.15, 0, S / 2, S, S);
+                g.addColorStop(0, '#0d1526'); g.addColorStop(1, '#050912');
+                ctx.fillStyle = g;
+                rr(ctx, 0, 0, S, S, 18); ctx.fill();
+                ctx.strokeStyle = '#f59e0b';
+                ctx.lineWidth = 3;
+                rr(ctx, 2, 2, S - 4, S - 4, 17); ctx.stroke();
+
                 ctx.textAlign = 'center';
+                ctx.textBaseline = 'alphabetic';
+
+                // --- ust baslik (harf araligi genis, mavi)
                 ctx.fillStyle = '#22d3ee';
-                ctx.font = "900 12px 'Inter', sans-serif";
-                ctx.fillText('WEEKLY OBS ROTATION  ·  HAFTANIN OBS ROTASYONU', S / 2, 34);
-                ctx.fillStyle = '#ffd27a';
-                ctx.font = "900 30px 'Cinzel', serif";
-                ctx.shadowColor = 'rgba(245,158,11,.6)'; ctx.shadowBlur = 18;
-                ctx.fillText('OBS', S / 2, 72);
-                ctx.shadowBlur = 0;
+                ctx.font = "900 11px 'Inter', Arial, sans-serif";
+                const title = 'W E E K L Y   O B S   R O T A T I O N   ·   H A F T A N I N   O B S   R O T A S Y O N U';
+                ctx.fillText(title, S / 2, 34);
 
-                // boss gorseli
+                // --- ic panel
+                const px = 28, py = 56, pw = S - 56, ph = S - 56 - 92;
+                ctx.fillStyle = 'rgba(3,7,18,.55)';
+                rr(ctx, px, py, pw, ph, 14); ctx.fill();
+                ctx.strokeStyle = 'rgba(245,158,11,.45)';
+                ctx.lineWidth = 2;
+                rr(ctx, px + 1, py + 1, pw - 2, ph - 2, 13); ctx.stroke();
+
+                // kose sira numarasi
+                ctx.textAlign = 'left';
+                ctx.fillStyle = '#f59e0b';
+                ctx.font = "900 13px 'Inter', Arial, sans-serif";
+                ctx.fillText(String(idx + 1).padStart(2, '0'), px + 16, py + 28);
+                ctx.textAlign = 'center';
+
+                // --- boss gorseli (panelin ustunde, adi altta)
+                const nameY = py + ph - 34;
                 const im = imgs[idx];
-                const maxW = S * 0.72, maxH = S * 0.52;
-                const k = Math.min(maxW / im.naturalWidth, maxH / im.naturalHeight) * scale;
+                const boxW = pw - 56, boxH = ph - 96;
+                const k = Math.min(boxW / im.naturalWidth, boxH / im.naturalHeight) * scale;
                 const w = im.naturalWidth * k, h = im.naturalHeight * k;
-                // Yalnizca boss ve adi soluyor; baslik/cerceve/cagri hep net.
                 ctx.globalAlpha = Math.max(0.15, alpha);
-                ctx.drawImage(im, (S - w) / 2, 108 + (maxH - h) / 2, w, h);
+                ctx.drawImage(im, (S - w) / 2, py + 34 + (boxH - h) / 2, w, h);
 
-                // boss adi
-                ctx.fillStyle = '#ffe6b8';
-                ctx.font = "900 30px 'Cinzel', serif";
-                ctx.fillText(String(bosses[idx].name).toUpperCase(), S / 2, 108 + maxH + 46);
-                // sira
-                ctx.fillStyle = `rgb(${col.r},${col.g},${col.b})`;
-                ctx.font = "900 13px 'Inter', sans-serif";
-                ctx.fillText(`BOSS ${idx + 1} / ${bosses.length}`, S / 2, 108 + maxH + 70);
+                // --- boss adi
+                ctx.fillStyle = '#f4f7ff';
+                let fs = 30;
+                ctx.font = `900 ${fs}px 'Cinzel', Georgia, serif`;
+                const label = String(bosses[idx].name).toUpperCase();
+                while (ctx.measureText(label).width > pw - 40 && fs > 14) {
+                    fs -= 1;
+                    ctx.font = `900 ${fs}px 'Cinzel', Georgia, serif`;
+                }
+                ctx.fillText(label, S / 2, nameY);
                 ctx.globalAlpha = 1;
 
-                // savas cagrisi (sabit)
+                // --- savas cagrisi (her karede net)
                 ctx.fillStyle = '#22d3ee';
-                ctx.font = "700 15px 'Cinzel', serif";
+                ctx.font = "700 15px 'Cinzel', Georgia, serif";
                 ctx.fillText(c.cryEn, S / 2, S - 44);
                 ctx.fillStyle = '#ffd27a';
                 ctx.fillText(c.cryTr, S / 2, S - 20);
