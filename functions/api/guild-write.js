@@ -43,7 +43,9 @@ const SECTIONS = {
     // dongusune giriyordu.
     botSettings:            { type: 'object', max: 20, validate: validateBotSettings },
     // Haftalik OBS rotasyonu: kanal, savas cagrisi ve hazirlanan GIF baglantilari.
-    obsRotation:            { type: 'object', max: 20, validate: validateObsRotation }
+    obsRotation:            { type: 'object', max: 20, validate: validateObsRotation },
+    // Sol menudeki sekmelerin hangi gruba ait oldugu: { 'tab-raid': 'nav_grp_event', ... }
+    navGroups:              { type: 'object', max: 40, validate: validateNavGroups }
     // NOT: Taktik haritalari GuildData'da DEGIL — gomulu gorselleriyle birlikte
     // ayri 'TacticsMaps' Firebase yolunda tutulur; yazma yetkisi kurallarla
     // yalnizca admin'e verilmistir.
@@ -51,6 +53,15 @@ const SECTIONS = {
 
 // Tek bir istekte yazilabilecek en fazla bolum sayisi.
 const MAX_SECTIONS_PER_REQUEST = 25;
+
+function validateNavGroups(o) {
+    const OK = ['nav_grp_event', 'nav_grp_guild', 'nav_grp_bot', 'nav_grp_system'];
+    for (const k in o) {
+        if (!/^tab-[a-z]{2,30}$/.test(k)) return 'navGroups: gecersiz sekme anahtari';
+        if (!OK.includes(String(o[k]))) return 'navGroups: gecersiz grup';
+    }
+    return null;
+}
 
 function validateObsRotation(o) {
     if (o.channelId !== undefined && o.channelId !== '' &&
