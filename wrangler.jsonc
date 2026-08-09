@@ -46,7 +46,7 @@
     // gosterdigi icin gorsel once bu kanala yuklenir, sonra kalici baglantisi
     // saklanir. Gizli bir "depo" kanali acip kimligini buraya yaz.
     // (Discord: kanala sag tik -> Kanal Kimligini Kopyala; Gelistirici Modu acik olmali)
-    "DISCORD_UPLOAD_CHANNEL_ID": "1533290379003035811"
+    "DISCORD_UPLOAD_CHANNEL_ID": "1535800822951182457"
   },
 
   "assets": {
