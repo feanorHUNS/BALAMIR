@@ -59,12 +59,13 @@ export async function postObsRotation(env, cfg, rot, tms, isTest) {
     // HAREKETSIZ gorunuyor (otomatik oynatma ayarina ve istemciye bagli).
     // Duz mesaj icinde tek basina duran bir GIF baglantisi ise her zaman
     // oynatilir. Bu yuzden metin ustte, GIF baglantisi kendi satirinda.
+    // Mesaj SADE tutuluyor: baslik + tarih. Rotasyon numarasi ve savas cagrisi
+    // zaten GORSELIN icinde; metinde tekrarlamak mesaji kalabaliklastiriyordu.
     const body = {
         content:
             `🗡️ **Weekly OBS Rotation · Haftanın OBS Rotasyonu**\n` +
-            `**Rotation ${rot} / ${OBS_COUNT}**  ·  🇹🇷 ${dates.tr}  ·  🇪🇺 ${dates.eu}\n` +
-            `${cfg.cryEn || 'TO ARMS, HUNS!'}\n${cfg.cryTr || 'SİLAH BAŞINA HUNS!'}` +
-            (isTest ? `\n_(test)_` : '') +
+            `🇹🇷 ${dates.tr}  ·  🇪🇺 ${dates.eu}` +
+            (isTest ? `  _(test)_` : '') +
             `\n${String(url)}`
     };
 
