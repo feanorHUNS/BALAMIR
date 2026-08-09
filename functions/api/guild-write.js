@@ -99,6 +99,8 @@ function validateBotSettings(o) {
     if (o.welcomeMessage !== undefined && String(o.welcomeMessage).length > 2000) return 'botSettings: mesaj cok uzun';
     if (o.welcomeImage !== undefined && o.welcomeImage !== '' &&
         !/^https?:\/\//i.test(String(o.welcomeImage))) return 'botSettings: gorsel adresi gecersiz';
+    if (o.logoUrl !== undefined && o.logoUrl !== '' &&
+        !/^https?:\/\//i.test(String(o.logoUrl))) return 'botSettings: logo adresi gecersiz';
     if (o.welcomeEnabled !== undefined && typeof o.welcomeEnabled !== 'boolean') return 'botSettings: etkin degeri gecersiz';
     return null;
 }
