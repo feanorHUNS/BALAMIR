@@ -341,16 +341,6 @@
         }
         .plan-act, .btn-neo{ border-radius:9px; }
 
-        /* --- mobil alt sekme çubuğu --- */
-        #mobBar{ display:none; position:fixed; left:0; right:0; bottom:0; z-index:70;
-            background:var(--mx12));
-            border-top:1px solid var(--edge-soft); backdrop-filter:blur(12px); }
-        #mobBar button{ flex:1; background:none; border:0; cursor:pointer; padding:8px 2px 10px;
-            display:flex; flex-direction:column; align-items:center; gap:3px;
-            font-family:'EB Garamond',serif; font-size:10.5px; font-weight:600;
-            color:var(--mx9); }
-        #mobBar button.on{ color:var(--neon-color); }
-        #mobBar .ic{ font-size:17px; }
 
         @media (max-width:900px){
             #appShell{ padding-left:0; }
@@ -362,8 +352,6 @@
                 border:1px solid var(--edge-soft); background:var(--surface2); color:var(--neon-color);
                 font-size:17px; cursor:pointer; }
             #mobBrand{ display:flex; }
-            #mobBar{ display:flex; }
-            body{ padding-bottom:62px; }
         }
 
         /* Yetki sinifiyla GOSTERILEN sekmeler de ray icinde flex olsun */
@@ -380,7 +368,7 @@
                 border-right:0 !important; border-left:1px solid var(--edge-soft) !important; }
         }
         @media (max-width:767px){
-            #raidSidebar{ bottom:62px !important; }
+            #raidSidebar{ bottom:0 !important; }
         }
 
 
@@ -492,6 +480,25 @@
         /* Sol ray ve üst şerit daha opak: içerikten net ayrılsın */
         #sideRail{ background:rgba(4,6,11,.97) !important; }
         #topBar{ background:rgba(4,6,11,.96) !important; }
+
+
+        /* mobil menü kapatma düğmesi + perde */
+        #railClose{ display:none; position:absolute; top:10px; right:10px; width:32px; height:32px;
+            border-radius:8px; border:1px solid var(--edge-soft); background:var(--surface2);
+            color:var(--neon-color); font-size:15px; cursor:pointer; z-index:5; }
+        #railMask{ display:none; position:fixed; inset:0; z-index:55; background:rgba(2,3,8,.6); }
+        @media (max-width:900px){
+            #railClose{ display:block; }
+            #sideRail.open ~ #railMask, #railMask.on{ display:block; }
+        }
+        /* ══ TARALI DOKU ══  önizlemedeki çapraz tarama, tema tonunda */
+        .neon-theme-box, #sideRail, #topBar, #gearDrawer{
+            background-image:
+              repeating-linear-gradient(115deg,
+                rgba(var(--neon-rgb),.045) 0 6px,
+                transparent 6px 14px) !important;
+        }
+        #planExportArea .neon-theme-box{ background-image:none !important; }
         /* eski yatay menü artık kullanılmıyor */
         body.shell-on #mainNav{ }
 
@@ -2060,7 +2067,7 @@
                 roll_logs: "ROLL LOGS", raid_history: "RAID HISTORY", event_plan: "EVENT CENTER", no_events: "No Active Events", 
                 add_character: "Add Character", add_roster: "+ ADD TO ROSTER", registered_players: "Registered Players", 
                 event_title: "Event Title", date_time: "Date & Time", event_roster: "EVENT ROSTER", delete_plan: "Delete Plan", 
-                publish: "PUBLISH", system_management: "SYSTEM MANAGEMENT", system_theme: "🌌 SYSTEM THEME", settings_title: "Settings", settings_account: "Account", settings_role: "Your role", theme_hint: "The colour changes panels, borders and background together — not just accents.", 
+                publish: "PUBLISH", system_management: "SYSTEM MANAGEMENT", system_theme: "🌌 SYSTEM THEME", settings_title: "Settings", nav_grp_event: "EVENTS", nav_grp_guild: "GUILD", nav_grp_bot: "BOT", nav_grp_system: "SYSTEM", nav_edit_title: "Move tabs between groups", settings_account: "Account", settings_role: "Your role", theme_hint: "The colour changes panels, borders and background together — not just accents.", 
                 penalty_mgmt: "⚖️ Penalty Management", mass_cut: "Mass Cut", history: "History", pending_penalties: "Pending Penalties", 
                 officer_accounts: "🛡️ Officer Accounts", add: "Add", audit_logs: "📋 Audit Logs", unauthorized: "Unauthorized Access.", 
                 roll_dice: "Roll Dice", save_raid: "Save & Finish Raid", character: "CHARACTER", 
@@ -2106,7 +2113,7 @@
                 roll_logs: "ZAR KAYITLARI", raid_history: "GEÇMİŞ RAİD KAYITLARI", event_plan: "ETKİNLİK MERKEZİ", no_events: "Aktif Etkinlik Yok", 
                 add_character: "Karakter Ekle", add_roster: "+ KADROYA EKLE", registered_players: "Kayıtlı Oyuncular", 
                 event_title: "Etkinlik Başlığı", date_time: "Tarih & Saat", event_roster: "ETKİNLİK KADROSU", delete_plan: "Planı Sil", 
-                publish: "YAYINLA", system_management: "SİSTEM YÖNETİMİ", system_theme: "🌌 SİSTEM TEMASI", settings_title: "Ayarlar", settings_account: "Hesap", settings_role: "Rolün", theme_hint: "Renk yalnızca vurguyu değil; panelleri, kenarları ve zemini birlikte değiştirir.", 
+                publish: "YAYINLA", system_management: "SİSTEM YÖNETİMİ", system_theme: "🌌 SİSTEM TEMASI", settings_title: "Ayarlar", nav_grp_event: "ETKİNLİK", nav_grp_guild: "LONCA", nav_grp_bot: "BOT", nav_grp_system: "SİSTEM", nav_edit_title: "Sekmeleri gruplar arasında taşı", settings_account: "Hesap", settings_role: "Rolün", theme_hint: "Renk yalnızca vurguyu değil; panelleri, kenarları ve zemini birlikte değiştirir.", 
                 penalty_mgmt: "⚖️ Ceza & Yaptırım Yönetimi", mass_cut: "Toplu Kes", history: "Geçmiş", pending_penalties: "Cezalı Bekleyenler", 
                 officer_accounts: "🛡️ Officer Hesapları", add: "Ekle", audit_logs: "📋 Denetim Kayıtları", unauthorized: "Yetkisiz Erişim.", 
                 roll_dice: "Kader Zarı At", save_raid: "Raidi Kaydet & Bitir", character: "KARAKTER", 
@@ -2336,6 +2343,10 @@
                     }
                 }
             });
+
+            // Ozel sekme adlari ceviriden SONRA yeniden uygulanmali,
+            // yoksa data-i18n metni ozel adin uzerine yaziyordu.
+            try { applyTabTitles(); } catch (e) {}
         }
 
         function changeLanguage(lang) {
@@ -5209,7 +5220,7 @@
             'discordChannels', 'discordLinks', 'siteTitles', 'discordNotify', 'rsvpReminder',
             'applicationQuestions', 'announcementHtml', 'planQuote', 'discordMotivationalMsg',
             'exportBgUrl', 'exportBgOpacity', 'activeTheme', 'adminMessages', 'guildBank',
-            'botSettings', 'obsRotation'
+            'botSettings', 'obsRotation', 'navGroups'
         ];
 
         // Sunucudan en az bir kez veri geldi mi? Tam kayit BUNU bekler --
@@ -7578,16 +7589,28 @@
         // switchTab, applyPermissions, dil değişimi, düzenleme modu ve tüm
         // yetki sınıfları (auth-only, admin-only-flex, member-only) eskisi gibi
         // çalışmaya devam eder.
-        const RAIL_GROUPS = [
-            ['ETKİNLİK', ['tab-announcements', 'tab-plan', 'tab-tactics']],
-            ['LONCA',    ['tab-raid', 'tab-bank', 'tab-applications']],
-            ['BOT',      ['tab-discordann', 'tab-discordlink', 'tab-scheduledposts']],
-            ['SİSTEM',   ['tab-admin']]
-        ];
-        const MOB_TABS = [
-            ['announcements', '📢', 'Duyuru'], ['plan', '📋', 'Plan'],
-            ['raid', '⚔️', 'Raid'], ['bank', '🏦', 'Banka'], ['admin', '⚙️', 'Yönetim']
-        ];
+        // Grup başlıkları çeviri anahtarıdır; dil değişince otomatik güncellenir.
+        const RAIL_GROUP_KEYS = ['nav_grp_event', 'nav_grp_guild', 'nav_grp_bot', 'nav_grp_system'];
+        const RAIL_DEFAULT = {
+            nav_grp_event:  ['tab-announcements', 'tab-plan', 'tab-tactics', 'tab-raid'],
+            nav_grp_guild:  ['tab-bank', 'tab-applications'],
+            nav_grp_bot:    ['tab-discordann', 'tab-discordlink', 'tab-scheduledposts'],
+            nav_grp_system: ['tab-admin']
+        };
+        /** Yönetici bir sekmeyi başka gruba taşımışsa o düzen kullanılır. */
+        function railGroups() {
+            const custom = (cloudData.navGroups && typeof cloudData.navGroups === 'object') ? cloudData.navGroups : {};
+            const out = {};
+            RAIL_GROUP_KEYS.forEach(k => { out[k] = []; });
+            const all = [];
+            RAIL_GROUP_KEYS.forEach(k => RAIL_DEFAULT[k].forEach(id => all.push(id)));
+            all.forEach(id => {
+                const g = RAIL_GROUP_KEYS.includes(custom[id]) ? custom[id]
+                        : RAIL_GROUP_KEYS.find(k => RAIL_DEFAULT[k].includes(id));
+                out[g].push(id);
+            });
+            return RAIL_GROUP_KEYS.map(k => [k, out[k]]);
+        }
 
         function buildShell() {
             const header = document.getElementById('siteHeader');
@@ -7628,11 +7651,13 @@
 
             // --- sekmeler gruplanarak taşınır
             const placed = new Set();
-            RAIL_GROUPS.forEach(([title, ids]) => {
+            railGroups().forEach(([gkey, ids]) => {
                 const btns = ids.map(id => document.getElementById(id)).filter(Boolean);
                 if (!btns.length) return;
                 const h = document.createElement('div');
-                h.className = 'rail-grp'; h.textContent = title;
+                h.className = 'rail-grp';
+                h.setAttribute('data-i18n', gkey);
+                h.textContent = t(gkey);
                 rail.appendChild(h);
                 const list = document.createElement('div');
                 list.className = 'rail-list';
@@ -7654,7 +7679,7 @@
             toggle.id = 'railToggle'; toggle.type = 'button';
             toggle.setAttribute('aria-label', 'Menü');
             toggle.textContent = '☰';
-            toggle.onclick = () => rail.classList.toggle('open');
+            toggle.onclick = () => { const o = rail.classList.toggle('open'); const m = document.getElementById('railMask'); if (m) m.classList.toggle('on', o); };
             top.appendChild(toggle);
 
             const mb = document.createElement('div');
@@ -7690,6 +7715,7 @@
                 '<div id="themeSwatches"></div>' +
                 '<p style="font-size:12.5px;line-height:1.6;margin:8px 0 0;opacity:.7" data-i18n="theme_hint">' +
                 'Renk yalnızca vurguyu değil; panelleri, kenarları ve zemini birlikte değiştirir.</p>' +
+                '<div id="navEditWrap"></div>' +
                 '<h4 data-i18n="settings_account">Hesap</h4>' +
                 '<div class="grow" id="gearLangRow"><span data-i18n="language">Dil</span></div>' +
                 '<div class="grow" id="gearEditRow"><span data-i18n="edit_mode">Düzenleme modu</span></div>' +
@@ -7719,21 +7745,26 @@
                 drawer.classList.toggle('open');
                 mask.classList.toggle('open', drawer.classList.contains('open'));
                 renderThemeSwatches();
+                try { renderNavEditor(); } catch (e) {}
             };
             top.appendChild(gear);
 
-            // --- mobil alt çubuk (mevcut switchTab'i çağırır)
-            const bar = document.createElement('nav');
-            bar.id = 'mobBar';
-            MOB_TABS.forEach(([id, ic, lb]) => {
-                const b = document.createElement('button');
-                b.type = 'button';
-                b.dataset.tab = id;
-                b.innerHTML = `<span class="ic">${ic}</span>${lb}`;
-                b.onclick = () => { if (!isEditMode) { switchTab(id); rail.classList.remove('open'); } };
-                bar.appendChild(b);
+            // Mobilde menüyü kapatmak için: ray içinde ✕ + dışına dokunma perdesi
+            const closeBtn = document.createElement('button');
+            closeBtn.id = 'railClose'; closeBtn.type = 'button';
+            closeBtn.setAttribute('aria-label', 'Menüyü kapat');
+            closeBtn.textContent = '✕';
+            closeBtn.onclick = () => { rail.classList.remove('open'); railMask.classList.remove('on'); };
+            rail.insertBefore(closeBtn, rail.firstChild);
+
+            const railMask = document.createElement('div');
+            railMask.id = 'railMask';
+            railMask.onclick = () => { rail.classList.remove('open'); railMask.classList.remove('on'); };
+            document.body.appendChild(railMask);
+            // Sekme seçilince mobilde menü kapansın
+            rail.addEventListener('click', (e) => {
+                if (e.target.closest('.tab-btn') && !isEditMode) { rail.classList.remove('open'); const m = document.getElementById('railMask'); if (m) m.classList.remove('on'); }
             });
-            document.body.appendChild(bar);
 
             document.body.classList.add('shell-on');
             syncShell();
@@ -7765,9 +7796,64 @@
                 const ov = raw ? (raw[currentLang] || (raw.text ? raw : null)) : null;
                 const span = document.getElementById('dyn-' + key);
                 if (!span) return;
-                if (ov && ov.text) { span.innerText = ov.text; span.style.color = ov.color || ''; }
-                else { span.style.color = ''; }
+                if (ov && ov.text) {
+                    span.innerText = ov.text;
+                    span.style.color = ov.color || '';
+                    span.removeAttribute('data-i18n');   // ceviri ustune yazmasin
+                } else { span.style.color = ''; }
             });
+        }
+
+        /** Sekmeleri gruplar arasında taşıma (yalnızca admin). */
+        function renderNavEditor() {
+            const wrap = document.getElementById('navEditWrap');
+            if (!wrap) return;
+            if (!isAdmin()) { wrap.innerHTML = ''; return; }
+            const groups = railGroups();
+            wrap.innerHTML = '<h4 data-i18n="nav_edit_title">' + t('nav_edit_title') + '</h4>' +
+                groups.map(([gkey, ids]) => ids.map(id => {
+                    const btn = document.getElementById(id);
+                    const label = btn ? btn.innerText.trim() : id;
+                    return `<div class="grow"><span style="flex:1">${esc(label)}</span>
+                        <select onchange="setTabGroup('${id}', this.value)" class="neon-theme-select text-xs rounded px-2 py-1">
+                        ${RAIL_GROUP_KEYS.map(k => `<option value="${k}" ${k === gkey ? 'selected' : ''}>${esc(t(k))}</option>`).join('')}
+                        </select></div>`;
+                }).join('')).join('');
+        }
+
+        function setTabGroup(tabId, groupKey) {
+            if (!isAdmin()) return;
+            if (!cloudData.navGroups || typeof cloudData.navGroups !== 'object') cloudData.navGroups = {};
+            cloudData.navGroups[tabId] = groupKey;
+            triggerCloudSave('navGroups');
+            rebuildRail();
+            renderNavEditor();
+        }
+
+        /** Sol rayı yeniden kurar (grup değişince). */
+        function rebuildRail() {
+            const rail = document.getElementById('sideRail');
+            if (!rail) return;
+            const brand = document.getElementById('railBrand');
+            const close = document.getElementById('railClose');
+            const buttons = Array.from(rail.querySelectorAll('.tab-btn'));
+            Array.from(rail.children).forEach(ch => {
+                if (ch !== brand && ch !== close) rail.removeChild(ch);
+            });
+            railGroups().forEach(([gkey, ids]) => {
+                const btns = ids.map(id => buttons.find(b => b.id === id)).filter(Boolean);
+                if (!btns.length) return;
+                const h = document.createElement('div');
+                h.className = 'rail-grp';
+                h.setAttribute('data-i18n', gkey);
+                h.textContent = t(gkey);
+                rail.appendChild(h);
+                const list = document.createElement('div');
+                list.className = 'rail-list';
+                btns.forEach(b => list.appendChild(b));
+                rail.appendChild(list);
+            });
+            try { applyTabTitles(); } catch (e) {}
         }
 
         function closeGear() {
@@ -7792,8 +7878,6 @@
 
         /** Aktif sekmeyi mobil çubukta işaretler ve mobilde menüyü kapatır. */
         function syncShell() {
-            document.querySelectorAll('#mobBar button').forEach(b =>
-                b.classList.toggle('on', b.dataset.tab === activeTab));
             const rail = document.getElementById('sideRail');
             if (rail && window.matchMedia('(max-width:900px)').matches) rail.classList.remove('open');
         }
@@ -7894,11 +7978,15 @@
         function openTitleEdit(key) {
             if(!isEditMode || !isAdmin()) return;
             currentEditTitleKey = key;
+            // Ekrandaki gercek metni yedekle: ceviri anahtari bulunamazsa
+            // kutuda "tab_bank" gibi ham anahtar gorunuyordu.
+            var _liveEl = document.getElementById('dyn-' + key);
+            var _liveText = _liveEl ? _liveEl.innerText.trim() : '';
             // ÖNEMLİ: Bu anahtar için, ŞU ANKİ dile ait daha önce kaydedilmiş bir düzenleme varsa onu göster;
             // yoksa (ilk kez düzenleniyorsa) sabit "Title" yazısı değil, o başlığın GERÇEK mevcut metnini
             // (mevcut dildeki çevirisini) göster — yoksa admin farkında olmadan başlığı "Title" yapabilirdi.
             const existing = cloudData.siteTitles && cloudData.siteTitles[key] && cloudData.siteTitles[key][currentLang];
-            const data = existing || { text: t(key), color: "#f1f5f9" };
+            const data = existing || { text: (_liveText || t(key)), color: "#f1f5f9" };
             document.getElementById('titleEditText').value = data.text || "";
             selectTitleColor(data.color || '#f1f5f9');
             document.getElementById('titleEditModal').classList.remove('hidden');
