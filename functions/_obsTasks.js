@@ -53,17 +53,19 @@ export async function postObsRotation(env, cfg, rot, tms, isTest) {
     if (!url) return { ok: false, error: `Rotasyon ${rot} icin gorsel hazirlanmamis.` };
 
     const dates = formatDates(tms);
+
+    // GIF NEDEN EMBED ICINDE DEGIL:
+    // Embed'in `image` alanindaki GIF'ler Discord'da cogu kullanicida
+    // HAREKETSIZ gorunuyor (otomatik oynatma ayarina ve istemciye bagli).
+    // Duz mesaj icinde tek basina duran bir GIF baglantisi ise her zaman
+    // oynatilir. Bu yuzden metin ustte, GIF baglantisi kendi satirinda.
     const body = {
-        embeds: [{
-            title: `🗡️ Weekly OBS Rotation · Haftanın OBS Rotasyonu`,
-            description:
-                `**Rotation ${rot} / ${OBS_COUNT}**\n` +
-                `🇹🇷 ${dates.tr}   ·   🇪🇺 ${dates.eu}\n\n` +
-                `${cfg.cryEn || 'TO ARMS, HUNS!'}\n${cfg.cryTr || 'SİLAH BAŞINA HUNS!'}`,
-            color: 0xf59e0b,
-            image: { url: String(url) },
-            footer: { text: isTest ? 'HUNS · test' : 'HUNS' }
-        }]
+        content:
+            `🗡️ **Weekly OBS Rotation · Haftanın OBS Rotasyonu**\n` +
+            `**Rotation ${rot} / ${OBS_COUNT}**  ·  🇹🇷 ${dates.tr}  ·  🇪🇺 ${dates.eu}\n` +
+            `${cfg.cryEn || 'TO ARMS, HUNS!'}\n${cfg.cryTr || 'SİLAH BAŞINA HUNS!'}` +
+            (isTest ? `\n_(test)_` : '') +
+            `\n${String(url)}`
     };
 
     const res = await fetch(`https://discord.com/api/v10/channels/${cfg.channelId}/messages`, {
