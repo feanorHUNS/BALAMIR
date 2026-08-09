@@ -529,14 +529,15 @@
         @media (max-width:900px){
             #topBar{
                 position:sticky !important; top:0; left:0 !important; right:0 !important;
-                width:100% !important; justify-content:flex-start !important; flex-wrap:wrap;
+                width:100% !important; justify-content:flex-end !important; flex-wrap:wrap;
                 gap:6px; padding:8px 10px;
                 background:rgba(6,9,16,.72) !important;
                 backdrop-filter:blur(14px) !important;
                 border-bottom:1px solid rgba(var(--neon-rgb),.35) !important;
             }
-            #topBar #railToggle{ order:-2; }
-            #topBar #mobBrand{ order:-1; margin-right:auto; }
+            #topBar #railToggle{ order:-2; margin-right:auto; }
+            /* İçeriği olmayan kapsayıcılar boş "pil" gibi görünüyordu */
+            #topBar > div:empty{ display:none !important; }
             #topBar > *{ font-size:11px !important; padding:6px 9px !important; }
             body.shell-on #mainContent{ padding-top:10px !important; }
         }
@@ -5907,6 +5908,32 @@
          * Bot kendi embed'ini ekledigi icin Discord OTOMATIK onizleme uretmiyor;
          * bu yuzden onizlemeyi sunucudan alip embed olarak ekliyoruz.
          */
+        /**
+         * Discord embed'lerinde logo gösterebilmek için gerçek bir HTTP bağlantısı
+         * gerekir; sitedeki logo gömülü (data URI) olduğundan Discord onu kabul
+         * etmez. Bu yüzden logo BİR KEZ yükleme kanalına gönderilip kalıcı
+         * bağlantısı saklanır, sonraki tüm mesajlarda o kullanılır.
+         */
+        async function ensureLogoUrl() {
+            const cfg = (cloudData.botSettings && typeof cloudData.botSettings === 'object') ? cloudData.botSettings : {};
+            if (cfg.logoUrl && /^https?:\/\//i.test(cfg.logoUrl)) return cfg.logoUrl;
+            if (!isAdmin()) return null;
+            const el = document.getElementById('huntsLogoSrc');
+            if (!el || !el.src) return null;
+            try {
+                const blob = await (await fetch(el.src)).blob();
+                const fd = new FormData();
+                fd.append('file', blob, 'huns-logo.webp');
+                const res = await apiFetch('/api/upload-image', { method: 'POST', body: fd });
+                if (!res.ok) return null;
+                const data = await res.json();
+                if (!data.url) return null;
+                cloudData.botSettings = { ...cfg, logoUrl: data.url };
+                triggerCloudSave('botSettings');
+                return data.url;
+            } catch (e) { console.error('ensureLogoUrl:', e); return null; }
+        }
+
         async function buildLinkPreviewEmbed(text) {
             const m = String(text || '').match(/https?:\/\/[^\s<>"']+/);
             if (!m) return null;
@@ -5920,7 +5947,17 @@
                 const data = await res.json();
                 if (!data.ok || !data.preview) return null;
                 const p = data.preview;
-                const embed = { url: p.url, color: 0x5865f2 };
+                const embed = { url: p.url, color: 0xf59e0b };
+                // Onizlemede sitenin KENDI kimligi gorunsun: taçlı kartal logosu
+                // ve yoneticinin belirledigi site adi (varsayilan HUNS).
+                const brandEl = document.getElementById('dyn-brand');
+                const brandName = (brandEl && brandEl.innerText.trim()) || 'HUNS';
+                embed.author = { name: brandName };
+                const logoUrl = await ensureLogoUrl();
+                if (logoUrl) {
+                    embed.author.icon_url = logoUrl;
+                    embed.thumbnail = { url: logoUrl };
+                }
                 if (p.title) embed.title = p.title;
                 if (p.description) embed.description = p.description;
                 if (p.image) embed.image = { url: p.image };
@@ -5932,14 +5969,28 @@
             }
         }
 
-        async function broadcastBotTextToAllChannels(content) {
-            const channelIds = (cloudData.discordChannels || []).map(ch => ch.id);
+        /**
+         * Bot metnini kanallara gönderir.
+         *
+         * KANAL SEÇİMİ: Kanallara Yönetim'den bir AMAÇ atanabiliyor
+         * (📢 duyuru / ⚔️ raid / 🎁 loot). Önceden bu amaç yok sayılıp mesaj
+         * KAYITLI TÜM kanallara gidiyordu. Artık:
+         *   · o amaca atanmış kanal varsa YALNIZCA onlara,
+         *   · hiç atanmamışsa amacı boş olan kanallara (geriye dönük uyumluluk)
+         * gönderilir.
+         */
+        async function broadcastBotTextToAllChannels(content, purpose, extraEmbeds) {
+            const all = (cloudData.discordChannels || []).filter(ch => ch && ch.id);
+            let list = purpose ? all.filter(ch => ch.purpose === purpose) : [];
+            if (!list.length) list = purpose ? all.filter(ch => !ch.purpose) : all;
+            const channelIds = list.map(ch => ch.id);
             if (channelIds.length === 0) return;
             const preview = await buildLinkPreviewEmbed(content);
+            const embeds = [].concat(extraEmbeds || [], preview ? [preview] : []);
             apiFetch('/api/send-plan-reminder', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ content, channelIds, extraEmbeds: preview ? [preview] : [] })
+                body: JSON.stringify({ content, channelIds, extraEmbeds: embeds })
             }).catch(e => console.error('broadcastBotTextToAllChannels error:', e));
         }
 
@@ -5969,7 +6020,24 @@
                 t('bulletin_broadcast_ask'),
                 () => {
                     _lastBroadcastHtml = plainText;
-                    broadcastBotTextToAllChannels(`📜 **${t('bulletin_broadcast_title')}**\n${plainText}`);
+
+                    // Bültendeki GÖRSEL ve VİDEO bağlantıları da taşınır:
+                    // ilk görsel embed'e konur, video bağlantıları metne eklenir
+                    // (Discord YouTube bağlantılarını kendisi oynatır).
+                    const media = [];
+                    const firstImg = tmp.querySelector('img');
+                    if (firstImg && /^https?:\/\//i.test(firstImg.src)) {
+                        media.push({ color: 0xf59e0b, image: { url: firstImg.src } });
+                    }
+                    const videos = Array.from(tmp.querySelectorAll('iframe'))
+                        .map(f => f.src)
+                        .filter(u => /^https?:\/\//i.test(u))
+                        .map(u => u.replace('/embed/', '/watch?v='));
+
+                    const body = `📜 **${t('bulletin_broadcast_title')}**\n${plainText}` +
+                        (videos.length ? '\n' + videos.join('\n') : '');
+
+                    broadcastBotTextToAllChannels(body, 'announce', media);
                 },
                 t('confirm'), '📢');
         }
@@ -7813,7 +7881,10 @@
                     if (el.id === 'gearBtn' || el.id === 'railToggle') return;
                     const hasText = (el.textContent || '').trim().length > 0;
                     const hasCtrl = el.querySelector('button, select, a, input, img');
-                    if (!hasText && !hasCtrl) el.remove();
+                    // Görünür bir kontrolü de yoksa (hepsi display:none ise) kaldır
+                    const visibleCtrl = hasCtrl && Array.from(el.querySelectorAll('button, select, a, input, img'))
+                        .some(c => getComputedStyle(c).display !== 'none');
+                    if (!hasText && !visibleCtrl) el.remove();
                 });
             }, 0);
 
@@ -9019,13 +9090,25 @@
             const channels = cloudData.discordChannels || [];
             const listEl = document.getElementById('shareDiscordChannelList');
             const plan = planId ? cloudData.raidPlans.find(p => p.id === planId) : null;
-            const preSelected = plan ? (plan.discordChannelIds || []) : [];
+            // DOMINION PLANLARI (raid_dom / party_dom) için ⚔️ amaçlı kanallar
+            // ÖNCEDEN İŞARETLİ gelir. Standart raidde böyle bir varsayılan yok;
+            // orada kanalı zaten paylaşım anında kendin seçiyorsun.
+            const isDom = plan && (plan.type === 'raid_dom' || plan.type === 'party_dom');
+            const domDefaults = isDom
+                ? channels.filter(ch => ch && ch.purpose === 'raid').map(ch => ch.id)
+                : [];
+            const preSelected = plan
+                ? ((plan.discordChannelIds && plan.discordChannelIds.length)
+                    ? plan.discordChannelIds
+                    : domDefaults)
+                : [];
+
             if (channels.length === 0) {
                 listEl.innerHTML = `<p class="text-[11px] text-slate-500 italic">${t("plan_channels_none")}</p>`;
             } else {
                 listEl.innerHTML = channels.map(ch => `<label class="flex items-center gap-2 bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg cursor-pointer text-[11px] text-slate-300">
                     <input type="checkbox" value="${ch.id}" ${preSelected.includes(ch.id) ? 'checked' : ''} class="share-discord-channel-checkbox w-3.5 h-3.5 cursor-pointer accent-indigo-500">
-                    ${ch.name}
+                    ${ch.name}${ch.purpose === 'raid' ? ' <span class="text-[9px] opacity-70">⚔️</span>' : ''}
                 </label>`).join('');
             }
             document.getElementById('shareDiscordCaptionText').value = captionText || '';
