@@ -329,7 +329,7 @@
 
         /* --- panelleri tema tonuna boya --- */
         .neon-theme-box{
-            background-color:var(--surface) !important;
+            background-color:rgba(6,9,16,.26) !important;
             border:1px solid var(--edge-soft) !important;
             border-top:1px solid var(--edge) !important;
             border-bottom:1px solid var(--edge) !important;
@@ -496,15 +496,44 @@
         #topBar > *{ background:rgba(4,6,11,.55); border:1px solid var(--edge-soft);
             border-radius:9px; backdrop-filter:blur(10px); }
         #topBar #mobBrand{ background:none; border:0; backdrop-filter:none; }
-        /* Yüzeyler düz ve saydam: desen yok, arka plan bulanıklaştırılarak
-           okunaklılık sağlanır. */
+        /* ══ YÜZEYLER: daha saydam + tema renginde neon parıltı ══
+           Zemin iyice hafifletildi; okunaklılık koyulukla değil, arka planı
+           bulanıklaştırarak sağlanıyor. Kenarlar ve dış/iç gölgeler tema
+           renginden geldiği için kutular hafifçe "yanıyor". */
         .neon-theme-box, #sideRail, #gearDrawer{
-            background-color:rgba(6,9,16,.42) !important;
+            background-color:rgba(6,9,16,.26) !important;
             background-image:none !important;
-            backdrop-filter:blur(18px) saturate(140%) !important;
-            -webkit-backdrop-filter:blur(18px) saturate(140%) !important;
+            backdrop-filter:blur(20px) saturate(160%) !important;
+            -webkit-backdrop-filter:blur(20px) saturate(160%) !important;
+            border:1px solid rgba(var(--neon-rgb),.45) !important;
+            box-shadow:0 0 22px rgba(var(--neon-rgb),.22),
+                       inset 0 0 24px rgba(var(--neon-rgb),.10),
+                       0 14px 34px rgba(0,0,0,.45) !important;
         }
-        #planExportArea .neon-theme-box{ background-color:#0f172a !important; backdrop-filter:none !important; }
+        #sideRail{ border-top:0 !important; border-bottom:0 !important; border-left:0 !important; }
+        #planExportArea .neon-theme-box{ background-color:#0f172a !important; backdrop-filter:none !important;
+            box-shadow:none !important; }
+
+        /* ══ SAĞ ÜST KONTROLLER ══ okunaklılık ve neon çerçeve */
+        #topBar > *{
+            background:rgba(6,9,16,.55) !important;
+            border:1px solid rgba(var(--neon-rgb),.5) !important;
+            border-radius:9px !important;
+            backdrop-filter:blur(12px);
+            box-shadow:0 0 14px rgba(var(--neon-rgb),.22);
+        }
+        /* Rol rozeti soluk gri metinle geliyordu; tema renginde ve net olsun */
+        #topBar #userRoleBadge{
+            color:var(--neon-color) !important;
+            text-shadow:0 0 10px rgba(var(--neon-rgb),.55);
+            opacity:1 !important;
+            font-size:10px !important;
+            padding:7px 11px !important;
+        }
+        #topBar #langSwitcher{ color:var(--neon-color) !important; font-weight:700; }
+        #topBar #loginBtn, #topBar #logoutBtn, #topBar #applyBtn{
+            color:#fff !important; opacity:1 !important; font-weight:800;
+        }
         /* eski yatay menü artık kullanılmıyor */
         body.shell-on #mainNav{ }
 
