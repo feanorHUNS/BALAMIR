@@ -28,8 +28,19 @@ export async function onRequestPost(context) {
         return json({ error: `Dosya cok buyuk (${Math.round(file.size / 1024 / 1024)}MB, en fazla 8MB).` }, 413);
     }
 
+    // DOSYA ADI KRITIK: Burada ad 'upload.png' olarak SABITLENMISTI. GIF
+    // gonderilse bile Discord uzantiya bakip onu hareketsiz PNG sayiyor ve
+    // CDN baglantisi .png ile bitiyordu — animasyon hic oynamiyordu.
+    // Artik gercek tur korunuyor.
+    const rawName = String(file.name || '').toLowerCase();
+    const rawType = String(file.type || '').toLowerCase();
+    let ext = 'png';
+    if (rawType.includes('gif') || rawName.endsWith('.gif')) ext = 'gif';
+    else if (rawType.includes('webp') || rawName.endsWith('.webp')) ext = 'webp';
+    else if (rawType.includes('jpeg') || rawName.endsWith('.jpg') || rawName.endsWith('.jpeg')) ext = 'jpg';
+
     const out = new FormData();
-    out.append('files[0]', file, 'upload.png');
+    out.append('files[0]', file, `upload.${ext}`);
     out.append('payload_json', JSON.stringify({ content: 'ℹ️ Site upload' }));
 
     const res = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
