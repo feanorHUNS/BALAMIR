@@ -13,7 +13,7 @@ import { fb } from '../_auth.js';
 // Bu dosyanin surumu. Teshis ekraninda gorunur; boylece Cloudflare'e GERCEKTEN
 // yeni dosyanin yuklenip yuklenmedigi tek bakista anlasilir. ("Bilinmeyen
 // islem." hatasi, sunucuda hala ESKI surumun calistigi anlamina gelir.)
-const API_VERSION = '2026-08-08.3';
+const API_VERSION = '2026-08-09.5';
 
 const COMMANDS = [
     {
@@ -64,21 +64,60 @@ export async function onRequestPost(context) {
             registered: null,
             error: null
         };
+        const H = { 'Authorization': `Bot ${env.DISCORD_BOT_TOKEN}` };
+
+        // 1) TOKEN HANGI UYGULAMAYA AIT?  En sik atlanan hata: Developer
+        //    Portal'da BASKA bir uygulamanin Application ID'si kopyalanmis
+        //    oluyor. O zaman komutlar "baska bir bota" kaydediliyor ve
+        //    sunucuda hicbir zaman gorunmuyor — hicbir hata da alinmiyor.
+        try {
+            const meRes = await fetch('https://discord.com/api/v10/applications/@me', { headers: H });
+            if (meRes.ok) {
+                const me = await meRes.json();
+                out.botAppId = me.id;
+                out.botName = me.name;
+                out.appIdMatchesToken = String(me.id) === String(appId);
+            } else {
+                // Bilinmiyor: bu kontrolun basarisiz olmasi komutlarin
+                // calismadigi anlamina GELMEZ (oran limiti / gecici hata).
+                out.appIdMatchesToken = null;
+                out.notes = (out.notes || []).concat('Bot bilgisi okunamadi (HTTP ' + meRes.status + ').');
+            }
+        } catch (e) {
+            out.appIdMatchesToken = null;
+            out.notes = (out.notes || []).concat('Bot bilgisi okunamadi.');
+        }
+
+        // 2) DISCORD_GUILD_ID gercekten dogru sunucu mu ve bot orada mi?
+        if (gid) {
+            try {
+                const gRes = await fetch(`https://discord.com/api/v10/guilds/${gid}`, { headers: H });
+                if (gRes.ok) {
+                    const g = await gRes.json();
+                    out.guildName = g.name;
+                    out.botInGuild = true;
+                } else {
+                    out.botInGuild = null;   // bilinmiyor
+                    out.notes = (out.notes || []).concat('Sunucu bilgisi okunamadi (HTTP ' + gRes.status + ').');
+                }
+            } catch (e) { /* yukarida raporlandi */ }
+        }
+
+        // 3) Kayitli komutlar
         if (out.applicationIdLooksValid && gid) {
             try {
-                const r = await fetch(`https://discord.com/api/v10/applications/${appId}/guilds/${gid}/commands`,
-                    { headers: { 'Authorization': `Bot ${env.DISCORD_BOT_TOKEN}` } });
+                const r = await fetch(`https://discord.com/api/v10/applications/${appId}/guilds/${gid}/commands`, { headers: H });
                 const body = await r.text();
                 if (r.ok) {
                     const arr = JSON.parse(body);
                     out.registered = Array.isArray(arr) ? arr.map(c => c.name) : [];
                 } else {
-                    out.error = `${r.status}: ${body.slice(0, 200)}`;
+                    out.error = (out.error ? out.error + ' | ' : '') + `${r.status}: ${body.slice(0, 180)}`;
                     if (body.includes('50001')) out.error += ' | Bot "applications.commands" izniyle davet edilmemis.';
                     if (r.status === 401) out.error += ' | Bot token yanlis ya da Application ID bota ait degil.';
                 }
             } catch (e) {
-                out.error = String(e && e.message ? e.message : e);
+                out.error = (out.error ? out.error + ' | ' : '') + String(e && e.message ? e.message : e);
             }
         }
         return json(out);
@@ -101,6 +140,19 @@ export async function onRequestPost(context) {
             ? `https://discord.com/api/v10/applications/${appId}/guilds/${gid}/commands`
             : `https://discord.com/api/v10/applications/${appId}/commands`;
 
+        // Application ID gercekten bu bot token'ina mi ait? Degilse komutlar
+        // baska bir uygulamaya yazilir ve sunucuda asla gorunmez.
+        try {
+            const meRes = await fetch('https://discord.com/api/v10/applications/@me',
+                { headers: { 'Authorization': `Bot ${env.DISCORD_BOT_TOKEN}` } });
+            if (meRes.ok) {
+                const me = await meRes.json();
+                if (String(me.id) !== String(appId)) {
+                    return json({ error: `DISCORD_APPLICATION_ID (${appId}) bu bot token'ina ait degil. Token'in uygulamasi: ${me.name} (${me.id}). wrangler.jsonc icine ${me.id} yazip yeniden deploy et.` }, 400);
+                }
+            }
+        } catch (e) { /* dogrulama yapilamadiysa normal akisa devam */ }
+
         const res = await fetch(url, {
             method: 'PUT',
             headers: {
@@ -120,10 +172,24 @@ export async function onRequestPost(context) {
                 : '';
             return json({ error: `Discord reddetti (${res.status}): ${body.slice(0, 250)}${hint}` }, 502);
         }
-        let count = COMMANDS.length;
-        try { const arr = JSON.parse(body); if (Array.isArray(arr)) count = arr.length; } catch (e) {}
-        console.log(`[bot-commands] ${count} komut kaydedildi (${gid ? 'guild' : 'global'}).`);
-        return json({ ok: true, scope: gid ? 'guild' : 'global', count });
+        // PUT cevabinin kendisi kaydedilen komut listesidir; ESAS KAYNAK budur.
+        // Onceden ardindan ikinci bir GET atiliyordu; Discord'un anlik
+        // tutarsizligi ya da oran limiti yuzunden o GET bos donunce kayit
+        // basarili olmasina ragmen "liste bos donduruldu" uyarisi cikiyordu.
+        let verified = [];
+        try { const arr = JSON.parse(body); if (Array.isArray(arr)) verified = arr.map(c => c.name); } catch (e) {}
+        if (!verified.length) {
+            try {
+                const v = await fetch(url, { headers: { 'Authorization': `Bot ${env.DISCORD_BOT_TOKEN}` } });
+                if (v.ok) {
+                    const arr = await v.json();
+                    if (Array.isArray(arr)) verified = arr.map(c => c.name);
+                }
+            } catch (e) { /* PUT zaten 2xx dondu */ }
+        }
+
+        console.log(`[bot-commands] kaydedildi: ${verified.join(', ') || '(bos)'} (${gid ? 'guild' : 'global'}).`);
+        return json({ ok: true, scope: gid ? 'guild' : 'global', count: verified.length, commands: verified });
     }
 
     // ------------------------------------------------------- /match karari
