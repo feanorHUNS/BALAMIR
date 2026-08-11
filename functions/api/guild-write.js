@@ -87,6 +87,16 @@ function validateObsRotation(o) {
     return null;
 }
 
+/** Tehlikeli etiket/oznitelikleri ayiklar. */
+function stripDangerousHtml(html) {
+    let out = String(html || '');
+    out = out.replace(/<\s*(script|style|object|embed|form|link|meta|base|noscript)[\s\S]*?<\s*\/\s*\1\s*>/gi, '');
+    out = out.replace(/<\s*(script|style|object|embed|form|link|meta|base|noscript)[^>]*>/gi, '');
+    out = out.replace(/\son[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '');
+    out = out.replace(/(href|src)\s*=\s*("|')?\s*javascript:[^"'>\s]*/gi, '$1="#"');
+    return out.slice(0, 200000);
+}
+
 function validateBotSettings(o) {
     if (o.commandChannels !== undefined) {
         if (!Array.isArray(o.commandChannels) || o.commandChannels.length > 50) return 'botSettings: kanal listesi gecersiz';
@@ -243,6 +253,13 @@ export async function onRequestPost(context) {
     if (names.length === 0) return json({ error: 'Yazilacak bolum yok.' }, 400);
     if (names.length > MAX_SECTIONS_PER_REQUEST) {
         return json({ error: `Tek istekte en fazla ${MAX_SECTIONS_PER_REQUEST} bolum.` }, 400);
+    }
+
+    // --- Bulten HTML temizligi (sakli XSS korumasi) ------------------------
+    // Istemcide de temizleniyor ama istemciye GUVENILMEZ: API'ye dogrudan
+    // istek atan biri script enjekte edebilirdi.
+    if (typeof sections.announcementHtml === 'string') {
+        sections.announcementHtml = stripDangerousHtml(sections.announcementHtml);
     }
 
     // --- Dogrulama: BIRI bile gecersizse HICBIRI yazilmaz -----------------

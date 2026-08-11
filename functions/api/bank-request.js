@@ -41,14 +41,17 @@ export async function onRequestPost(context) {
 
         // Ayni kisi ayni esya icin BEKLEYEN bir istek birakmissa tekrar acmasin.
         const dup = list.find(r => r && r.status === 'pending' &&
-            r.itemName === itemName && String(r.by) === String(auth.name || auth.uid));
+            r.itemName === itemName && String(r.byUid || r.by) === String(auth.uid));
         if (dup) return json({ error: 'already_pending' }, 409);
 
         // HAFTALIK ONAYLI ISTEK LIMITI (yetkililer ayarlar, 0 = sinirsiz).
         // Kisiye OZEL limit varsa o gecerli, yoksa genel limit. Limit dolan uye,
         // limit yukseltilene dek yeni istek ACAMAZ.
         try {
-            const me = String(auth.name || auth.uid);
+            // KIMLIK UID ILE: Onceden goruntulenen ISIM kullaniliyordu. Kullanici kendi
+            // adini degistirebildigi icin baskasinin adini alip limit sayimini
+            // karistirabiliyordu. UID degistirilemez.
+            const me = String(auth.uid);
             const globalLimit = parseInt(bank.requestLimit, 10) || 0;
             const rawLims = bank.requestLimits || [];
             const limList = Array.isArray(rawLims) ? rawLims : Object.values(rawLims);
@@ -60,7 +63,7 @@ export async function onRequestPost(context) {
             if (limit > 0) {
                 const since = Date.now() - days * 24 * 3600 * 1000;
                 const approvedInPeriod = list.filter(r => r && r.status === 'approved' &&
-                    String(r.by) === me && (r.decidedAt || r.at || 0) >= since).length;
+                    String(r.byUid || r.by) === me && (r.decidedAt || r.at || 0) >= since).length;
                 if (approvedInPeriod >= limit) {
                     return json({ error: 'weekly_limit', limit }, 429);
                 }
@@ -76,6 +79,7 @@ export async function onRequestPost(context) {
             // degistiremez.
             siteName: auth.name || auth.uid,
             by: auth.name || auth.uid,
+            byUid: auth.uid,        // kimlik: degistirilemez UID (isim yalnizca gosterim)
             byRole: auth.role,
             at: Date.now(),
             status: 'pending'
