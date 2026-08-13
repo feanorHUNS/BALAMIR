@@ -630,6 +630,9 @@
         .tab-btn.active { border-bottom-color: var(--neon-color); background: rgba(255,255,255,0.05); color: #fff; text-shadow: 0 0 10px var(--neon-color); }
 
         .admin-only, .officer-only, .auth-only, .admin-only-flex, .admin-only-block, .edit-mode-only, .member-only { display: none !important; }
+        /* ZİYARETÇİ GÖRÜNÜRLÜĞÜ: Ana sayfadaki bülten, aktif etkinlikler ve
+           kadro sayacı herkese açıktır — bunlar loncanın vitrinidir. */
+        #announcementEditor, #activeEventsBanner, #activeEventsList { display: block !important; }
         /* YETKI KATMANLARI
            visitor : yalnizca Duyurular
            member  : Duyurular + DKP (Raid Bolgesi)
@@ -870,6 +873,25 @@
                 <button onclick="formatDoc('justifyLeft')" title="Sola hizala" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 w-9 h-9 rounded-lg text-sm font-black transition">⬅</button>
                 <button onclick="formatDoc('justifyCenter')" title="Ortala" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 w-9 h-9 rounded-lg text-sm font-black transition">↔</button>
                 <button onclick="formatDoc('justifyRight')" title="Sağa hizala" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 w-9 h-9 rounded-lg text-sm font-black transition">➡</button>
+                <!-- Yazı tipi ve boyutu -->
+                <select onchange="applyEditorFont(this.value); this.selectedIndex=0" class="neon-theme-select text-[11px] px-2 py-1.5 rounded-lg outline-none" title="Yazı tipi">
+                    <option value="" data-i18n="editor_font">Yazı tipi</option>
+                    <option value="'Cinzel Decorative', serif">Cinzel Decorative</option>
+                    <option value="'EB Garamond', Georgia, serif">EB Garamond</option>
+                    <option value="'Cinzel', serif">Cinzel</option>
+                    <option value="'Inter', sans-serif">Inter</option>
+                    <option value="'JetBrains Mono', monospace">JetBrains Mono</option>
+                    <option value="Georgia, serif">Georgia</option>
+                    <option value="'Trebuchet MS', sans-serif">Trebuchet</option>
+                </select>
+                <select onchange="applyEditorSize(this.value); this.selectedIndex=0" class="neon-theme-select text-[11px] px-2 py-1.5 rounded-lg outline-none" title="Yazı boyutu">
+                    <option value="" data-i18n="editor_size">Boyut</option>
+                    <option value="12px">12</option><option value="14px">14</option>
+                    <option value="16px">16</option><option value="18px">18</option>
+                    <option value="22px">22</option><option value="28px">28</option>
+                    <option value="36px">36</option><option value="48px">48</option>
+                    <option value="64px">64</option>
+                </select>
                 <div class="flex gap-1 border-r border-slate-700 pr-2">
                     <button onclick="formatDoc('bold')" title="Bold" class="px-3 py-1.5 font-bold rounded hover:bg-slate-800 transition" aria-label="Bold">B</button>
                     <button onclick="formatDoc('italic')" title="Italic" class="px-3 py-1.5 italic rounded hover:bg-slate-800 transition" aria-label="Italic">I</button>
@@ -881,9 +903,6 @@
                     <input type="color" onchange="formatDoc('hiliteColor', this.value)" title="Highlight Color" value="#000000" class="w-6 h-6 rounded cursor-pointer bg-transparent border-none p-0 ml-1">
                 </div>
                 <div class="flex gap-1 border-r border-slate-700 pr-2">
-                    <button onclick="formatDoc('justifyLeft')" title="Left Align" class="px-3 py-1.5 rounded hover:bg-slate-800 transition" aria-label="Left Align">📄L</button>
-                    <button onclick="formatDoc('justifyCenter')" title="Center Align" class="px-3 py-1.5 rounded hover:bg-slate-800 transition" aria-label="Center Align">📄C</button>
-                    <button onclick="formatDoc('justifyRight')" title="Right Align" class="px-3 py-1.5 rounded hover:bg-slate-800 transition" aria-label="Right Align">📄R</button>
                 </div>
                 <div class="flex gap-1 border-r border-slate-700 pr-2">
                     <button onclick="formatDoc('insertUnorderedList')" title="Bullet List" class="px-3 py-1.5 rounded hover:bg-slate-800 transition">• List</button>
@@ -2148,7 +2167,7 @@
                 roll_logs: "ROLL LOGS", raid_history: "RAID HISTORY", event_plan: "EVENT CENTER", no_events: "No Active Events", 
                 add_character: "Add Character", add_roster: "+ ADD TO ROSTER", registered_players: "Registered Players", 
                 event_title: "Event Title", date_time: "Date & Time", event_roster: "EVENT ROSTER", delete_plan: "Delete Plan", 
-                publish: "PUBLISH", system_management: "SYSTEM MANAGEMENT", system_theme: "🌌 SYSTEM THEME", settings_title: "Settings", bulletin_broadcast_ask: "Also post this bulletin to the Discord channels?", bulletin_broadcast_title: "New Bulletin Published", nav_grp_event: "EVENTS", nav_grp_guild: "GUILD", nav_grp_bot: "BOT", nav_grp_system: "SYSTEM", nav_edit_title: "Move tabs between groups", settings_account: "Account", settings_role: "Your role", theme_hint: "The colour changes panels, borders and background together — not just accents.", 
+                publish: "PUBLISH", system_management: "SYSTEM MANAGEMENT", system_theme: "🌌 SYSTEM THEME", settings_title: "Settings", editor_font: "Font", editor_size: "Size", editor_select_first: "Select some text first, then choose a font or size.", bulletin_broadcast_ask: "Also post this bulletin to the Discord channels?", bulletin_broadcast_title: "New Bulletin Published", nav_grp_event: "EVENTS", nav_grp_guild: "GUILD", nav_grp_bot: "BOT", nav_grp_system: "SYSTEM", nav_edit_title: "Move tabs between groups", settings_account: "Account", settings_role: "Your role", theme_hint: "The colour changes panels, borders and background together — not just accents.", 
                 penalty_mgmt: "⚖️ Penalty Management", mass_cut: "Mass Cut", history: "History", pending_penalties: "Pending Penalties", 
                 officer_accounts: "🛡️ Officer Accounts", add: "Add", audit_logs: "📋 Audit Logs", unauthorized: "Unauthorized Access.", 
                 roll_dice: "Roll Dice", save_raid: "Save & Finish Raid", character: "CHARACTER", 
@@ -2194,7 +2213,7 @@
                 roll_logs: "ZAR KAYITLARI", raid_history: "GEÇMİŞ RAİD KAYITLARI", event_plan: "ETKİNLİK MERKEZİ", no_events: "Aktif Etkinlik Yok", 
                 add_character: "Karakter Ekle", add_roster: "+ KADROYA EKLE", registered_players: "Kayıtlı Oyuncular", 
                 event_title: "Etkinlik Başlığı", date_time: "Tarih & Saat", event_roster: "ETKİNLİK KADROSU", delete_plan: "Planı Sil", 
-                publish: "YAYINLA", system_management: "SİSTEM YÖNETİMİ", system_theme: "🌌 SİSTEM TEMASI", settings_title: "Ayarlar", bulletin_broadcast_ask: "Bu bülten Discord kanallarına da gönderilsin mi?", bulletin_broadcast_title: "Yeni Duyuru Yayınlandı", nav_grp_event: "ETKİNLİK", nav_grp_guild: "LONCA", nav_grp_bot: "BOT", nav_grp_system: "SİSTEM", nav_edit_title: "Sekmeleri gruplar arasında taşı", settings_account: "Hesap", settings_role: "Rolün", theme_hint: "Renk yalnızca vurguyu değil; panelleri, kenarları ve zemini birlikte değiştirir.", 
+                publish: "YAYINLA", system_management: "SİSTEM YÖNETİMİ", system_theme: "🌌 SİSTEM TEMASI", settings_title: "Ayarlar", editor_font: "Yazı tipi", editor_size: "Boyut", editor_select_first: "Önce metni seç, sonra yazı tipi veya boyut seç.", bulletin_broadcast_ask: "Bu bülten Discord kanallarına da gönderilsin mi?", bulletin_broadcast_title: "Yeni Duyuru Yayınlandı", nav_grp_event: "ETKİNLİK", nav_grp_guild: "LONCA", nav_grp_bot: "BOT", nav_grp_system: "SİSTEM", nav_edit_title: "Sekmeleri gruplar arasında taşı", settings_account: "Hesap", settings_role: "Rolün", theme_hint: "Renk yalnızca vurguyu değil; panelleri, kenarları ve zemini birlikte değiştirir.", 
                 penalty_mgmt: "⚖️ Ceza & Yaptırım Yönetimi", mass_cut: "Toplu Kes", history: "Geçmiş", pending_penalties: "Cezalı Bekleyenler", 
                 officer_accounts: "🛡️ Officer Hesapları", add: "Ekle", audit_logs: "📋 Denetim Kayıtları", unauthorized: "Yetkisiz Erişim.", 
                 roll_dice: "Kader Zarı At", save_raid: "Raidi Kaydet & Bitir", character: "KARAKTER", 
@@ -6044,6 +6063,28 @@
          *   · iframe yalnızca bilinen video sağlayıcılarından
          */
         const IFRAME_WHITELIST = /^(https?:)?\/\/(www\.)?(youtube\.com|youtube-nocookie\.com|youtu\.be|player\.twitch\.tv|clips\.twitch\.tv|streamable\.com)\//i;
+        /**
+         * Seçili metne yazı tipi / boyut uygular.
+         * document.execCommand('fontSize') yalnızca 1-7 arası kaba boyut
+         * veriyor; bu yüzden seçim bir <span> ile sarılıp CSS uygulanıyor.
+         */
+        function wrapSelection(styleProp, value) {
+            const sel = window.getSelection();
+            if (!sel || sel.rangeCount === 0 || sel.isCollapsed) {
+                return showCustomAlert(t('editor_select_first'), t('info'), '✏️');
+            }
+            const range = sel.getRangeAt(0);
+            const span = document.createElement('span');
+            span.style[styleProp] = value;
+            try {
+                span.appendChild(range.extractContents());
+                range.insertNode(span);
+                sel.removeAllRanges();
+            } catch (e) { console.error('wrapSelection:', e); }
+        }
+        function applyEditorFont(v) { if (v) wrapSelection('fontFamily', v); }
+        function applyEditorSize(v) { if (v) wrapSelection('fontSize', v); }
+
         function sanitizeBulletinHtml(html) {
             const doc = document.createElement('div');
             doc.innerHTML = String(html || '');
@@ -6784,6 +6825,7 @@
         // kullanıcıya gösterilmez — sadece arka planda anahtar olarak kullanılır.
 
         function handleGoogleLogin() {
+            justLoggedIn = true;   // hoşgeldin kutusu yalnızca bu akışta çıkar
             const provider = new firebase.auth.GoogleAuthProvider();
             firebase.auth().signInWithPopup(provider).catch(e => {
                 console.error('Google login error:', e);
@@ -6800,6 +6842,24 @@
         }
 
         // Firebase Auth oturum durumu her değiştiğinde (giriş/çıkış/sayfa yenileme) otomatik çalışır.
+        /**
+         * OTURUM AÇILIŞ DAVRANIŞI
+         * · "Hoş geldin" kutusu YALNIZCA gerçek giriş anında çıkar. Sayfa
+         *   yenilendiğinde onAuthStateChanged yine tetikleniyor ve her seferinde
+         *   kutu açılıp kullanıcıyı başa atıyordu.
+         * · Sayfa yenilenince en son bakılan sekmeye dönülür.
+         */
+        let justLoggedIn = false;
+        function rememberTab(tabId) {
+            try { sessionStorage.setItem('huns_last_tab', tabId); } catch (e) {}
+        }
+        function restoreTab(fallback) {
+            let saved = null;
+            try { saved = sessionStorage.getItem('huns_last_tab'); } catch (e) {}
+            const target = (saved && canSeeTab(saved)) ? saved : fallback;
+            switchTab(target);
+        }
+
         function initAuthListener() {
             firebase.auth().onAuthStateChanged(async (user) => {
                 currentFirebaseUser = user;
@@ -6807,6 +6867,11 @@
                 if (!user) {
                     currentUser = { role: 'visitor', username: t('visitor') };
                     applyPermissions(); renderAll();
+                    // Ziyaretçi de bülteni, aktif etkinlikleri ve kadro sayacını görür
+                    try {
+                        safeRender('activeEvents', renderActiveEventsToMainPage);
+                        safeRender('activeAnnouncements', renderActiveAnnouncementsToMainPage);
+                    } catch (e) {}
                     return;
                 }
 
@@ -6830,21 +6895,21 @@
                         currentUser = { role: 'admin', username: roleData.name || user.displayName || t('admin_role') };
                         document.getElementById('loginModal').classList.add('hidden');
                         logAudit('Logged In (admin)');
-                        showCustomAlert(t("welcome_msg", { user: currentUser.username }), t("system_entered"), "✅");
-                        applyPermissions(); if (window.attachOwnRoleListener) window.attachOwnRoleListener(); if (window.attachStaffListeners) window.attachStaffListeners(); if (window.attachApplicationsListener) window.attachApplicationsListener(); renderAll(); switchTab('admin');
+                        if (justLoggedIn) showCustomAlert(t("welcome_msg", { user: currentUser.username }), t("system_entered"), "✅");
+                        applyPermissions(); if (window.attachOwnRoleListener) window.attachOwnRoleListener(); if (window.attachStaffListeners) window.attachStaffListeners(); if (window.attachApplicationsListener) window.attachApplicationsListener(); renderAll(); restoreTab('announcements');
                     } else if (roleData && roleData.role === 'officer') {
                         currentUser = { role: 'officer', username: roleData.name || user.displayName || 'Officer' };
                         document.getElementById('loginModal').classList.add('hidden');
                         logAudit('Logged In (officer)');
-                        showCustomAlert(t("welcome_msg", { user: currentUser.username }), t("system_entered"), "✅");
-                        applyPermissions(); if (window.attachOwnRoleListener) window.attachOwnRoleListener(); if (window.attachStaffListeners) window.attachStaffListeners(); if (window.attachApplicationsListener) window.attachApplicationsListener(); renderAll(); switchTab('raid');
+                        if (justLoggedIn) showCustomAlert(t("welcome_msg", { user: currentUser.username }), t("system_entered"), "✅");
+                        applyPermissions(); if (window.attachOwnRoleListener) window.attachOwnRoleListener(); if (window.attachStaffListeners) window.attachStaffListeners(); if (window.attachApplicationsListener) window.attachApplicationsListener(); renderAll(); restoreTab('announcements');
                     } else if (roleData && roleData.role === 'member') {
                         // MEMBER: Duyurular + DKP sayfasini gorur, duzenleme yapamaz.
                         currentUser = { role: 'member', username: roleData.name || user.displayName || 'Member' };
                         document.getElementById('loginModal').classList.add('hidden');
                         logAudit('Logged In (member)');
-                        showCustomAlert(t("welcome_msg", { user: currentUser.username }), t("system_entered"), "✅");
-                        applyPermissions(); renderAll(); switchTab('raid');
+                        if (justLoggedIn) showCustomAlert(t("welcome_msg", { user: currentUser.username }), t("system_entered"), "✅");
+                        applyPermissions(); renderAll(); restoreTab('announcements');
                     } else {
                         // Rolu olmayan kullanici: giris oncesi BASVUR'a bastiysa
                         // form simdi otomatik acilir.
@@ -6862,6 +6927,7 @@
                         }
                         applyPermissions(); renderAll();
                     }
+                    justLoggedIn = false;
                 } catch (e) {
                     console.error('Role lookup error:', e);
                     currentUser = { role: 'visitor', username: t('visitor') };
@@ -7673,6 +7739,30 @@
             }).join('');
         }
 
+        /**
+         * SUNUCU YAZMASINDAN SONRA ANLIK TAZELEME
+         *
+         * Bazı işlemler (/match onayı, rol değişimi, banka kararı) veriyi worker
+         * üzerinden yazıyor. Firebase dinleyicisi bu değişimi genelde saniyeler
+         * içinde getiriyor ama ağ gecikmesinde kullanıcı sayfayı yenilemek
+         * zorunda kalıyordu. Bu yardımcı, yazma biter bitmez GuildData'yı bir
+         * kez okuyup ekranı çiziyor — bekleme ortadan kalkıyor.
+         */
+        async function refreshGuildDataNow() {
+            try {
+                if (!window.fbDb) return;
+                const snap = await window.fbDb.ref('GuildData').once('value');
+                const data = snap.val();
+                if (!data) return;
+                const keep = protectedSections();
+                WRITABLE_SECTIONS.forEach(k => {
+                    if (keep.includes(k)) return;              // kaydedilmeyi bekleyen bölüm ezilmesin
+                    if (data[k] !== undefined) cloudData[k] = data[k];
+                });
+                withActiveFieldPreserved(renderAll);
+            } catch (e) { console.error('refreshGuildDataNow:', e); }
+        }
+
         function decideMatchRequest(id, decision) {
             if (!canEdit()) return;
             apiFetch('/api/bot-commands', {
@@ -7687,6 +7777,9 @@
                 // Yerel gorunumu hemen guncelle; dinleyici zaten tazeleyecek.
                 if (matchRequestsData[id]) matchRequestsData[id].status = decision === 'approve' ? 'approved' : 'rejected';
                 renderMatchRequests();
+                // Onay oyuncu listesini ve eşleştirmeleri değiştirir: hemen tazele
+                await refreshGuildDataNow();
+                renderDiscordLinkTable();
             }).catch(e => { console.error('decideMatchRequest:', e); showCustomAlert(t('error'), t('error'), '❌'); });
         }
 
@@ -8336,6 +8429,7 @@
                 tabId = 'announcements';
             }
             activeTab = tabId;
+            rememberTab(tabId);
             try { syncShell(); } catch (e) {} document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active')); document.getElementById(`page-${tabId}`).classList.add('active'); document.getElementById(`tab-${tabId}`).classList.add('active'); if (tabId === 'admin') { if (!isAdmin()) { document.getElementById('accessDeniedMsg').style.display = 'block'; } else { document.getElementById('accessDeniedMsg').style.display = 'none'; fetchRaidAnimBg(); renderRaidAnimBg(); renderBotSettings(); renderObsPanel(); } } if (tabId === 'discordann') { if (!canEdit()) { document.getElementById('discordAnnDeniedMsg').style.display = 'block'; } else { document.getElementById('discordAnnDeniedMsg').style.display = 'none'; renderDiscordAnnouncementsList(); renderDiscordAnnChannelSelect(); loadRsvpSettings(); } } if (tabId === 'discordlink') { if (!canEdit()) { document.getElementById('discordLinkDeniedMsg').style.display = 'block'; } else { document.getElementById('discordLinkDeniedMsg').style.display = 'none'; renderDiscordLinkTable(); renderMatchRequests(); renderBotSettings(); if (isAdmin()) renderUserCards(); } } if (tabId === 'scheduledposts') { if (!canEdit()) { document.getElementById('scheduledPostsDeniedMsg').style.display = 'block'; } else { document.getElementById('scheduledPostsDeniedMsg').style.display = 'none'; renderSchedPostChannels(); renderSchedTypeFields(); renderScheduledPostsList(); } } applyPermissions(); updatePresence(); }
         
         function toggleEditMode() { if(!isAdmin()) return; isEditMode = !isEditMode; document.body.classList.toggle('edit-mode-active', isEditMode); const statusSpan = document.getElementById('editModeStatus'); const ed = document.getElementById('announcementEditor'); const tbar = document.getElementById('editorToolbar'); if(isEditMode) { statusSpan.innerText = t("on"); statusSpan.className = 'text-emerald-400'; ed.setAttribute('contenteditable','true'); tbar.classList.remove('hidden'); tbar.style.display = 'flex'; } else { statusSpan.innerText = t("off"); statusSpan.className = 'text-red-500'; ed.setAttribute('contenteditable','false'); tbar.classList.add('hidden'); tbar.style.display = 'none'; ed.innerHTML = sanitizeBulletinHtml(cloudData.announcementHtml || ed.innerHTML); /* kaydetmeden çıkıldıysa taslak atılır — yanıltıcı "kaydedilmiş gibi" görünüm kalmasın */ } }
