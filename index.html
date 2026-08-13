@@ -682,7 +682,63 @@
         #announcementEditor ul { list-style-type: disc; margin-left: 2rem; margin-bottom: 1rem; }
         #announcementEditor ol { list-style-type: decimal; margin-left: 2rem; margin-bottom: 1rem; }
     </style>
-    <style id="dynamicTheme"></style>
+    <style id="dynamicTheme">
+        /* ===== DOMINION MAC KAYITLARI ===== */
+        .mt-drop{border:1.5px dashed #3d4a63;border-radius:10px;padding:26px 18px;text-align:center;
+          cursor:pointer;transition:.15s;background:rgba(255,255,255,.012)}
+        .mt-drop:hover,.mt-drop.is-over{border-color:#39e6c8;background:rgba(57,230,200,.05)}
+        .mt-drop:focus-visible{outline:2px solid #39e6c8;outline-offset:3px}
+        .mt-drop-big{font-size:17px;color:#e8d9b8;margin-bottom:4px}
+        .mt-drop-sub{font-size:13px;color:#8794ab}
+        .mt-drop-path{font-family:ui-monospace,monospace;font-size:10px;color:#5f6c85;
+          margin-top:9px;word-break:break-all}
+        .mt-steps{margin-top:13px;border:1px solid #2c3547;border-radius:8px;overflow:hidden}
+        .mt-step{display:flex;gap:8px;align-items:center;padding:7px 11px;font-family:ui-monospace,monospace;
+          font-size:11px;border-bottom:1px solid #2c3547;color:#8794ab}
+        .mt-step:last-child{border-bottom:none}
+        .mt-step.no{color:#ff6b6b}
+        .mt-ic{width:13px;text-align:center}
+        .mt-step.ok .mt-ic{color:#7ddc6a}
+        .mt-step.no .mt-ic{color:#ff6b6b}
+        .mt-card{margin-top:10px;border:1px solid #2c3547;border-radius:9px;padding:12px 14px;
+          background:rgba(11,14,20,.55)}
+        .mt-card.bad{border-color:rgba(255,107,107,.45)}
+        .mt-card-head{display:flex;flex-wrap:wrap;gap:8px;align-items:baseline;margin-bottom:7px}
+        .mt-slot{font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.12em;
+          text-transform:uppercase;color:#ffd166}
+        .mt-serial{font-family:ui-monospace,monospace;font-size:9.5px;color:#8794ab;
+          border:1px solid #2c3547;padding:2px 6px;border-radius:3px}
+        .mt-size{margin-left:auto;font-family:ui-monospace,monospace;font-size:9.5px;color:#8794ab}
+        .mt-meta{display:flex;flex-wrap:wrap;gap:12px;font-family:ui-monospace,monospace;
+          font-size:10.5px;color:#8794ab;margin-bottom:7px}
+        .mt-teams{font-size:13px;line-height:1.5;margin-bottom:8px;word-break:break-word}
+        .mt-us{color:#39e6c8}.mt-them{color:#ff5c8a}.mt-vs{color:#8794ab}
+        .mt-stats{display:flex;flex-wrap:wrap;gap:5px}
+        .mt-chip{display:inline-flex;gap:4px;align-items:baseline;border:1px solid #2c3547;
+          border-radius:11px;padding:2px 8px;font-family:ui-monospace,monospace;font-size:9.5px}
+        .mt-chip b{font-weight:700;color:#e8d9b8}
+        .mt-chip i{font-style:normal;color:#8794ab}
+        .mt-note{margin-top:8px;font-size:12px;font-style:italic;color:#ffd166;line-height:1.45}
+        .mt-issues{font-family:ui-monospace,monospace;font-size:10.5px;color:#ff6b6b;line-height:1.6}
+        .mt-detail{font-family:ui-monospace,monospace;font-size:10px;color:#8794ab;margin-top:4px;
+          word-break:break-word}
+        .mt-actions{display:flex;gap:6px;margin-top:12px}
+        .mt-btn{font-family:ui-monospace,monospace;font-size:10.5px;letter-spacing:.07em;
+          padding:7px 14px;border-radius:5px;border:1px solid #3d4a63;background:#1c2333;
+          color:#e8d9b8;cursor:pointer;transition:.15s}
+        .mt-btn:hover:not(:disabled){border-color:#39e6c8;color:#39e6c8}
+        .mt-btn:disabled{opacity:.5;cursor:default}
+        .mt-btn.primary{background:rgba(57,230,200,.1);border-color:#39e6c8;color:#39e6c8}
+        .mt-btn:focus-visible{outline:2px solid #39e6c8;outline-offset:2px}
+        .mt-result{margin-top:11px}
+        .mt-rrow{border:1px solid #2c3547;border-left-width:3px;border-radius:7px;padding:10px 12px;
+          margin-bottom:6px;display:flex;flex-wrap:wrap;gap:8px;align-items:baseline;color:#e8d9b8}
+        .mt-rrow.ok{border-left-color:#7ddc6a}
+        .mt-rrow.bad{border-left-color:#ff6b6b}
+        .mt-rrow b{font-weight:500}
+        .mt-error{display:flex;gap:8px;align-items:center;margin-top:11px;padding:10px 12px;
+          border:1px solid rgba(255,107,107,.45);border-radius:7px;color:#ff6b6b;font-size:13px}
+</style>
 </head>
 <body class="relative">
     <!-- MADDE 38: Klavyeyle gezinenler menuyu her seferinde gecmek zorunda kalmasin. -->
@@ -777,6 +833,9 @@
                     </button>
                     <button onclick="if(!isEditMode) switchTab('tactics')" id="tab-tactics" class="tab-btn member-only px-3 md:px-4 py-2 text-xs font-black uppercase tracking-widest border-b-2 border-transparent relative z-20">
                         <span data-i18n="tab_tactics">🗺️ Tactics</span>
+                    </button>
+                    <button onclick="if(!isEditMode) switchTab('matches')" id="tab-matches" class="tab-btn member-only px-3 md:px-4 py-2 text-xs font-black uppercase tracking-widest border-b-2 border-transparent relative z-20">
+                        <span data-i18n="tab_matches">&#9876; Dominion Kayitlari</span>
                     </button>
                     <button onclick="if(!isEditMode) switchTab('plan')" id="tab-plan" class="tab-btn auth-only px-3 md:px-4 py-2 text-xs font-black uppercase tracking-widest border-b-2 border-transparent relative z-20">
                         <span id="dyn-tab4" data-i18n="tab_plan">Event Plan</span>
@@ -1619,6 +1678,33 @@
         </div>
 
         <!-- MADDE 119: Guild Bankasi -- kendi sekmesi, HERKES gorebilir. -->
+        <!-- ====================================================================
+             DOMINION MAC KAYITLARI
+             Addon'un yazdigi Configs/HUNSRecorder/user.cfg dosyasi buraya
+             yuklenir. Dosya OKUNARAK alinir, oldugu gibi ice aktarilmaz.
+             Istemcideki ayristirma yalnizca onizleme icindir; sunucu dosyayi
+             sifirdan yeniden ayristirir ve sadece kendi sonucunu kaydeder.
+             ==================================================================== -->
+        <div id="page-matches" class="tab-content">
+            <div class="mb-6">
+                <h2 class="text-xl md:text-2xl font-black text-white uppercase tracking-widest guild-font mb-1" data-i18n="mt_page_title">DOMINION MAC KAYITLARI</h2>
+                <p class="text-[11px] text-slate-400 max-w-3xl leading-relaxed" data-i18n="mt_page_desc">Oyun ici addon her Dominion macini kaydeder. Oyundan cikmana gerek yok: kayit dosyasini asagiya surukle. Ayni maci takim arkadaslarin da yuklerse veriler birlestirilir ve kayit zenginlesir.</p>
+            </div>
+
+            <div class="neon-theme-box p-5 rounded-2xl mb-6">
+                <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3" data-i18n="mt_upload_title">Kayit Yukle</h3>
+                <div id="hunsMatchUploadBox"></div>
+            </div>
+
+            <div class="neon-theme-box p-5 rounded-2xl">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest" data-i18n="mt_list_title">Kayitli Maclar</h3>
+                    <button onclick="loadMatchList()" class="text-[10px] px-3 py-1 rounded neon-theme-box-sm text-slate-300 hover:text-white" data-i18n="mt_refresh">Yenile</button>
+                </div>
+                <div id="matchListBox" class="text-[12px] text-slate-400" data-i18n="mt_loading">Yukleniyor...</div>
+            </div>
+        </div>
+
         <div id="page-bank" class="tab-content">
             <header class="mb-6 border-b border-slate-800 pb-4">
                 <h1 class="text-3xl md:text-4xl font-black text-slate-200 tracking-tighter guild-font">
@@ -2184,6 +2270,7 @@
                 admin_pass: "🔑 Admin Password", admin_pass_desc: "Change system admin password.", update_pass: "UPDATE", pass_empty: "Password cannot be empty!", pass_success: "Admin password successfully updated.",
                 discord_webhook: "🔔 Discord Webhook", discord_webhook_desc: "Enter the Discord Webhook URL to send notifications to.", discord_notify_publish: "When Event Is Published", discord_notify_announce: "When New Announcement Is Posted", discord_notify_roll: "On Loot Roll Result", discord_test: "Send Test Notification", discord_test_sent: "Test notification sent!", discord_test_fail: "Webhook URL not set or send failed.", discord_saved: "Discord settings saved.",
                 export_bg_title: "🖼️ PNG Background Image", export_bg_desc: "Enter the image link to use as background for Event and Raid Report PNG exports.", export_bg_opacity: "Opacity", export_bg_reset: "Reset to Default", export_bg_saved: "Background image updated.",
+                tab_matches: "⚔ Dominion Records", mt_page_title: "DOMINION MATCH RECORDS", mt_page_desc: "The in-game addon records every Dominion match. You don't need to quit the game \u2014 just drag the record file below. If your teammates upload the same match too, the data is merged and the record gets richer.", mt_upload_title: "Upload Record", mt_list_title: "Saved Matches", mt_refresh: "Refresh", mt_loading: "Loading...",
                 tab_discordann: "📢 Discord Announcement", discordann_compose_title: "📢 Compose Discord Announcement", discordann_compose_desc: "This message will be sent with @everyone to Discord, with Accept / Decline / Tentative buttons.", discordann_field_title: "Title", discordann_field_time: "Event Date & Time", discordann_field_content: "Content", discordann_send_btn: "Send to Discord", discordann_setup_note: "⚠️ Requires the Discord Bot setup to be completed first (see the setup guide).", discordann_recent_title: "🕒 Recent Announcements", discordann_none_yet: "No announcements sent yet.", discordann_missing_fields: "Please fill in the title and content fields.", discordann_sending: "Sending...", discordann_send_fail: "Failed to send. Check the Discord bot / channel setup.", discordann_send_success: "Announcement sent to Discord!", discordann_status_finalized: "Finalized", discordann_status_active: "Active",
                 discordann_autoplan_label: "Also create a linked Raid Plan with this title", discordann_status_accept: "Accepted", discordann_status_decline: "Declined", discordann_status_tentative: "Tentative",
                 plan_linked_ann_label: "🔗 Linked Discord Announcement",
@@ -2230,6 +2317,7 @@
                 admin_pass: "🔑 Admin Şifresi", admin_pass_desc: "Sistem yöneticisi şifresini değiştirin.", update_pass: "GÜNCELLE", pass_empty: "Şifre boş olamaz!", pass_success: "Admin şifresi başarıyla güncellendi.",
                 discord_webhook: "🔔 Discord Webhook", discord_webhook_desc: "Bildirimlerin gönderileceği Discord Webhook URL'sini girin.", discord_notify_publish: "Etkinlik Yayınlandığında", discord_notify_announce: "Yeni Duyuru Paylaşıldığında", discord_notify_roll: "Loot Çekilişi Sonucunda", discord_test: "Test Bildirimi Gönder", discord_test_sent: "Test bildirimi gönderildi!", discord_test_fail: "Webhook adresi girilmedi veya gönderim başarısız oldu.", discord_saved: "Discord ayarları kaydedildi.",
                 export_bg_title: "🖼️ PNG Arkaplan Görseli", export_bg_desc: "Etkinlik ve raid raporu PNG çıktılarının arka planında kullanılacak görsel linkini girin.", export_bg_opacity: "Opaklık", export_bg_reset: "Varsayılana Döndür", export_bg_saved: "Arkaplan görseli güncellendi.",
+                tab_matches: "⚔ Dominion Kayıtları", mt_page_title: "DOMINION MAÇ KAYITLARI", mt_page_desc: "Oyun içi addon her Dominion maçını kaydeder. Oyundan çıkmana gerek yok: kayıt dosyasını aşağıya sürükle. Aynı maçı takım arkadaşların da yüklerse veriler birleştirilir ve kayıt zenginleşir.", mt_upload_title: "Kayıt Yükle", mt_list_title: "Kayıtlı Maçlar", mt_refresh: "Yenile", mt_loading: "Yükleniyor...",
                 tab_discordann: "📢 Discord Duyurusu", discordann_compose_title: "📢 Discord Duyurusu Oluştur", discordann_compose_desc: "Bu mesaj Discord'a @everyone ile, Kabul / Reddet / Belirsiz butonlarıyla gönderilecek.", discordann_field_title: "Başlık", discordann_field_time: "Etkinlik Tarih & Saati", discordann_field_content: "İçerik", discordann_send_btn: "Discord'a Gönder", discordann_setup_note: "⚠️ Bunun çalışması için önce Discord Bot kurulumunun tamamlanmış olması gerekir (kurulum rehberine bakın).", discordann_recent_title: "🕒 Son Duyurular", discordann_none_yet: "Henüz duyuru gönderilmedi.", discordann_missing_fields: "Lütfen başlık ve içerik alanlarını doldurun.", discordann_sending: "Gönderiliyor...", discordann_send_fail: "Gönderilemedi. Discord bot/kanal kurulumunu kontrol edin.", discordann_send_success: "Duyuru Discord'a gönderildi!", discordann_status_finalized: "Sonlandırıldı", discordann_status_active: "Aktif",
                 discordann_autoplan_label: "Bu başlıkla bağlantılı bir Raid Planı da oluştur", discordann_status_accept: "Kabul", discordann_status_decline: "Red", discordann_status_tentative: "Belirsiz",
                 plan_linked_ann_label: "🔗 Bağlı Discord Duyurusu",
@@ -6968,9 +7056,300 @@
             bank:          'member',   // ziyaretciye kapali
             applications:  'officer',
             discordlink:   'officer',
-            scheduledposts:'officer'
+            scheduledposts:'officer',
+            matches:       'member'    // ziyaretciye kapali: kadro isimleri guild ici bilgi
         };
         const ROLE_LEVEL = { visitor: 0, member: 1, officer: 2, admin: 3 };
+
+        // ============================================================================
+        // DOMINION MAC KAYITLARI
+        // ============================================================================
+        // Addon oyun ici kaydi  Configs/HUNSRecorder/user.cfg  dosyasina yaziyor.
+        // Kullanici dosyayi buraya surukluyor.
+        //
+        // TASARIM KARARI: istemcideki ayristirma YALNIZCA ONIZLEME icindir.
+        // Kullanici ne yukledigini gorsun diye Web Worker'da calisiyor (200 KB'lik
+        // dosya ana is parcacigini dondurmasin, bozuk girdi sonsuz donguye girse
+        // bile arayuz yanit versin). Sunucu dosyayi SIFIRDAN yeniden ayristiriyor
+        // ve yalnizca kendi sonucunu veritabanina yaziyor -- istemcinin ciktisina
+        // hicbir zaman guvenilmiyor.
+        //
+        // Dosya icerigi hicbir yerde innerHTML ile basilmiyor: tamami
+        // createElement + textContent. Sablon dizesi yok, eval yok.
+
+        const MT_MAX_BYTES = 4 * 1024 * 1024;
+        const MT_CODE_TEXT = {
+            'E-FORMAT':    'Dosya bozuk veya taninmayan bicimde.',
+            'E-INTEGRITY': 'Dosya degistirilmis gorunuyor.',
+            'E-SANITY':    'Kayit dogrulanamadi -- veriler tutarsiz.',
+            'E-CONFLICT':  'Ayni macin baska bir kaydiyla celisiyor, incelemeye alindi.',
+            'E-CODE':      'Addon kodu taninmiyor veya baska bir hesaba ait.',
+            'E-VERSION':   'Addon surumunuz eski, guncelleyin.'
+        };
+        let mtMounted = false;
+
+        const mtEl = (tag, cls, txt) => {
+            const n = document.createElement(tag);
+            if (cls) n.className = cls;
+            if (txt != null) n.textContent = txt;   // ASLA innerHTML
+            return n;
+        };
+        const mtKB   = b  => (b / 1024).toFixed(0) + ' KB';
+        const mtMin  = ms => Math.floor(ms / 60000) + ':' + String(Math.floor((ms % 60000) / 1000)).padStart(2, '0');
+        const mtDate = ms => new Date(ms).toLocaleString('tr-TR',
+            { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+        function mountMatchUpload() {
+            if (mtMounted) return;
+            const host = document.getElementById('hunsMatchUploadBox');
+            if (!host) return;
+            mtMounted = true;
+            host.textContent = '';
+
+            const drop = mtEl('div', 'mt-drop');
+            drop.tabIndex = 0;
+            drop.setAttribute('role', 'button');
+            drop.appendChild(mtEl('div', 'mt-drop-big', 'Kayit dosyasini buraya surukle'));
+            drop.appendChild(mtEl('div', 'mt-drop-sub', 'veya tiklayip sec'));
+            drop.appendChild(mtEl('div', 'mt-drop-path',
+                '...\\Allods Online\\data\\Mods\\Configs\\HUNSRecorder\\user.cfg'));
+
+            const input = mtEl('input');
+            input.type = 'file';
+            input.accept = '.cfg,.bak,text/plain';
+            input.style.display = 'none';
+
+            const panel = mtEl('div');
+            host.appendChild(drop); host.appendChild(input); host.appendChild(panel);
+
+            const pick = () => input.click();
+            drop.addEventListener('click', pick);
+            drop.addEventListener('keydown', e => {
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); }
+            });
+            input.addEventListener('change', () => {
+                if (input.files && input.files[0]) mtHandleFile(input.files[0], panel);
+                input.value = '';
+            });
+            ['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => {
+                e.preventDefault(); drop.classList.add('is-over');
+            }));
+            ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => {
+                e.preventDefault(); drop.classList.remove('is-over');
+            }));
+            drop.addEventListener('drop', e => {
+                const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+                if (f) mtHandleFile(f, panel);
+            });
+        }
+
+        function mtHandleFile(file, panel) {
+            panel.textContent = '';
+            if (file.size > MT_MAX_BYTES) {
+                panel.appendChild(mtError('Dosya cok buyuk (' + mtKB(file.size) + '). En fazla 4 MB.'));
+                return;
+            }
+
+            const steps = mtEl('div', 'mt-steps');
+            panel.appendChild(steps);
+            const step = (ok, txt) => {
+                const r = mtEl('div', 'mt-step ' + (ok ? 'ok' : 'no'));
+                r.appendChild(mtEl('span', 'mt-ic', ok ? '\u2713' : '\u2715'));
+                r.appendChild(mtEl('span', null, txt));
+                steps.appendChild(r);
+            };
+            step(true, 'Dosya okundu -- ' + mtKB(file.size));
+
+            const reader = new FileReader();
+            reader.onerror = () => step(false, 'Dosya okunamadi.');
+            reader.onload = () => {
+                const text = String(reader.result || '');
+                let worker;
+                try { worker = new Worker('/huns-parser.worker.js'); }
+                catch (e) { step(false, 'Ayristirici yuklenemedi.'); return; }
+
+                const timer = setTimeout(() => {
+                    try { worker.terminate(); } catch (e) {}
+                    step(false, 'Ayristirma zaman asimina ugradi.');
+                }, 20000);
+
+                worker.onmessage = ev => {
+                    clearTimeout(timer);
+                    try { worker.terminate(); } catch (e) {}
+                    const msg = ev.data;
+                    if (!msg || !msg.ok) {
+                        const code = (msg && msg.code) || 'E-FORMAT';
+                        step(false, MT_CODE_TEXT[code] || 'Dosya okunamadi.');
+                        if (msg && msg.detail) panel.appendChild(mtEl('div', 'mt-detail', msg.detail));
+                        return;
+                    }
+                    const r = msg.result;
+                    step(true, 'Bicim gecerli');
+                    step(true, r.owner ? ('Addon kodu: ' + r.owner)
+                                       : 'Addon kodu yok -- hesabiniza baglanacak');
+
+                    const valid = r.slots.filter(x => x.ok);
+                    r.slots.forEach(x => panel.appendChild(mtSlotCard(x)));
+                    if (!valid.length) { step(false, 'Yuklenebilir mac kaydi yok.'); return; }
+                    step(true, valid.length + ' mac kaydi bulundu');
+
+                    const bar = mtEl('div', 'mt-actions');
+                    const send = mtEl('button', 'mt-btn primary', 'Yuklemeyi onayla');
+                    const cancel = mtEl('button', 'mt-btn', 'Iptal');
+                    bar.appendChild(send); bar.appendChild(cancel);
+                    panel.appendChild(bar);
+
+                    cancel.addEventListener('click', () => { panel.textContent = ''; });
+                    send.addEventListener('click', async () => {
+                        send.disabled = cancel.disabled = true;
+                        send.textContent = 'Yukleniyor...';
+                        try {
+                            const res = await apiFetch('/api/match-ingest', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ file: text })
+                            });
+                            const data = await res.json().catch(() => null);
+                            if (!res.ok) throw new Error((data && data.error)
+                                || MT_CODE_TEXT[data && data.code] || 'Yukleme reddedildi.');
+                            panel.textContent = '';
+                            panel.appendChild(mtResult(data));
+                            loadMatchList();
+                        } catch (err) {
+                            panel.appendChild(mtError(err.message || 'Yukleme basarisiz.'));
+                            send.disabled = cancel.disabled = false;
+                            send.textContent = 'Tekrar dene';
+                        }
+                    });
+                };
+                worker.postMessage(text);
+            };
+            reader.readAsText(file, 'utf-8');
+        }
+
+        function mtSlotCard(s) {
+            const card = mtEl('div', 'mt-card' + (s.ok ? '' : ' bad'));
+            const m = s.summary;
+
+            const head = mtEl('div', 'mt-card-head');
+            head.appendChild(mtEl('span', 'mt-slot', 'Slot ' + s.slot));
+            if (m) head.appendChild(mtEl('span', 'mt-serial', m.serial));
+            head.appendChild(mtEl('span', 'mt-size', mtKB(s.bytes)));
+            card.appendChild(head);
+
+            if (!s.ok || !m) {
+                const why = mtEl('div', 'mt-issues');
+                (s.issues || []).forEach(i => why.appendChild(mtEl('div', null, '\u2022 ' + i)));
+                card.appendChild(why);
+                return card;
+            }
+
+            const meta = mtEl('div', 'mt-meta');
+            meta.appendChild(mtEl('span', null, m.mapName || m.mapSys));
+            meta.appendChild(mtEl('span', null, mtDate(m.startMs)));
+            meta.appendChild(mtEl('span', null, mtMin(m.durMs)));
+            card.appendChild(meta);
+
+            const line = mtEl('div', 'mt-teams');
+            line.appendChild(mtEl('span', 'mt-us',
+                m.players.filter(p => p.team === 1).map(p => p.name).join(' \u00b7 ')));
+            line.appendChild(mtEl('span', 'mt-vs', '  \u2014  '));
+            line.appendChild(mtEl('span', 'mt-them',
+                m.players.filter(p => p.team === 2).map(p => p.name).join(' \u00b7 ')));
+            card.appendChild(line);
+
+            const stats = mtEl('div', 'mt-stats');
+            [['hasar', m.damage], ['sifa', m.heal], ['olum', m.deaths],
+             ['nokta', m.points], ['konum', m.positions], ['mesafe', m.distances]]
+                .forEach(pair => {
+                    const chip = mtEl('span', 'mt-chip');
+                    chip.appendChild(mtEl('b', null, String(pair[1])));
+                    chip.appendChild(mtEl('i', null, pair[0]));
+                    stats.appendChild(chip);
+                });
+            card.appendChild(stats);
+
+            // Mesafe ornegi yoksa trilaterasyon katmani devre disi demektir:
+            // dusman konumu yalnizca nokta uyeliginden cikarilabilir.
+            if (m.distances === 0) {
+                card.appendChild(mtEl('div', 'mt-note',
+                    'Mesafe olcumu yok -- dusman konumu yalnizca nokta uyeliginden cikarilacak.'));
+            }
+            return card;
+        }
+
+        function mtResult(res) {
+            const box = mtEl('div', 'mt-result');
+            const LBL = {
+                created: 'Yeni mac kaydedildi', merged: 'Mevcut macla birlestirildi',
+                updated: 'Kaydiniz guncellendi', rejected: 'Reddedildi',
+                quarantined: 'Incelemeye alindi', error: 'Islenemedi'
+            };
+            (res.results || []).forEach(r => {
+                const bad = (r.status === 'rejected' || r.status === 'quarantined' || r.status === 'error');
+                const row = mtEl('div', 'mt-rrow ' + (bad ? 'bad' : 'ok'));
+                row.appendChild(mtEl('b', null, 'Slot ' + r.slot + ' \u2014 ' + (LBL[r.status] || r.status)));
+                if (r.serial)  row.appendChild(mtEl('span', 'mt-serial', r.serial));
+                if (r.mapName) row.appendChild(mtEl('span', null, r.mapName));
+                (r.issues || []).forEach(i => row.appendChild(mtEl('div', 'mt-detail', '\u2022 ' + i)));
+                box.appendChild(row);
+            });
+            return box;
+        }
+
+        function mtError(msg) {
+            const b = mtEl('div', 'mt-error');
+            b.appendChild(mtEl('span', 'mt-ic', '\u2715'));
+            b.appendChild(mtEl('span', null, msg));
+            return b;
+        }
+
+        // ---- Kayitli maclar listesi ------------------------------------------
+        async function loadMatchList() {
+            const box = document.getElementById('matchListBox');
+            if (!box) return;
+            box.textContent = 'Yukleniyor...';
+            try {
+                const res = await apiFetch('/api/match-list');
+                const data = await res.json().catch(() => null);
+                if (!res.ok) throw new Error((data && data.error) || 'Liste alinamadi.');
+                mtRenderList(box, (data && data.matches) || []);
+            } catch (e) {
+                box.textContent = e.message || 'Liste alinamadi.';
+            }
+        }
+
+        function mtRenderList(box, list) {
+            box.textContent = '';
+            if (!list.length) {
+                box.appendChild(mtEl('div', null, 'Henuz kayit yok.'));
+                return;
+            }
+            list.forEach(m => {
+                const card = mtEl('div', 'mt-card');
+                const head = mtEl('div', 'mt-card-head');
+                head.appendChild(mtEl('span', 'mt-us', 'Kayit sahibi: ' + (m.ownerName || '?')));
+                head.appendChild(mtEl('span', 'mt-serial', m.serial || ''));
+                head.appendChild(mtEl('span', 'mt-size', (m.contributors || 1) + ' katki'));
+                card.appendChild(head);
+
+                const meta = mtEl('div', 'mt-meta');
+                meta.appendChild(mtEl('span', null, m.mapName || m.mapSys || ''));
+                if (m.startMs) meta.appendChild(mtEl('span', null, mtDate(m.startMs)));
+                if (m.durMs)   meta.appendChild(mtEl('span', null, mtMin(m.durMs)));
+                meta.appendChild(mtEl('span', null, m.state === 'ready' ? 'hazir' : 'isleniyor'));
+                card.appendChild(meta);
+
+                // Rakip isimleri guild ici bilgidir; bu sekme zaten member+.
+                if (m.foes && m.foes.length) {
+                    const l = mtEl('div', 'mt-teams');
+                    l.appendChild(mtEl('span', 'mt-them', 'Rakip: ' + m.foes.join(' \u00b7 ')));
+                    card.appendChild(l);
+                }
+                box.appendChild(card);
+            });
+        }
+
 
         // ============================================================================
         // DOMINION TAKTIK SAYFASI
@@ -8031,7 +8410,7 @@
         // Grup başlıkları çeviri anahtarıdır; dil değişince otomatik güncellenir.
         const RAIL_GROUP_KEYS = ['nav_grp_event', 'nav_grp_guild', 'nav_grp_bot', 'nav_grp_system'];
         const RAIL_DEFAULT = {
-            nav_grp_event:  ['tab-announcements', 'tab-plan', 'tab-tactics', 'tab-raid'],
+            nav_grp_event:  ['tab-announcements', 'tab-plan', 'tab-tactics', 'tab-raid', 'tab-matches'],
             nav_grp_guild:  ['tab-bank', 'tab-applications'],
             nav_grp_bot:    ['tab-discordann', 'tab-discordlink', 'tab-scheduledposts'],
             nav_grp_system: ['tab-admin']
@@ -8479,6 +8858,7 @@
                 if (!mob) setTimeout(() => { safeRender('tacticsList', renderTacticsMapList); tctFetchMaps(); }, 0);
             }
             if (tabId === 'plan') { fetchRaidAnimBg(); }
+            if (tabId === 'matches') { setTimeout(() => { mountMatchUpload(); loadMatchList(); }, 0); }
             if (tabId === 'applications') { setTimeout(() => { renderApplicationList(); renderApplicationQuestionEditor(); renderUserCards(); updateAppBadges(); }, 0); }
             if (!canSeeTab(tabId)) {
                 showCustomAlert(t('tab_access_denied'), t('info'), '🔒');

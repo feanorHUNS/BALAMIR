@@ -1,0 +1,127 @@
+{
+  "rules": {
+    "GuildData": {
+      ".read": "auth != null",
+      ".write": false,
+      "announcementHtml": { ".read": true },
+      "siteTitles": { ".read": true },
+      "activeTheme": { ".read": true },
+      "exportBgOpacity": { ".read": true },
+      "navGroups": { ".read": true },
+      "players": { ".read": true },
+      "raidPlans": { ".read": true },
+      "planQuote": { ".read": true },
+      "exportBgUrl": { ".read": true }
+    },
+    "Roles": {
+      ".read": "auth != null && (root.child('Roles').child(auth.uid).child('role').val() == 'officer' || root.child('Roles').child(auth.uid).child('role').val() == 'admin')",
+      ".write": "auth != null && root.child('Roles').child(auth.uid).child('role').val() == 'admin'",
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+        "name": {
+          ".write": "auth != null && auth.uid == $uid && newData.isString() && newData.val().length >= 2 && newData.val().length <= 24"
+        },
+        "noRsvpDm": {
+          ".write": "auth != null && auth.uid == $uid && newData.isBoolean()"
+        },
+        "playerIds": {
+          ".write": "auth != null && auth.uid == $uid"
+        }
+      }
+    },
+    "PendingUsers": {
+      ".read": "auth != null && (root.child('Roles').child(auth.uid).child('role').val() == 'officer' || root.child('Roles').child(auth.uid).child('role').val() == 'admin')",
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+        ".write": "auth != null && auth.uid == $uid || (auth != null && (root.child('Roles').child(auth.uid).child('role').val() == 'officer' || root.child('Roles').child(auth.uid).child('role').val() == 'admin'))"
+      }
+    },
+    "Announcements": {
+      ".read": true,
+      ".write": "auth != null && (root.child('Roles').child(auth.uid).child('role').val() == 'officer' || root.child('Roles').child(auth.uid).child('role').val() == 'admin')"
+    },
+    "DiscordUsers": {
+      ".read": true,
+      ".write": "auth != null && (root.child('Roles').child(auth.uid).child('role').val() == 'officer' || root.child('Roles').child(auth.uid).child('role').val() == 'admin')"
+    },
+    "ScheduledPosts": {
+      ".read": true,
+      ".write": "auth != null && (root.child('Roles').child(auth.uid).child('role').val() == 'officer' || root.child('Roles').child(auth.uid).child('role').val() == 'admin')"
+    },
+    "AuditLogs": {
+      ".read": "auth != null && (root.child('Roles').child(auth.uid).child('role').val() == 'officer' || root.child('Roles').child(auth.uid).child('role').val() == 'admin')",
+      ".write": false
+    },
+    "Archives": {
+      ".read": "auth != null && (root.child('Roles').child(auth.uid).child('role').val() == 'officer' || root.child('Roles').child(auth.uid).child('role').val() == 'admin')",
+      ".write": "auth != null && (root.child('Roles').child(auth.uid).child('role').val() == 'officer' || root.child('Roles').child(auth.uid).child('role').val() == 'admin')"
+    },
+    "RsvpDmLog": {
+      ".read": "auth != null && (root.child('Roles').child(auth.uid).child('role').val() == 'officer' || root.child('Roles').child(auth.uid).child('role').val() == 'admin')",
+      ".write": false
+    },
+    "ReminderLocks": { ".read": false, ".write": false },
+    "RateLimits": { ".read": false, ".write": false },
+    "Presence": {
+      ".read": "auth != null",
+      "$uid": { ".write": "auth != null && auth.uid == $uid" }
+    },
+    "UserCards": {
+      ".read": "auth != null && root.child('Roles').child(auth.uid).child('role').val() == 'admin'",
+      ".write": "auth != null && root.child('Roles').child(auth.uid).child('role').val() == 'admin'"
+    },
+    "Backups": {
+      ".read": "auth != null && root.child('Roles').child(auth.uid).child('role').val() == 'admin'",
+      ".write": false
+    },
+    "Applications": {
+      ".read": "auth != null && (root.child('Roles').child(auth.uid).child('role').val() == 'officer' || root.child('Roles').child(auth.uid).child('role').val() == 'admin')",
+      "$appId": {
+        ".write": "(auth != null && !data.exists() && !root.child('Roles').child(auth.uid).exists()) || (auth != null && root.child('Roles').child(auth.uid).child('role').val() == 'admin')",
+        "status": {
+          ".write": "auth != null && (root.child('Roles').child(auth.uid).child('role').val() == 'officer' || root.child('Roles').child(auth.uid).child('role').val() == 'admin')",
+          ".validate": "newData.val() == 'pending' || newData.val() == 'approved' || newData.val() == 'rejected'"
+        },
+        "decidedAt": {
+          ".write": "auth != null && (root.child('Roles').child(auth.uid).child('role').val() == 'officer' || root.child('Roles').child(auth.uid).child('role').val() == 'admin')",
+          ".validate": "newData.isNumber()"
+        },
+        "decidedBy": {
+          ".write": "auth != null && (root.child('Roles').child(auth.uid).child('role').val() == 'officer' || root.child('Roles').child(auth.uid).child('role').val() == 'admin')",
+          ".validate": "newData.isString()"
+        },
+        "decisionMessage": {
+          ".write": "auth != null && (root.child('Roles').child(auth.uid).child('role').val() == 'officer' || root.child('Roles').child(auth.uid).child('role').val() == 'admin')"
+        }
+      }
+    },
+    "TacticsMaps": {
+      ".read": "auth != null",
+      ".write": "auth != null && root.child('Roles').child(auth.uid).child('role').val() == 'admin'"
+    },
+    "MatchRequests": {
+      ".read": "auth != null && (root.child('Roles').child(auth.uid).child('role').val() == 'officer' || root.child('Roles').child(auth.uid).child('role').val() == 'admin')",
+      ".write": false
+    },
+
+    "Matches": {
+      ".read": false,
+      ".write": false
+    },
+    "MatchIndex": {
+      ".read": false,
+      ".write": false
+    },
+    "AddonCodes": {
+      ".read": false,
+      ".write": false
+    },
+
+    "WelcomeState": { ".read": false, ".write": false },
+    "RaidAnimBg": {
+      ".read": "auth != null",
+      ".write": false
+    },
+    "_rulesVersion": { ".read": false, ".write": false }
+  }
+}
