@@ -1741,7 +1741,12 @@
                     <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest" data-i18n="mt_list_title">Kayitli Maclar</h3>
                     <button onclick="loadMatchList()" class="text-[10px] px-3 py-1 rounded neon-theme-box-sm text-slate-300 hover:text-white" data-i18n="mt_refresh">Yenile</button>
                 </div>
-                <div id="matchListBox" class="text-[12px] text-slate-400" data-i18n="mt_loading">Yukleniyor...</div>
+                <!-- DIKKAT: bu kapsayiciya data-i18n KOYMA.
+                     Dil/izin yenilemesi (applyPermissions -> [data-i18n] dongusu)
+                     elemanin icerigini ceviriyle EZIYOR; render edilmis mac listesi
+                     silinip yerine "Loading..." yaziliyordu. Baslangic metni
+                     asagida JS ile veriliyor. -->
+                <div id="matchListBox" class="text-[12px] text-slate-400">&#8230;</div>
             </div>
         </div>
 
@@ -7361,7 +7366,7 @@
         async function loadMatchList() {
             const box = document.getElementById('matchListBox');
             if (!box) return;
-            box.textContent = 'Yukleniyor...';
+            box.textContent = (typeof t === 'function') ? t('mt_loading') : 'Yukleniyor...';
             try {
                 // worker.js yalnizca POST yonlendiriyor (bkz. ROUTES tablosu).
                 const res = await apiFetch('/api/match-list', {
