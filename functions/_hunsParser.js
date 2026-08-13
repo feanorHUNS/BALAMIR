@@ -380,7 +380,7 @@ function parseConfigFile(text) {
       const rec = parseRecord(raw);
       const sanity = sanityCheck(rec);
       slots.push({ slot: Number(sm[1]), ok: sanity.ok, issues: sanity.issues,
-                   match: rec, bytes: packed.length });
+                   match: rec, bytes: packed.length, packed });
     } catch (e) {
       slots.push({ slot: Number(sm[1]), ok: false,
                    issues: [e.code ? `${e.code} — ${e.detail || ''}` : String(e.message)],
