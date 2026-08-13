@@ -6871,6 +6871,7 @@
                     try {
                         safeRender('activeEvents', renderActiveEventsToMainPage);
                         safeRender('activeAnnouncements', renderActiveAnnouncementsToMainPage);
+                        startFreshnessWatch();
                     } catch (e) {}
                     return;
                 }
@@ -6927,6 +6928,14 @@
                         }
                         applyPermissions(); renderAll();
                     }
+                    // GİRİŞ SONRASI VERİYİ YENİDEN OKU
+                    // Firebase dinleyicisi ziyaretçi yetkisiyle bağlanmıştı ve
+                    // kurallar gereği yalnızca herkese açık alanları getiriyordu.
+                    // Giriş yapılınca yetki genişler ama dinleyici kendiliğinden
+                    // yeniden bağlanmaz; bu yüzden raidler, duyurular ve banka
+                    // boş görünüyordu. Burada tam veri bir kez çekilip ekran
+                    // yeniden çiziliyor.
+                    try { await refreshGuildDataNow(true); startFreshnessWatch(); } catch (e) {}
                     justLoggedIn = false;
                 } catch (e) {
                     console.error('Role lookup error:', e);
@@ -7748,7 +7757,7 @@
          * zorunda kalıyordu. Bu yardımcı, yazma biter bitmez GuildData'yı bir
          * kez okuyup ekranı çiziyor — bekleme ortadan kalkıyor.
          */
-        async function refreshGuildDataNow() {
+        async function refreshGuildDataNow(full) {
             try {
                 if (!window.fbDb) return;
                 const snap = await window.fbDb.ref('GuildData').once('value');
@@ -7759,8 +7768,55 @@
                     if (keep.includes(k)) return;              // kaydedilmeyi bekleyen bölüm ezilmesin
                     if (data[k] !== undefined) cloudData[k] = data[k];
                 });
+                if (!cloudData.raidPlans) cloudData.raidPlans = [];
+                if (!cloudData.players) cloudData.players = [];
+                // Kadro yuvalarını normalize et (dinleyicideki mantığın aynısı)
+                cloudData.raidPlans.forEach(p => {
+                    if (!p.characters) p.characters = [];
+                    if (!p.type) p.type = 'raid';
+                    if (p.published !== true) p.published = true;
+                    const cap = p.type === 'party_dom' ? (p.groupCount || 1) * 6 : 12;
+                    const fixed = [];
+                    for (let i = 0; i < cap; i++) {
+                        fixed.push((p.characters[i] && p.characters[i].name && !p.characters[i].empty)
+                            ? p.characters[i] : { empty: true });
+                    }
+                    p.characters = fixed;
+                });
+                initialDataLoaded = true;
                 withActiveFieldPreserved(renderAll);
+                if (full) {
+                    // Duyurular ayrı yolda: onları da tazele
+                    try {
+                        const aSnap = await window.fbDb.ref('Announcements').orderByKey().limitToLast(60).once('value');
+                        announcementsData = aSnap.val() || {};
+                    } catch (e) {}
+                    safeRender('activeEvents', renderActiveEventsToMainPage);
+                    safeRender('activeAnnouncements', renderActiveAnnouncementsToMainPage);
+                    safeRender('guildBank', renderGuildBank);
+                    try { renderPlanUI(); } catch (e) {}
+                    try { renderDiscordAnnouncementsList(); } catch (e) {}
+                }
             } catch (e) { console.error('refreshGuildDataNow:', e); }
+        }
+
+        /**
+         * GÜVENLİK AĞI: Firebase dinleyicisi bazen sessizce kopuyor (uyku modu,
+         * ağ değişimi, sekme arka planda). O durumda site "donuyor" gibi
+         * görünüyor — başkasının yayınladığı raid ya da duyuru gelmiyordu.
+         * Sekme öne geldiğinde ve düzenli aralıklarla veri bir kez okunur.
+         */
+        function startFreshnessWatch() {
+            if (window._freshWatch) return;
+            window._freshWatch = setInterval(() => {
+                if (document.hidden) return;
+                if (isSaving || isEditMode || isAnimating) return;
+                refreshGuildDataNow(true);
+            }, 45000);
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden && !isEditMode) setTimeout(() => refreshGuildDataNow(true), 300);
+            });
+            window.addEventListener('online', () => setTimeout(() => refreshGuildDataNow(true), 600));
         }
 
         function decideMatchRequest(id, decision) {
@@ -10825,7 +10881,7 @@ function buildSlotContentCanvasDataUri(name, pills, reincText, className) {
             }, 100);
         }
 
-        function renderActiveEventsToMainPage() { const banner = document.getElementById('activeEventsBanner'); const list = document.getElementById('activeEventsList'); const activePlans = cloudData.raidPlans.filter(p => p.published && p.active && (canEdit() || p.type === 'raid')); if (activePlans.length === 0) { banner.classList.add('hidden'); return; } banner.classList.remove('hidden'); list.innerHTML = activePlans.map(p => { const isDom = p.type.includes('dom'); const tName = p.type === 'party_dom' ? t('party_dom') : p.type === 'raid_dom' ? t('raid_dom') : t('std_raid'); const maxC = p.type === 'party_dom' ? 6 : 12; return `<div class="bg-slate-900/60 border border-slate-700 p-4 rounded-2xl shadow-lg relative overflow-hidden group neon-theme-box border-none backdrop-blur-sm"><div class="absolute inset-0 bg-gradient-to-r from-blue-900/20 to-purple-900/20 opacity-50 group-hover:opacity-100 transition"></div><div class="relative z-10 flex flex-col h-full"><h3 class="text-sm font-black text-white uppercase tracking-widest mb-1 truncate">${p.title || t('event')} <span class="text-[9px] font-mono ${isDom?'text-fuchsia-400 bg-fuchsia-900/50':'text-amber-400 bg-amber-900/50'} px-1 rounded ml-1">${tName}</span></h3><div class="text-xs text-blue-400 font-mono font-bold mb-3">${p.time ? new Date(p.time).toLocaleString('tr-TR') : t('no_date')}</div><div class="mt-auto flex justify-between items-center border-t border-slate-700/50 pt-2"><span class="text-[10px] text-slate-400 font-black uppercase">ROSTER</span><span class="text-[10px] bg-slate-950 px-2 py-1 rounded text-white border border-slate-700">${p.characters.filter(x => x && x.name && !x.empty).length} / ${maxC}</span></div></div></div>`; }).join(''); }
+        function renderActiveEventsToMainPage() { const banner = document.getElementById('activeEventsBanner'); const list = document.getElementById('activeEventsList'); const activePlans = cloudData.raidPlans.filter(p => p.published && p.active && (canEdit() || p.type === 'raid')); if (activePlans.length === 0) { banner.classList.add('hidden'); return; } banner.classList.remove('hidden'); list.innerHTML = activePlans.map(p => { const isDom = p.type.includes('dom'); const tName = p.type === 'party_dom' ? t('party_dom') : p.type === 'raid_dom' ? t('raid_dom') : t('std_raid'); const maxC = p.type === 'party_dom' ? 6 : 12; return `<div class="bg-slate-900/60 border border-slate-700 p-4 rounded-2xl shadow-lg relative overflow-hidden group neon-theme-box border-none backdrop-blur-sm"><div class="absolute inset-0 bg-gradient-to-r from-blue-900/20 to-purple-900/20 opacity-50 group-hover:opacity-100 transition"></div><div class="relative z-10 flex flex-col h-full"><h3 class="text-sm font-black text-white uppercase tracking-widest mb-1 truncate">${p.title || t('event')} <span class="text-[9px] font-mono ${isDom?'text-fuchsia-400 bg-fuchsia-900/50':'text-amber-400 bg-amber-900/50'} px-1 rounded ml-1">${tName}</span></h3><div class="text-xs text-blue-400 font-mono font-bold mb-3">${p.time ? (() => { const L = trEuLabel(p.time); return `${L.tr}<br><span class="opacity-80">${L.eu}</span>`; })() : t('no_date')}</div><div class="mt-auto flex justify-between items-center border-t border-slate-700/50 pt-2"><span class="text-[10px] text-slate-400 font-black uppercase">ROSTER</span><span class="text-[10px] bg-slate-950 px-2 py-1 rounded text-white border border-slate-700">${p.characters.filter(x => x && x.name && !x.empty).length} / ${maxC}</span></div></div></div>`; }).join(''); }
         // ============ ÇOKLU İSTEMCİ ÇAKIŞMA KORUMASI ============
         // Aynı hatırlatmanın birden fazla açık sekme/istemci tarafından aynı anda Discord'a
         // gönderilmesini engeller. Firebase'in atomic transaction() özelliği sayesinde,
