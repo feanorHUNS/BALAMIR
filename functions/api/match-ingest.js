@@ -98,7 +98,11 @@ export async function onRequestPost({ request, env }) {
             results.push(await ingestOne(env, auth, slot, parsed.owner));
         } catch (e) {
             console.error('[match-ingest] slot', slot.slot, e);
-            results.push({ slot: slot.slot, status: 'error', message: 'Islenemedi.' });
+            results.push({
+                slot: slot.slot,
+                status: 'error',
+                issues: [String((e && e.message) || e)],
+            });
         }
     }
 
@@ -187,12 +191,18 @@ async function ingestOne(env, auth, slot, ownerCode) {
         });
     }
 
-    // Ham kayit katkida bulunan basina ayri tutuluyor: birlestirme bunlari
-    // okuyup tek "merged" belgesi uretecek.
+    // Ham kayit katkida bulunan basina ayri tutuluyor.
+    //
+    // ONEMLI: acilmis nesne agacini DEGIL, paketli stringi sakliyoruz.
+    // 177 KB'lik paket acildiginda 2723 hasar + 599 sifa + 451 konum satiri
+    // birkac MB'lik JSON'a donusuyor; Firebase REST'e o boyutta PUT hem yavas
+    // hem de Worker CPU butcesini zorluyor. Birlestirme asamasi paketi zaten
+    // sunucuda yeniden acacak.
     await put(env, `Matches/${matchKey}/raw/${auth.uid}`, {
         uploadedAt: now,
         ownerCode: ownerCode || null,
         clock: m.clock,
+        packed: slot.packed,
         counts: {
             damage: m.damage.length,
             heal: m.heal.length,
@@ -201,7 +211,6 @@ async function ingestOne(env, auth, slot, ownerCode) {
             positions: m.positions.length,
             distances: m.distances.length,
         },
-        data: slotPayload(m),
     });
 
     await put(env, `Matches/${matchKey}/contributors/${auth.uid}`, {
@@ -229,22 +238,6 @@ async function ingestOne(env, auth, slot, ownerCode) {
 }
 
 // ----------------------------------------------------------------------------
-/** Firebase'e yazilacak sadelestirilmis govde. */
-function slotPayload(m) {
-    return {
-        spells: m.spells,
-        damage: m.damage,
-        heal: m.heal,
-        deaths: m.deaths,
-        points: m.points,
-        pointMembers: m.pointMembers,
-        positions: m.positions,
-        distances: m.distances,
-        score: m.score,
-        geodata: m.geodata,
-    };
-}
-
 /**
  * Isim normalizasyonu.
  * Turkce harfler kucultmeden ONCE cozulmeli: JavaScript'te Turkce yerel
@@ -269,7 +262,10 @@ async function put(env, path, value) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(value),
     });
-    if (!res.ok) throw new Error(`Firebase yazma hatasi ${res.status} @ ${path}`);
+    if (!res.ok) {
+        const body = await res.text().catch(() => '');
+        throw new Error(`Firebase yazma hatasi ${res.status} @ ${path} ${body.slice(0, 200)}`);
+    }
 }
 
 function json(status, obj) {
