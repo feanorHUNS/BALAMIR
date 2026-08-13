@@ -27,6 +27,10 @@ import { onRequestPost as obsRotationRoute } from './functions/api/obs-rotation.
 import { postObsRotation, obsRotationAt, obsCurrentSlot } from './functions/_obsTasks.js';
 import { loadBotSettings } from './functions/_botCommands.js';
 import { onRequestPost as detectChannels } from './functions/api/detect-channels.js';
+// Dominion mac kayitlari: addon'un urettigi user.cfg dosyasinin alinmasi ve
+// kullanicinin gorebilecegi maclarin listelenmesi.
+import { onRequestPost as matchIngest } from './functions/api/match-ingest.js';
+import { onRequestPost as matchList }   from './functions/api/match-list.js';
 
 // ============================================================================
 // ADRES TABLOSU  (Madde 25 + 27)
@@ -71,7 +75,12 @@ const ROUTES = {
     // Haftalik OBS rotasyonu: "simdi gonder" testi (admin).
     '/api/obs-rotation':          { handler: obsRotationRoute,    minRole: 'admin',   limit: 20,  windowMs: 600000 },
     // Kanallarin hangi Discord sunucusuna ait oldugunu tespit eder.
-    '/api/detect-channels':       { handler: detectChannels,      minRole: 'officer', limit: 10,  windowMs: 600000 }
+    '/api/detect-channels':       { handler: detectChannels,      minRole: 'officer', limit: 10,  windowMs: 600000 },
+
+    // Dominion mac kayitlari. Yukleme dosya basina agir bir islem oldugu icin
+    // limit dar; liste sik cagrildigindan genis.
+    '/api/match-ingest':          { handler: matchIngest,         minRole: 'member',  limit: 20,  windowMs: 3600000 },
+    '/api/match-list':            { handler: matchList,           minRole: 'member',  limit: 200, windowMs: 600000 }
 };
 
 export default {

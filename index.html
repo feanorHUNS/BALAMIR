@@ -7363,7 +7363,12 @@
             if (!box) return;
             box.textContent = 'Yukleniyor...';
             try {
-                const res = await apiFetch('/api/match-list');
+                // worker.js yalnizca POST yonlendiriyor (bkz. ROUTES tablosu).
+                const res = await apiFetch('/api/match-list', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: '{}'
+                });
                 const data = await res.json().catch(() => null);
                 if (!res.ok) throw new Error((data && data.error) || 'Liste alinamadi.');
                 mtRenderList(box, (data && data.matches) || []);
