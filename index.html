@@ -681,63 +681,103 @@
         #announcementEditor h2 { font-size: 1.8rem; font-weight: bold; font-family: 'Cinzel', serif; color: white; border-bottom: 1px solid var(--neon-color); padding-bottom: 0.5rem; margin-bottom: 1rem; margin-top: 1.5rem; }
         #announcementEditor ul { list-style-type: disc; margin-left: 2rem; margin-bottom: 1rem; }
         #announcementEditor ol { list-style-type: decimal; margin-left: 2rem; margin-bottom: 1rem; }
+
+        /* ===== DOMINION MAC KAYITLARI =====
+           NOT: Bu blok ANA <style> icinde durmali. <style id="dynamicTheme">
+           icine konursa applyTheme() ilk calistiginda innerHTML ile silinir. */
+        .mt-drop{border:1.5px dashed rgba(148,163,184,.35);border-radius:14px;
+          padding:34px 20px;text-align:center;cursor:pointer;transition:.18s;
+          background:rgba(2,6,23,.45);display:flex;flex-direction:column;
+          align-items:center;gap:6px}
+        .mt-drop:hover,.mt-drop.is-over{border-color:var(--neon-color);
+          background:rgba(2,6,23,.65);box-shadow:0 0 24px -8px var(--neon-shadow)}
+        .mt-drop:focus-visible{outline:2px solid var(--neon-color);outline-offset:3px}
+        .mt-drop-ico{font-size:26px;line-height:1;opacity:.75;margin-bottom:2px}
+        .mt-drop-big{font-size:15px;font-weight:700;color:#e2e8f0;letter-spacing:.02em}
+        .mt-drop-sub{font-size:12px;color:#94a3b8}
+        .mt-drop-path{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+          font-size:10px;color:#64748b;margin-top:8px;word-break:break-all;
+          background:rgba(0,0,0,.35);padding:4px 10px;border-radius:6px}
+
+        .mt-steps{margin-top:16px;border:1px solid rgba(148,163,184,.18);
+          border-radius:12px;overflow:hidden;background:rgba(2,6,23,.4)}
+        .mt-step{display:flex;gap:10px;align-items:center;padding:9px 13px;
+          font-size:12px;border-bottom:1px solid rgba(148,163,184,.12);color:#94a3b8}
+        .mt-step:last-child{border-bottom:none}
+        .mt-step.no{color:#fca5a5;background:rgba(127,29,29,.18)}
+        .mt-ic{width:16px;text-align:center;font-weight:700;flex:none}
+        .mt-step.ok .mt-ic{color:#4ade80}
+        .mt-step.no .mt-ic{color:#f87171}
+
+        .mt-card{margin-top:14px;border:1px solid rgba(148,163,184,.2);
+          border-radius:14px;padding:16px 18px;background:rgba(2,6,23,.55)}
+        .mt-card.bad{border-color:rgba(248,113,113,.4);background:rgba(69,10,10,.25)}
+        .mt-card-head{display:flex;flex-wrap:wrap;gap:10px;align-items:center;
+          margin-bottom:12px;padding-bottom:10px;
+          border-bottom:1px solid rgba(148,163,184,.14)}
+        .mt-slot{font-size:10px;font-weight:900;letter-spacing:.16em;
+          text-transform:uppercase;color:var(--neon-color)}
+        .mt-serial{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+          font-size:10px;color:#94a3b8;border:1px solid rgba(148,163,184,.25);
+          padding:3px 8px;border-radius:6px;background:rgba(0,0,0,.3)}
+        .mt-size{margin-left:auto;font-family:ui-monospace,monospace;
+          font-size:10px;color:#64748b}
+
+        .mt-meta{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+        .mt-meta span{font-size:11px;color:#cbd5e1;background:rgba(148,163,184,.1);
+          padding:4px 10px;border-radius:6px;white-space:nowrap}
+
+        .mt-teams{display:flex;flex-wrap:wrap;align-items:center;gap:8px;
+          font-size:13px;line-height:1.6;margin-bottom:12px;word-break:break-word}
+        .mt-us{color:#5eead4}
+        .mt-them{color:#fda4af}
+        .mt-vs{color:#64748b;font-weight:700}
+
+        .mt-stats{display:flex;flex-wrap:wrap;gap:7px}
+        .mt-chip{display:inline-flex;gap:5px;align-items:baseline;
+          border:1px solid rgba(148,163,184,.2);border-radius:999px;
+          padding:4px 11px;background:rgba(0,0,0,.25)}
+        .mt-chip b{font-family:ui-monospace,monospace;font-size:12px;
+          font-weight:700;color:#e2e8f0}
+        .mt-chip i{font-style:normal;font-size:10px;color:#94a3b8;
+          text-transform:uppercase;letter-spacing:.06em}
+
+        .mt-note{margin-top:12px;font-size:12px;color:#fcd34d;line-height:1.5;
+          background:rgba(120,53,15,.25);border-left:3px solid #f59e0b;
+          padding:9px 12px;border-radius:0 8px 8px 0}
+        .mt-issues{font-size:12px;color:#fca5a5;line-height:1.7}
+        .mt-detail{font-family:ui-monospace,monospace;font-size:10.5px;
+          color:#94a3b8;margin-top:6px;word-break:break-word;line-height:1.5}
+
+        .mt-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+        .mt-btn{font-size:11px;font-weight:700;letter-spacing:.08em;
+          text-transform:uppercase;padding:10px 18px;border-radius:9px;
+          border:1px solid rgba(148,163,184,.3);background:rgba(15,23,42,.8);
+          color:#e2e8f0;cursor:pointer;transition:.16s}
+        .mt-btn:hover:not(:disabled){border-color:var(--neon-color);
+          color:var(--neon-color);box-shadow:0 0 18px -6px var(--neon-shadow)}
+        .mt-btn:disabled{opacity:.45;cursor:default}
+        .mt-btn.primary{background:var(--neon-bg);border-color:var(--neon-color);
+          color:var(--neon-color)}
+        .mt-btn:focus-visible{outline:2px solid var(--neon-color);outline-offset:2px}
+
+        .mt-result{margin-top:14px}
+        .mt-rrow{border:1px solid rgba(148,163,184,.2);border-left-width:4px;
+          border-radius:0 12px 12px 0;padding:13px 16px;margin-bottom:9px;
+          display:flex;flex-wrap:wrap;gap:10px;align-items:center;
+          color:#e2e8f0;font-size:13px;background:rgba(2,6,23,.5)}
+        .mt-rrow.ok{border-left-color:#4ade80}
+        .mt-rrow.bad{border-left-color:#f87171}
+        .mt-rrow b{font-weight:700}
+        .mt-rrow > .mt-detail{flex-basis:100%;margin-top:0}
+
+        .mt-error{display:flex;gap:10px;align-items:flex-start;margin-top:14px;
+          padding:13px 16px;border:1px solid rgba(248,113,113,.4);
+          border-radius:12px;background:rgba(69,10,10,.3);color:#fca5a5;
+          font-size:13px;line-height:1.55;word-break:break-word}
+        .mt-empty{padding:26px;text-align:center;color:#64748b;font-size:13px}
     </style>
     <style id="dynamicTheme">
-        /* ===== DOMINION MAC KAYITLARI ===== */
-        .mt-drop{border:1.5px dashed #3d4a63;border-radius:10px;padding:26px 18px;text-align:center;
-          cursor:pointer;transition:.15s;background:rgba(255,255,255,.012)}
-        .mt-drop:hover,.mt-drop.is-over{border-color:#39e6c8;background:rgba(57,230,200,.05)}
-        .mt-drop:focus-visible{outline:2px solid #39e6c8;outline-offset:3px}
-        .mt-drop-big{font-size:17px;color:#e8d9b8;margin-bottom:4px}
-        .mt-drop-sub{font-size:13px;color:#8794ab}
-        .mt-drop-path{font-family:ui-monospace,monospace;font-size:10px;color:#5f6c85;
-          margin-top:9px;word-break:break-all}
-        .mt-steps{margin-top:13px;border:1px solid #2c3547;border-radius:8px;overflow:hidden}
-        .mt-step{display:flex;gap:8px;align-items:center;padding:7px 11px;font-family:ui-monospace,monospace;
-          font-size:11px;border-bottom:1px solid #2c3547;color:#8794ab}
-        .mt-step:last-child{border-bottom:none}
-        .mt-step.no{color:#ff6b6b}
-        .mt-ic{width:13px;text-align:center}
-        .mt-step.ok .mt-ic{color:#7ddc6a}
-        .mt-step.no .mt-ic{color:#ff6b6b}
-        .mt-card{margin-top:10px;border:1px solid #2c3547;border-radius:9px;padding:12px 14px;
-          background:rgba(11,14,20,.55)}
-        .mt-card.bad{border-color:rgba(255,107,107,.45)}
-        .mt-card-head{display:flex;flex-wrap:wrap;gap:8px;align-items:baseline;margin-bottom:7px}
-        .mt-slot{font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.12em;
-          text-transform:uppercase;color:#ffd166}
-        .mt-serial{font-family:ui-monospace,monospace;font-size:9.5px;color:#8794ab;
-          border:1px solid #2c3547;padding:2px 6px;border-radius:3px}
-        .mt-size{margin-left:auto;font-family:ui-monospace,monospace;font-size:9.5px;color:#8794ab}
-        .mt-meta{display:flex;flex-wrap:wrap;gap:12px;font-family:ui-monospace,monospace;
-          font-size:10.5px;color:#8794ab;margin-bottom:7px}
-        .mt-teams{font-size:13px;line-height:1.5;margin-bottom:8px;word-break:break-word}
-        .mt-us{color:#39e6c8}.mt-them{color:#ff5c8a}.mt-vs{color:#8794ab}
-        .mt-stats{display:flex;flex-wrap:wrap;gap:5px}
-        .mt-chip{display:inline-flex;gap:4px;align-items:baseline;border:1px solid #2c3547;
-          border-radius:11px;padding:2px 8px;font-family:ui-monospace,monospace;font-size:9.5px}
-        .mt-chip b{font-weight:700;color:#e8d9b8}
-        .mt-chip i{font-style:normal;color:#8794ab}
-        .mt-note{margin-top:8px;font-size:12px;font-style:italic;color:#ffd166;line-height:1.45}
-        .mt-issues{font-family:ui-monospace,monospace;font-size:10.5px;color:#ff6b6b;line-height:1.6}
-        .mt-detail{font-family:ui-monospace,monospace;font-size:10px;color:#8794ab;margin-top:4px;
-          word-break:break-word}
-        .mt-actions{display:flex;gap:6px;margin-top:12px}
-        .mt-btn{font-family:ui-monospace,monospace;font-size:10.5px;letter-spacing:.07em;
-          padding:7px 14px;border-radius:5px;border:1px solid #3d4a63;background:#1c2333;
-          color:#e8d9b8;cursor:pointer;transition:.15s}
-        .mt-btn:hover:not(:disabled){border-color:#39e6c8;color:#39e6c8}
-        .mt-btn:disabled{opacity:.5;cursor:default}
-        .mt-btn.primary{background:rgba(57,230,200,.1);border-color:#39e6c8;color:#39e6c8}
-        .mt-btn:focus-visible{outline:2px solid #39e6c8;outline-offset:2px}
-        .mt-result{margin-top:11px}
-        .mt-rrow{border:1px solid #2c3547;border-left-width:3px;border-radius:7px;padding:10px 12px;
-          margin-bottom:6px;display:flex;flex-wrap:wrap;gap:8px;align-items:baseline;color:#e8d9b8}
-        .mt-rrow.ok{border-left-color:#7ddc6a}
-        .mt-rrow.bad{border-left-color:#ff6b6b}
-        .mt-rrow b{font-weight:500}
-        .mt-error{display:flex;gap:8px;align-items:center;margin-top:11px;padding:10px 12px;
-          border:1px solid rgba(255,107,107,.45);border-radius:7px;color:#ff6b6b;font-size:13px}
 </style>
 </head>
 <body class="relative">
@@ -7109,6 +7149,7 @@
             const drop = mtEl('div', 'mt-drop');
             drop.tabIndex = 0;
             drop.setAttribute('role', 'button');
+            drop.appendChild(mtEl('div', 'mt-drop-ico', '\u2B07'));
             drop.appendChild(mtEl('div', 'mt-drop-big', 'Kayit dosyasini buraya surukle'));
             drop.appendChild(mtEl('div', 'mt-drop-sub', 'veya tiklayip sec'));
             drop.appendChild(mtEl('div', 'mt-drop-path',
@@ -7209,9 +7250,20 @@
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ file: text })
                             });
-                            const data = await res.json().catch(() => null);
-                            if (!res.ok) throw new Error((data && data.error)
-                                || MT_CODE_TEXT[data && data.code] || 'Yukleme reddedildi.');
+
+                            // Sunucu JSON yerine HTML dondurebilir (404, 500, proxy
+                            // hatasi). O durumda ham metni gosteriyoruz -- "reddedildi"
+                            // gibi bos bir mesaj teshis etmeyi imkansiz kiliyordu.
+                            const bodyText = await res.text();
+                            let data = null;
+                            try { data = JSON.parse(bodyText); } catch (e) {}
+
+                            if (!res.ok) {
+                                const msg = (data && (data.error || data.detail))
+                                    || MT_CODE_TEXT[data && data.code]
+                                    || ('HTTP ' + res.status + ' -- ' + bodyText.slice(0, 300));
+                                throw new Error(msg);
+                            }
                             panel.textContent = '';
                             panel.appendChild(mtResult(data));
                             loadMatchList();
@@ -7291,6 +7343,7 @@
                 row.appendChild(mtEl('b', null, 'Slot ' + r.slot + ' \u2014 ' + (LBL[r.status] || r.status)));
                 if (r.serial)  row.appendChild(mtEl('span', 'mt-serial', r.serial));
                 if (r.mapName) row.appendChild(mtEl('span', null, r.mapName));
+                if (r.message) row.appendChild(mtEl('div', 'mt-detail', r.message));
                 (r.issues || []).forEach(i => row.appendChild(mtEl('div', 'mt-detail', '\u2022 ' + i)));
                 box.appendChild(row);
             });
@@ -7322,7 +7375,8 @@
         function mtRenderList(box, list) {
             box.textContent = '';
             if (!list.length) {
-                box.appendChild(mtEl('div', null, 'Henuz kayit yok.'));
+                box.appendChild(mtEl('div', 'mt-empty',
+                    'Henuz kayit yok. Bir Dominion maci oynayip user.cfg dosyasini yukleyin.'));
                 return;
             }
             list.forEach(m => {
