@@ -19,7 +19,7 @@
 // Istemci tarafi ayristirma SADECE onizleme icindir; burada dosya sifirdan
 // yeniden ayristirilir ve yalnizca bu sonuc veritabanina yazilir.
 
-import { fb, authenticate, checkRateLimit } from '../_auth.js';
+import { fb } from '../_auth.js';
 import { parseConfigFile } from '../_hunsParser.js';
 
 // Ayni maci ayni sayan zaman penceresi. Roster anahtari zaten zamansiz;
@@ -28,14 +28,12 @@ const MATCH_WINDOW_MS = 15 * 60 * 1000;
 
 const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
 
-export async function onRequestPost({ request, env }) {
-    // ---- kimlik ----------------------------------------------------------
-    const auth = await authenticate(request, env);
-    if (!auth.ok) return auth.response;
-
-    // ---- hiz siniri ------------------------------------------------------
-    const rl = await checkRateLimit(env, auth.uid, 'match-ingest', 20, 60 * 60 * 1000);
-    if (rl && rl.ok === false) return rl.response;
+// NOT: Kimlik dogrulama, yetki seviyesi ve hiz siniri worker.js'teki ROUTES
+// tablosunda yapiliyor; dogrulanmis kimlik context.auth ile geliyor.
+// Burada tekrar authenticate() cagirmak gereksiz (ve iki kez token dogrulamak
+// demek olurdu).
+export async function onRequestPost(context) {
+    const { request, env, auth } = context;
 
     // ---- govde -----------------------------------------------------------
     let text;

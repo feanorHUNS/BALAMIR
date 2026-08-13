@@ -12,13 +12,14 @@
 // buyuk/kucuk harf ve Turkce karakter duyarsiz; caksima olursa sistem durmaz,
 // sadece o eslesme kurulmaz.
 
-import { fb, authenticate } from '../_auth.js';
+import { fb } from '../_auth.js';
 
 const MAX_RESULTS = 200;
 
-export async function onRequestGet({ request, env }) {
-    const auth = await authenticate(request, env);
-    if (!auth.ok) return auth.response;
+// worker.js yalnizca POST yonlendiriyor; bu yuzden liste de POST.
+// Kimlik ve hiz siniri router'da yapiliyor, auth context ile geliyor.
+export async function onRequestPost(context) {
+    const { env, auth } = context;
 
     const isAdmin = auth.role === 'admin';
 
